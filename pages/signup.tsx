@@ -5,9 +5,9 @@ export default () => {
 
     return (
         <Layout>
-            <h1>Login</h1>
+            <h1>Beta Sign up</h1>
             <SignUpForm
-                backLink="/"
+                backLink="/login"
                 targetUrl="/"/>
         </Layout>
     );

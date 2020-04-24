@@ -6,8 +6,8 @@ export default () => {
 
     return (
         <Layout>
-            <h1>Login</h1>
-            <LoginForm/>
+            <h1>Beta Login</h1>
+            <LoginForm targetUrl="/"/>
             <p>
                 or <Link href="/signup"><a>sign up</a></Link>
             </p>

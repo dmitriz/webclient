@@ -1,3 +1,26 @@
+# Digital Stage Web Client
+
+This is the web client implementation of the Digital Stage Project, written in Typescript and using mainly
+ - React
+ - Next.js
+ - Socket.io
+ - Mediasoup
+ - Google Firebase
+ - Base Web UI Framework
+ 
+ Please participante and help us developing this solution right now at
+ 
+    #WirVsVirus
+     
+    #EUvsVirus
+
+# Live
+
+This repository is currently deployed here:
+
+https://digitalstage.now.sh/login
+
+
 
 # Install
 
