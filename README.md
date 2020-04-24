@@ -1,47 +1,28 @@
 
-## Requirements
-
-Since we are using node.js, npm and mediasoup you need to have the following frameworks installed first:
-
-### Linux, Unix or macos
-- node version >= v8.6.0
-- python version 2 or 3
-- make
-- gcc and g++ >= 4.9 or clang
-
-### Windows
-
-- node version >= v8.6.0
-- python version 2
-- Visual Studio >= 2015
-
-For more information please see: https://mediasoup.org/documentation/v3/mediasoup/installation/
-
-## Install
+# Install
 
 To get started, checkout the repository and install all dependencies first:
 
-    git clone https://github.com/delude88/digitalstage-mediasoup.git
-    cd digitalstage-mediasoup
-    cd client
-    npm install
-    cd ..
-    cd server
+    git clone https://github.com/digital-stage/webclient.git
+    cd webclient
     npm install
     
-Then you can start the server by using
+Then you can start the client by using
 
-    cd server
-    npm dev
+    npm prod
     
-Go ahead and open another terminal and start the client's webserver by
-
-    cd client
-    npm dev
 
 Then open a modern browser (we recommend Google Chrome) and open
 
     http://localhost:3000/
+
+## Using a local digital stage server instance
+
+When you want to use a local instance of the digital stage server (https://github.com/digital-stage/server.git), use the following command instead
+
+    npm dev
+    
+and make sure, that the server instance is running on port 3001.
 
 ### Google Chrome hints
 Google Chrome will restrict the connection to the server, since we are using self-signed SSL certificates, so enable the usage of insecure localhost,
