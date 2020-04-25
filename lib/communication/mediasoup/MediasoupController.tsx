@@ -81,7 +81,15 @@ export default class MediasoupController implements IBaseController {
     }
 
     unpublishTrack(track: MediaStreamTrack): Promise<void> {
-        return undefined;
+        return new Promise<void>(resolve => {
+            const producer: mediasoup.types.Producer = this.findProducerForTrack(track);
+            if (producer) {
+                producer.close();
+                resolve();
+            } else {
+                throw new Error("Could not find any publication of track with id=" + track.id);
+            }
+        });
     }
 
     getRtcCapabilities = (): Promise<RtpCapabilities> => {
@@ -163,4 +171,8 @@ export default class MediasoupController implements IBaseController {
                 return receiveTransport;
             })
     };
+
+    private findProducerForTrack = (track: MediaStreamTrack): mediasoup.types.Producer | null => {
+        return this.producers.find((producer: mediasoup.types.Producer) => producer.track != null && producer.track.id === track.id);
+    }
 }
