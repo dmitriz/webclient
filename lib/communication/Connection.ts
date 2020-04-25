@@ -48,7 +48,7 @@ export default class Connection {
         return user.getIdToken()
             .then((token: string) => {
                 console.log("join-stage");
-                return this.socket.request("join-stage", {
+                return this.socket.request("stg/join", {
                     stageId,
                     token,
                     password: password ? password : null
