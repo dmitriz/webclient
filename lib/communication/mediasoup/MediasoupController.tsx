@@ -13,6 +13,8 @@ interface MediasoupStage {
 interface MediasoupClient {
     uid: string;
     producerIds: string[];
+    // Keine transports
+    // Keine cosumer
 }
 
 export default class MediasoupController implements IBaseController {

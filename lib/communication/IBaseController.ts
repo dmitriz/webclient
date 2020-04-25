@@ -8,6 +8,4 @@ export default interface IBaseController {
     publishTack(track: MediaStreamTrack): Promise<void>
 
     unpublishTrack(track: MediaStreamTrack): Promise<void>
-
-    handleParticipantAdded(participant: Participant): Promise<void>;
 }
