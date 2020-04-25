@@ -13,6 +13,7 @@ export default () => {
     const router = useRouter();
     const [connection] = useState<Connection>(new Connection());
 
+
     // TEST METHOD (useCallback einfach erstmal ignorieren, hat seinen Grund)
     const connect = useCallback(() => {
         connection.connect(config.SERVER_URL, parseInt(config.SERVER_PORT))

@@ -9,7 +9,7 @@ export interface Stage {
 }
 
 export interface Participant {
-    uid: string;
+    userId: string;
     name: string;
 
     tracks: MediaStreamTrack[];

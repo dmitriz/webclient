@@ -4,6 +4,17 @@ import {SocketWithRequest} from "../../../util/SocketWithRequest";
 import * as mediasoup from 'mediasoup-client';
 import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
 
+
+interface MediasoupStage {
+    id: string;
+    clients: MediasoupClient[];
+}
+
+interface MediasoupClient {
+    uid: string;
+    producerIds: string[];
+}
+
 export default class MediasoupController implements IBaseController {
     private readonly socket: SocketWithRequest;
     private readonly uid: string;
@@ -54,7 +65,7 @@ export default class MediasoupController implements IBaseController {
                 this.socket.request("con/ms/get-existing-clients").then(
                     async (response: {
                         clients: {
-                            uid: string;
+                            userId: string;
                             producerIds: string[]
                         }[]
                     }) => {
