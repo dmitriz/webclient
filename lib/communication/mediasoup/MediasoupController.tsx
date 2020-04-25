@@ -1,8 +1,8 @@
 import IBaseController from "../IBaseController";
 import {Participant} from "../Connection";
 import {SocketWithRequest} from "../../../util/SocketWithRequest";
-import {RtpCapabilities} from "mediasoup-client/lib/RtpParameters";
 import * as mediasoup from 'mediasoup-client';
+import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
 
 export default class MediasoupController implements IBaseController {
     private readonly socket: SocketWithRequest;
@@ -22,14 +22,15 @@ export default class MediasoupController implements IBaseController {
         this.device = new mediasoup.Device();
         // Get general informations from server
         return this.getRtcCapabilities()
-            .then(async (rtpCapabilities: RtpCapabilities) => {
+            .then(async (rtpCapabilities: any) => {
+                await this.device.load({routerRtpCapabilities: rtpCapabilities});
                 // Create a transport to receive streams
                 this.recvTransport = await this.createRecvTransport(this.device);
                 // Create a transport to send streams
                 this.sendTransport = await this.createSendTransport(this.device);
 
                 // Listen for added producers
-                this.socket.on('ms-producer-added', async (data: {
+                this.socket.on('con/ms/producer-added', async (data: {
                     userId: string,
                     producerId: string
                 }) => {
@@ -49,6 +50,26 @@ export default class MediasoupController implements IBaseController {
                     console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
                     //TODO: Throw new consumer event
                 });
+
+                this.socket.request("con/ms/get-existing-clients").then(
+                    async (response: {
+                        clients: {
+                            uid: string;
+                            producerIds: string[]
+                        }[]
+                    }) => {
+                        response.clients.forEach((c) => {
+                            // I know who is who
+
+                            c.producerIds.forEach(async (pi) => {
+                                const consumerOptions = await this.socket.request('con/ms/consume', {
+                                    producerId: pi,
+                                    transportId: this.recvTransport.id,
+                                    rtpCapabilities: this.device.rtpCapabilities
+                                });
+                            })
+                        })
+                    });
                 return;
             })
     }

@@ -4,11 +4,15 @@ import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
 
 export interface Stage {
-
+    participant: Participant[];
+    directorUid: string;
 }
 
 export interface Participant {
+    uid: string;
+    name: string;
 
+    tracks: MediaStreamTrack[];
 }
 
 export default class Connection {
