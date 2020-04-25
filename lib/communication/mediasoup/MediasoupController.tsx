@@ -10,6 +10,8 @@ export default class MediasoupController implements IBaseController {
     private device: mediasoup.Device;
     private sendTransport: mediasoup.types.Transport;
     private recvTransport: mediasoup.types.Transport;
+    private producers: mediasoup.types.Producer[] = [];
+    private consumers: mediasoup.types.Consumer[] = [];
 
     constructor(socket: SocketWithRequest, uid: string) {
         this.socket = socket;
@@ -43,6 +45,7 @@ export default class MediasoupController implements IBaseController {
                         id: consumerOptions.id
                     });
                     consumer.resume();
+                    this.consumers.push(consumer);
                     console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
                     //TODO: Throw new consumer event
                 });
@@ -52,7 +55,8 @@ export default class MediasoupController implements IBaseController {
 
     disconnect(): Promise<void> {
         return new Promise<void>(resolve => {
-            //TODO: Close all active producers and consumers first
+            this.producers.forEach((producer: mediasoup.types.Producer) => producer.close());
+            this.consumers.forEach((consumer: mediasoup.types.Consumer) => consumer.close());
             this.sendTransport.close();
             this.recvTransport.close();
             return;
