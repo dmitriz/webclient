@@ -59,6 +59,11 @@ export default class Connection {
                         if (response.stage) {
                             this.mediasoupController = new MediasoupController(this.socket, user.uid);
                             await this.mediasoupController.connect();
+
+                            this.socket.on("stg/client-added", () => {
+                                console.log("client added");
+                            });
+
                             return response.stage as Stage;
                         } else {
                             if (response.error) {
