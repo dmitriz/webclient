@@ -43,19 +43,19 @@ export default class MediasoupController implements IBaseController {
                 this.sendTransport = await this.createSendTransport(this.device);
 
                 // Listen for added producers
-                this.socket.on('con/ms/producer-added', async (data: {
+                this.socket.on('stg/ms/producer-added', async (data: {
                     userId: string,
                     producerId: string
                 }) => {
                     console.log("mediasoup: new producer" + data.producerId + ', so lets create an consumer for it');
                     console.log("mediasoup: ask server for new consumer");
-                    const consumerOptions = await this.socket.request('con/ms/consume', {
+                    const consumerOptions = await this.socket.request('stg/ms/consume', {
                         producerId: data.producerId,
                         transportId: this.recvTransport.id,
                         rtpCapabilities: this.device.rtpCapabilities
                     });
                     const consumer: mediasoup.types.Consumer = await this.recvTransport.consume(consumerOptions);
-                    await this.socket.request('con/ms/finish-consume', {
+                    await this.socket.request('stg/ms/finish-consume', {
                         id: consumerOptions.id
                     });
                     consumer.resume();
@@ -64,7 +64,7 @@ export default class MediasoupController implements IBaseController {
                     //TODO: Throw new consumer event
                 });
 
-                this.socket.request("con/ms/get-existing-clients").then(
+                this.socket.request("stg/ms/get-existing-clients").then(
                     async (response: {
                         clients: {
                             userId: string;
@@ -75,7 +75,7 @@ export default class MediasoupController implements IBaseController {
                             // I know who is who
 
                             c.producerIds.forEach(async (pi) => {
-                                const consumerOptions = await this.socket.request('con/ms/consume', {
+                                const consumerOptions = await this.socket.request('stg/ms/consume', {
                                     producerId: pi,
                                     transportId: this.recvTransport.id,
                                     rtpCapabilities: this.device.rtpCapabilities
@@ -128,13 +128,13 @@ export default class MediasoupController implements IBaseController {
 
     getRtcCapabilities = (): Promise<RtpCapabilities> => {
         console.log("mediasoup: getRtcCapabilities");
-        return this.socket.request('con/ms/get-rtp-capabilities', {})
+        return this.socket.request('stg/ms/get-rtp-capabilities', {})
             .then((routerRtpCapabilities) => routerRtpCapabilities);
     };
 
     createSendTransport = (device: mediasoup.Device): Promise<mediasoup.types.Transport> => {
         console.log("mediasoup: createSendTransport");
-        return this.socket.request('con/ms/create-send-transport', {
+        return this.socket.request('stg/ms/create-send-transport', {
             forceTcp: false,
             rtpCapabilities: this.device.rtpCapabilities,
         })
@@ -144,7 +144,7 @@ export default class MediasoupController implements IBaseController {
                 // Add handler
                 sendTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
                     console.log("mediasoup: sendTransport: connect");
-                    this.socket.request('con/ms/connect-transport', {
+                    this.socket.request('stg/ms/connect-transport', {
                         transportId: sendTransportOptions.id,
                         dtlsParameters
                     })
@@ -153,7 +153,7 @@ export default class MediasoupController implements IBaseController {
                 });
                 sendTransport.on('produce', async ({kind, rtpParameters, appData}, callback) => {
                     console.log("mediasoup: sendTransport: produce");
-                    const result = await this.socket.request('con/ms/send-track', {
+                    const result = await this.socket.request('stg/ms/send-track', {
                         transportId: sendTransportOptions.id,
                         kind,
                         rtpParameters,
@@ -177,7 +177,7 @@ export default class MediasoupController implements IBaseController {
 
     createRecvTransport = (device: mediasoup.Device): Promise<mediasoup.types.Transport> => {
         console.log("mediasoup: createRecvTransport");
-        return this.socket.request('con/ms/create-receive-transport', {
+        return this.socket.request('stg/ms/create-receive-transport', {
             forceTcp: false,
             rtpCapabilities: this.device.rtpCapabilities,
         })
@@ -187,7 +187,7 @@ export default class MediasoupController implements IBaseController {
                 // Add handler
                 receiveTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
                     console.log("mediasoup: receive transport: connect");
-                    await this.socket.request('con/ms/connect-transport', {
+                    await this.socket.request('stg/ms/connect-transport', {
                         transportId: receiveTransportOptions.id,
                         dtlsParameters
                     })

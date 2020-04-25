@@ -105,7 +105,7 @@ export default class P2PController {
                 console.error(peerConnection);
             }
         });
-    }
+    };
 
     private makeOffer = (targetSocketId: string, offer: RTCSessionDescriptionInit) => {
         this.socket.emit("p2p-make-offer", {
