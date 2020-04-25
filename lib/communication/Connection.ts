@@ -1,3 +1,6 @@
+import MediasoupController from "./mediasoup/MediasoupController";
+import P2PController from "./p2p/P2PController";
+import SoundjackController from "./soundjack/SoundjackController";
 import firebase from "firebase";
 
 export interface Stage {
@@ -8,7 +11,10 @@ export interface Participant {
 
 }
 
-export default class DigitalStageApi {
+export default class Connection {
+    private mediasoupController: MediasoupController;
+    private p2pController: P2PController;
+    private soundjackController: SoundjackController;
 
     constructor() {
         if (typeof window !== "undefined")
@@ -20,6 +26,8 @@ export default class DigitalStageApi {
 
     connect = (hostname: string, port: number): Promise<boolean> => {
         return new Promise<boolean>((resolve, reject) => {
+            this.mediasoupController.connect();
+            this.p2pController.connect();
             resolve(false);
         });
     };

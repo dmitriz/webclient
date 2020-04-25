@@ -1,12 +1,12 @@
 import React, {Context, createContext, useCallback, useState} from "react";
 import firebase from "firebase/app";
-import DigitalStageApi, {Participant, Stage} from "./api/DigitalStageApi";
+import Connection, {Participant, Stage} from "./communication/Connection";
 
 interface StageContextProps {
     stage?: Stage;
     participants: Participant[],
     connect: (hostname: string, port: number) => Promise<void>,
-    disconnect: () => Promise<void>,
+    disconnect: () => Promise<void>,3
     createStage: (user: firebase.User, name: string, password?: string, type?: 'theater' | 'music' | 'conference') => Promise<void>,
     joinStage: (user: firebase.User, stageId: string, password?: string) => Promise<void>
 }
@@ -17,29 +17,29 @@ const StageContext: Context<StageContextProps> = createContext(undefined);
 export const StageProvider = (props: {
     children: React.ReactNode
 }) => {
-    const [api] = useState<DigitalStageApi>(new DigitalStageApi());
+    const [connection] = useState<Connection>(new Connection());
 
     const connect = useCallback((hostname: string, port: number) => {
         return new Promise<void>((resolve, reject) => {
-            if (api) {
+            if (connection) {
                 console.log("Connecting...");
-                return api.connect(hostname, port);
+                return connection.connect(hostname, port);
             }
-            console.log(api);
+            console.log(connection);
             reject("API not ready...")
         });
-    }, [api]);
+    }, [connection]);
 
     const disconnect = useCallback(async () => {
         return new Promise<void>(resolve => {
-            api.disconnect();
+            connection.disconnect();
             resolve();
         });
-    }, [api]);
+    }, [connection]);
 
     const createStage = useCallback(async (user: firebase.User, name: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater') => {
-        if (api) {
-            return api.createStage(user, name, password, type)
+        if (connection) {
+            return connection.createStage(user, name, password, type)
                 .then((stage: Stage) => {
                     console.log("Created stage!");
                     setState(prevState => ({
@@ -48,11 +48,11 @@ export const StageProvider = (props: {
                     }));
                 });
         }
-    }, [api]);
+    }, [connection]);
 
     const joinStage = useCallback(async (user: firebase.User, stageId: string, password?: string) => {
-        if (api) {
-            return api.joinStage(user, stageId, password)
+        if (connection) {
+            return connection.joinStage(user, stageId, password)
                 .then((stage: Stage) => {
                     console.log("Joined stage!");
                     setState(prevState => ({
@@ -61,7 +61,7 @@ export const StageProvider = (props: {
                     }));
                 });
         }
-    }, [api]);
+    }, [connection]);
     const [state, setState] = useState<StageContextProps>({
         participants: [],
         connect: connect,
