@@ -6,12 +6,14 @@ import * as mediasoup from 'mediasoup-client';
 
 export default class MediasoupController implements IBaseController {
     private readonly socket: SocketWithRequest;
+    private readonly uid: string;
     private device: mediasoup.Device;
     private sendTransport: mediasoup.types.Transport;
     private recvTransport: mediasoup.types.Transport;
 
-    constructor(socket: SocketWithRequest) {
+    constructor(socket: SocketWithRequest, uid: string) {
         this.socket = socket;
+        this.uid = uid;
     }
 
     connect(): Promise<void> {
@@ -49,7 +51,12 @@ export default class MediasoupController implements IBaseController {
     }
 
     disconnect(): Promise<void> {
-        return undefined;
+        return new Promise<void>(resolve => {
+            //TODO: Close all active producers and consumers first
+            this.sendTransport.close();
+            this.recvTransport.close();
+            return;
+        });
     }
 
     handleParticipantAdded(participant: Participant): Promise<void> {
@@ -57,7 +64,16 @@ export default class MediasoupController implements IBaseController {
     }
 
     publishTack(track: MediaStreamTrack): Promise<void> {
-        return undefined;
+        return this.sendTransport.produce({
+            track: track,
+            appData: {
+                uid: this.uid
+            }
+        }).then(
+            (producer: mediasoup.types.Producer) => {
+                this.producers.push(producer);
+            }
+        );
     }
 
     unpublishTrack(track: MediaStreamTrack): Promise<void> {
@@ -136,7 +152,7 @@ export default class MediasoupController implements IBaseController {
                     console.log("mediasoup: receive transport - connectionstatechange " + state);
                     if (state === 'closed' || state === 'failed' || state === 'disconnected') {
                         console.error("mediasoup: Disconnect by server side");
-                        //TODO: Throw disconnect event
+                        //TODO: Throw disconnected event
                     }
                 });
 
