@@ -62,13 +62,11 @@ export default class CanvasPlayer extends React.Component<Props, States> {
                 uniqueTracks.push(videoTrack);
             }
         });
-        console.log(uniqueTracks);
         return uniqueTracks;
     };
 
     componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<States>, snapshot?: any): void {
         if (prevProps.videoTracks !== this.props.videoTracks) {
-            console.log("Tracks changed");
 
             const videoTracks: MediaStreamTrack[] = this.getUniqueTracks();
 
@@ -76,8 +74,6 @@ export default class CanvasPlayer extends React.Component<Props, States> {
             const numRows = Math.ceil(Math.sqrt(numberOfElements));
 
             const numColsMax = Math.ceil(numberOfElements / numRows);
-            console.log("Rows: " + numRows);
-            console.log("Cols: " + numColsMax);
 
             const width = this.props.width ? this.props.width : window.innerWidth;
             const height = this.props.height ? this.props.height : window.innerHeight;
@@ -122,9 +118,7 @@ export default class CanvasPlayer extends React.Component<Props, States> {
                     animationFrame.width = elementWidth;
                     animationFrame.height = elementHeight;
                 }
-                console.log("[" + row + "|" + col + "]: " + x + "|" + y);
             }
-            console.log(currentAnimationFrames);
             this.setState({
                 animationFrames: currentAnimationFrames,
                 drawing: currentAnimationFrames.length > 0
@@ -152,7 +146,6 @@ export default class CanvasPlayer extends React.Component<Props, States> {
 
     private drawAnimationFrames = () => {
         const context = this.canvasRef.current.getContext("2d");
-        console.log(this.state.animationFrames.length);
         context.fillStyle = 'black';
         context.strokeStyle = 'red';
         context.fillRect(0, 0, this.props.width ? this.props.width : window.innerWidth, this.props.height ? this.props.height : window.innerHeight);
