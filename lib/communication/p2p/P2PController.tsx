@@ -110,12 +110,12 @@ export default class P2PController {
         });
 
         this.socket.on("stg/p2p/offer-made", (data: {
-            userId: string;
+            uid: string;
             socketId: string;
             offer: RTCSessionDescriptionInit;
         }) => {
-            console.log('s > c: stg/p2p/offer-made: ' + data.userId);
-            const peerConnection: PeerConnection = this.createPeerConnection(data.userId, data.socketId);
+            console.log('s > c: stg/p2p/offer-made: ' + data.uid);
+            const peerConnection: PeerConnection = this.createPeerConnection(data.uid, data.socketId);
             peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
                 .then(() => peerConnection.rtcpPeerConnection.createAnswer())
                 .then((answer: RTCSessionDescriptionInit) => {
@@ -127,11 +127,11 @@ export default class P2PController {
         });
 
         this.socket.on("stg/p2p/answer-made", (data: {
-            userId: string;
+            uid: string;
             socketId: string;
             answer: RTCSessionDescriptionInit;
         }) => {
-            console.log('s > c: stg/p2p/answer-made: ' + data.userId);
+            console.log('s > c: stg/p2p/answer-made: ' + data.uid);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
                 peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));

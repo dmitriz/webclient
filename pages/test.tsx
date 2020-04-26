@@ -86,8 +86,6 @@ export default () => {
         router.push("/login");
     }
 
-    console.log(participants.length);
-
     return (
         <Layout>
             <Background $darkMode={darkMode}/>
@@ -102,7 +100,8 @@ export default () => {
                 <TextWrapper $darkMode={darkMode}>
                     <h2>Participants</h2>
                     <ul>
-                        {participants.map((participant: Participant) => (<li>{participant.name}</li>))}
+                        {participants.map((participant: Participant) => (
+                            <li key={participant.userId}>{participant.name}</li>))}
                     </ul>
                     <CanvasPlayer
                         videoTracks={participants.flatMap((participants: Participant) => participants.tracks.filter((track: MediaStreamTrack) => track.kind === "video"))}/>

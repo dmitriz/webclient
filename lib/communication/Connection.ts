@@ -64,7 +64,7 @@ export default class Connection {
                 tracks: []
             };
             this.p2pController.addClientManually(announcement.userId, announcement.socketId);
-            if( this.onParticipantAdded )
+            if (this.onParticipantAdded)
                 this.onParticipantAdded(this.participants[announcement.userId]);
         });
 
@@ -72,7 +72,7 @@ export default class Connection {
             console.log("s > c: stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
             delete this.participants[announcement.userId];
-            if( this.onParticipantRemoved )
+            if (this.onParticipantRemoved)
                 this.onParticipantRemoved(participant);
         });
 
@@ -118,6 +118,7 @@ export default class Connection {
                         stage: Stage,
                         participants: StageParticipantAnnouncement[]
                     } | any): Promise<Stage> => {
+                        console.log(response.participants);
                         if (response.stage) {
                             this.p2pController = new P2PController(this.socket, user.uid);
                             this.mediasoupController = new MediasoupController(this.socket, user.uid);
@@ -125,7 +126,7 @@ export default class Connection {
                                 const participant = this.participants[userId];
                                 if (participant) {
                                     participant.tracks.push(consumer.track);
-                                    if( this.onParticipantChanged )
+                                    if (this.onParticipantChanged)
                                         this.onParticipantChanged(participant);
                                 } else {
                                     console.log("not found: " + userId);
@@ -140,7 +141,7 @@ export default class Connection {
                                     socketId: p.socketId,
                                     tracks: []
                                 };
-                                if( this.onParticipantAdded )
+                                if (this.onParticipantAdded)
                                     this.onParticipantAdded(this.participants[p.userId]);
                                 this.p2pController.addClientManually(p.userId, p.socketId);
                             });
