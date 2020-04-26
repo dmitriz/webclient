@@ -2,11 +2,10 @@ import {useAuth} from "../lib/useAuth";
 import {useRouter} from "next/router";
 import Loading from "../components/ui/Loading";
 import * as React from "react";
-import {useCallback, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import Layout from "../components/ui/Layout";
 import {Button} from "baseui/button";
 import * as config from "../env";
-import {fixWebRTC} from "../util/fixWebRTC";
 import VideoPlayer from "../components/video/VideoPlayer";
 import useConnection from "../lib/communication/useConnection";
 import {Participant} from "../lib/communication/Connection";
@@ -51,10 +50,9 @@ export default () => {
     const router = useRouter();
     const [useP2P, setP2P] = useState<boolean>(false);
     const [localStream, setLocalStream] = useState<MediaStream>();
-    const {connect, connected, createStage, joinStage, stage, participants, publishStream, publishTrack} = useConnection();
+    const {connect, connected, createStage, joinStage, stage, participants, publishTrack} = useConnection();
 
-    const shareMedia = useCallback(() => {
-        fixWebRTC();
+    useEffect(() => {
         navigator.mediaDevices.getUserMedia({video: true, audio: true})
             .then((stream: MediaStream) => {
                 setLocalStream(stream);
@@ -68,14 +66,6 @@ export default () => {
             setDarkMode(false);
         }
     }, [connected]);
-
-    useEffect(() => {
-        if (connected && stage && localStream) {
-            publishStream(localStream);
-            //localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, useP2P ? "p2p" : "mediasoup"));
-        }
-    }, [localStream, connected, stage, useP2P]);
-
 
     // Rendering webpage depending to states:
 
@@ -93,18 +83,15 @@ export default () => {
         <Layout>
             <Background $darkMode={darkMode}/>
             <div>
-                {!connected &&
-                <Button onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button>}
-                {connected && !stage &&
-                <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
-
-
-                {!localStream && (
-                    <>
-                        <Checkbox checked={useP2P} onChange={(e) => setP2P(e.currentTarget.checked)}>use P2P</Checkbox>
-                        <Button onClick={shareMedia}>Share media</Button>
-                    </>
+                {!connected && (<><Checkbox checked={useP2P} onChange={(e) => setP2P(e.currentTarget.checked)}>use
+                        P2P</Checkbox><Button
+                        onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button></>
                 )}
+                {connected && !stage &&
+                <Button onClick={() => joinStage(user, localStream, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
+
+                {!useP2P && <Button
+                    onClick={() => localStream.getTracks().forEach(track => publishTrack(track, "mediasoup"))}>Share</Button>}
             </div>
             {participants && participants.length > 0 && (
                 <TextWrapper $darkMode={darkMode}>

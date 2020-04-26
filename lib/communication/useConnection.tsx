@@ -38,16 +38,16 @@ export default () => {
         return connection.disconnect().then(() => setConnected(false))
     }, [connection]);
 
-    const createStage = useCallback((user: firebase.User, name: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
+    const createStage = useCallback((user: firebase.User, localStream: MediaStream, name: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
         if (stage)
             throw new Error("Already in a stage");
-        return connection.createStage(user, password, type)
+        return connection.createStage(user, localStream, password, type)
     }, [connection, stage]);
 
-    const joinStage = useCallback((user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
+    const joinStage = useCallback((user: firebase.User, localStream: MediaStream, stageId: string, password?: string): Promise<Stage> => {
         if (stage)
             throw new Error("Already in a stage");
-        return connection.joinStage(user, stageId, password)
+        return connection.joinStage(user, localStream, stageId, password)
             .then((stage: Stage) => {
                 setStage(stage);
                 return stage;
@@ -59,7 +59,6 @@ export default () => {
         connect,
         connected,
         publishTrack: connection.publishTrack,
-        publishStream: connection.publishStream,
         stage,
         participants,
         createStage,

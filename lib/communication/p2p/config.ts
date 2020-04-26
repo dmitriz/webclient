@@ -1,6 +1,5 @@
 export const p2pConfiguration: RTCConfiguration = {
     iceServers: [
-        /*
         {
             urls: ["stun:u3.xirsys.com"]
         }, {
@@ -14,7 +13,7 @@ export const p2pConfiguration: RTCConfiguration = {
                 "turns:u3.xirsys.com:443?transport=tcp",
                 "turns:u3.xirsys.com:5349?transport=tcp"
             ]
-        }*/
+        }/*
         {
             urls: [
                 'stun:stun1.l.google.com:19302',

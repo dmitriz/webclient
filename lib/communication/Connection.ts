@@ -33,6 +33,7 @@ export default class Connection {
     private socket: SocketWithRequest;
     private p2pController: P2PController;
     private mediasoupController: MediasoupController;
+    private localStream: MediaStream;
 
     //TODO: Make event handler out of this
     public onParticipantAdded?: (participant: Participant) => void;
@@ -40,11 +41,13 @@ export default class Connection {
     public onParticipantChanged?: (participant: Participant) => void;
 
     constructor() {
-        if (typeof window !== "undefined")
+        if (typeof window !== "undefined") {
             window.addEventListener("beforeunload", (ev) => {
                 ev.preventDefault();
                 this.disconnect();
             });
+            this.localStream = new MediaStream();
+        }
     }
 
     connect = (hostname: string, port: number): Promise<void> => {
@@ -108,8 +111,8 @@ export default class Connection {
         //TODO: throw disconnected event
     };
 
-    private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[]) => {
-        this.p2pController = new P2PController(this.socket, user.uid);
+    private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[], localStream: MediaStream) => {
+        this.p2pController = new P2PController(this.socket, user.uid, localStream);
         this.p2pController.onTrackAdded = (userId: string, socketId: string, track: MediaStreamTrack) => {
             const participant = this.participants[userId];
             if (participant) {
@@ -148,7 +151,8 @@ export default class Connection {
         });
     };
 
-    joinStage = (user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
+    joinStage = (user: firebase.User, localStream: MediaStream, stageId: string, password?: string): Promise<Stage> => {
+        this.localStream = localStream;
         return user.getIdToken()
             .then((token: string) => {
                 console.log("s > c: " + SocketEvents.stage.join + ": stageId=" + stageId + " userId=" + user.uid);
@@ -163,7 +167,7 @@ export default class Connection {
                     } | any): Promise<Stage> => {
                         console.log(response.participants);
                         if (response.stage) {
-                            await this.initStage(user, response.stage, response.participants);
+                            await this.initStage(user, response.stage, response.participants, this.localStream);
                             return response.stage as Stage;
                         } else {
                             if (response.error) {
@@ -175,7 +179,8 @@ export default class Connection {
             });
     };
 
-    createStage = (user: firebase.User, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
+    createStage = (user: firebase.User, localStream: MediaStream, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
+        this.localStream = localStream;
         return user.getIdToken()
             .then((token: string) => {
                 console.log("s > c: " + SocketEvents.stage.create + ": stageName=" + stageName + " userId=" + user.uid + " type=" + type);
@@ -197,7 +202,7 @@ export default class Connection {
                                 password: password,
                                 directorUid: user.uid
                             };
-                            await this.initStage(user, stage, response.participants);
+                            await this.initStage(user, stage, response.participants, this.localStream);
                             return {
                                 id: response,
                                 name: stageName,
@@ -215,16 +220,11 @@ export default class Connection {
             });
     };
 
-
-    publishStream = (stream: MediaStream): Promise<void> => {
-        return this.p2pController.publishStream(stream);
-    };
-
     publishTrack = (track: MediaStreamTrack, method: "mediasoup" | "p2p"): Promise<void> => {
         if (method === "mediasoup") {
             return this.mediasoupController.publishTack(track);
         } else {
-            return this.p2pController.publishTack(track);
+            return this.p2pController.publishAdditionalTack(track);
         }
     }
 }
