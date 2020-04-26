@@ -74,14 +74,14 @@ export default class Connection {
             this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantRemoved(participant));
         });
 
-        this.socket.request('stg/participants/state')
-            .then((announcements: StageParticipantAnnouncement[]) => {
-                console.log("stg/participants: length=" + announcements.length);
-                announcements.forEach((announcement: StageParticipantAnnouncement) => this.participants[announcement.userId] = {
-                    ...announcement,
-                    tracks: []
-                });
+        this.socket.on('stg/participants/state', (announcements: StageParticipantAnnouncement[]) => {
+            console.log("stg/participants/state: length=" + announcements.length);
+            announcements.forEach((announcement: StageParticipantAnnouncement) => this.participants[announcement.userId] = {
+                ...announcement,
+                tracks: []
             });
+        });
+
     };
 
     connected = (): boolean => {
