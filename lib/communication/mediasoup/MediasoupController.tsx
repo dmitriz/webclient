@@ -1,5 +1,4 @@
-import IBaseController from "../IBaseController";
-import {Participant} from "../Connection";
+
 import {SocketWithRequest} from "../../../util/SocketWithRequest";
 import * as mediasoup from 'mediasoup-client';
 import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
@@ -17,7 +16,7 @@ interface MediasoupClient {
     // Keine cosumer
 }
 
-export default class MediasoupController implements IBaseController {
+export default class MediasoupController {
     private readonly socket: SocketWithRequest;
     private readonly uid: string;
     private device: mediasoup.Device;
@@ -95,10 +94,6 @@ export default class MediasoupController implements IBaseController {
             this.recvTransport.close();
             return;
         });
-    }
-
-    handleParticipantAdded(participant: Participant): Promise<void> {
-        return undefined;
     }
 
     publishTack(track: MediaStreamTrack): Promise<void> {
