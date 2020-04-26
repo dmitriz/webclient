@@ -92,7 +92,7 @@ export default () => {
             <div>
                 {!connected &&
                 <Button onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button>}
-                {connected &&
+                {connected && !stage &&
                 <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
                 {!localStream && <Button onClick={shareMedia}>Share media</Button>}
             </div>
