@@ -1,9 +1,9 @@
 import MediasoupController from "./mediasoup/MediasoupController";
 import firebase from "firebase";
-import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
+import { extend, SocketWithRequest } from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
 import P2PController from "./p2p/P2PController";
-import {SocketEvents, StageJoinPayload, StageParticipantAnnouncement} from "./SocketEvents";
+import { SocketEvents, StageJoinPayload, StageParticipantAnnouncement } from "./SocketEvents";
 
 export interface Stage {
     id: string;
@@ -56,7 +56,7 @@ export default class Connection {
     };
 
     private initializeSocketHandler = () => {
-        this.socket.on('stg/participant-added', (announcement: StageParticipantAnnouncement) => {
+        this.socket.on('stg/participant/added', (announcement: StageParticipantAnnouncement) => {
             console.log("s > c: stg/participant-added: " + announcement.userId);
             // Add participant to list
             this.participants[announcement.userId] = {
@@ -68,7 +68,7 @@ export default class Connection {
                 this.onParticipantAdded(this.participants[announcement.userId]);
         });
 
-        this.socket.on('stg/participant-removed', (announcement: StageParticipantAnnouncement) => {
+        this.socket.on('stg/participant/removed', (announcement: StageParticipantAnnouncement) => {
             console.log("s > c: stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
             delete this.participants[announcement.userId];
