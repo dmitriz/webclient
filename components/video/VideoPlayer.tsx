@@ -6,7 +6,8 @@ const Video = styled('video', {
 });
 
 export default (props: {
-    stream: MediaStream
+    stream: MediaStream;
+    className?: string;
 }) => {
     const videoRef = useRef<HTMLVideoElement>();
 
@@ -15,7 +16,7 @@ export default (props: {
     }, [props.stream]);
 
     return (
-        <Video ref={videoRef} autoPlay={true} muted={true} playsInline={true}/>
+        <Video className={props.className} ref={videoRef} autoPlay={true} muted={true} playsInline={true}/>
     )
 };
 

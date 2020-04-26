@@ -11,8 +11,41 @@ import VideoPlayer from "../components/video/VideoPlayer";
 import useConnection from "../lib/communication/useConnection";
 import {Participant} from "../lib/communication/Connection";
 import CanvasPlayer from "../components/video/CanvasPlayer";
+import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
+import {styled} from "baseui";
+
+const CornerVideo = styled(VideoPlayer, {
+    position: 'fixed',
+    bottom: '1vmin',
+    right: '1vmin',
+    maxWidth: '300px',
+    maxHeight: '200px',
+    height: '30vmin',
+    width: '30vmin',
+    objectPosition: 'bottom',
+    zIndex: 999
+});
+const Background = styled('div', (props: {
+        $darkMode: boolean
+    }) => ({
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: -1,
+        backgroundColor: props.$darkMode ? 'black' : 'white'
+    }))
+;
+
+const TextWrapper = styled('div', (props: {
+    $darkMode: boolean
+}) => ({
+    color: props.$darkMode ? "white" : "black"
+}));
 
 export default () => {
+    const {darkMode, setDarkMode} = useDarkModeSwitch();
     const {user, loading} = useAuth();
     const router = useRouter();
     const [localStream, setLocalStream] = useState<MediaStream>();
@@ -25,6 +58,14 @@ export default () => {
                 setLocalStream(stream);
             });
     }, []);
+
+    useEffect(() => {
+        if (connected) {
+            setDarkMode(true);
+        } else {
+            setDarkMode(false);
+        }
+    }, [connected]);
 
     useEffect(() => {
         if (connected && stage && localStream) {
@@ -47,6 +88,7 @@ export default () => {
 
     return (
         <Layout>
+            <Background $darkMode={darkMode}/>
             <div>
                 {!connected &&
                 <Button onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button>}
@@ -54,16 +96,16 @@ export default () => {
                 <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
                 {!localStream && <Button onClick={shareMedia}>Share media</Button>}
             </div>
-            <div>
-                {localStream && <VideoPlayer stream={localStream}/>}
-            </div>
-            <h2>Participants</h2>
-            <ul>
-                {participants && participants.map((participant: Participant) => (<li>{participant.name}</li>))}
-            </ul>
-            {participants && (
-                <CanvasPlayer width={400} height={300} videoTracks={participants.flatMap(p => p.tracks)}/>
-            )}
+            <TextWrapper $darkMode={darkMode}>
+                <h2>Participants</h2>
+                <ul>
+                    {participants && participants.map((participant: Participant) => (<li>{participant.name}</li>))}
+                </ul>
+                {participants && (
+                    <CanvasPlayer width={400} height={300} videoTracks={participants.flatMap(p => p.tracks)}/>
+                )}
+            </TextWrapper>
+            {localStream && <CornerVideo stream={localStream}/>}
         </Layout>
     );
 }
