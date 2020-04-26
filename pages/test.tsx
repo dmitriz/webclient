@@ -13,6 +13,7 @@ import {Participant} from "../lib/communication/Connection";
 import CanvasPlayer from "../components/video/CanvasPlayer";
 import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
 import {styled} from "baseui";
+import VideoTrackPlayer from "../components/video/VideoTrackPlayer";
 
 const CornerVideo = styled(VideoPlayer, {
     position: 'fixed',
@@ -103,6 +104,8 @@ export default () => {
                         {participants.map((participant: Participant) => (<li>{participant.name}</li>))}
                     </ul>
                     <CanvasPlayer width={1920} height={1080} videoTracks={participants.flatMap(p => p.tracks)}/>
+                    {participants.map(p => p.tracks.map(t => <VideoTrackPlayer
+                        track={t}/>))}
                 </TextWrapper>
             )}
             {localStream && <CornerVideo stream={localStream}/>}

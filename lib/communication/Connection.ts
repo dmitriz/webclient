@@ -58,6 +58,7 @@ export default class Connection {
 
     private initializeSocketHandler = () => {
         this.socket.on('stg/participant-added', (announcement: StageParticipantAnnouncement) => {
+            console.log("stg/participant-added: " + announcement.userId);
             // Add participant to list
             this.participants[announcement.userId] = {
                 ...announcement,
@@ -67,6 +68,7 @@ export default class Connection {
         });
 
         this.socket.on('stg/participant-removed', (announcement: StageParticipantAnnouncement) => {
+            console.log("stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
             delete this.participants[announcement.userId];
             this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantRemoved(participant));
@@ -74,6 +76,7 @@ export default class Connection {
 
         this.socket.request(SocketEvents.stage.participants)
             .then((announcements: StageParticipantAnnouncement[]) => {
+                console.log("stg/participants: length=" + announcements.length);
                 announcements.forEach((announcement: StageParticipantAnnouncement) => this.participants[announcement.userId] = {
                     ...announcement,
                     tracks: []
@@ -125,9 +128,11 @@ export default class Connection {
                             };
                             await this.mediasoupController.connect();
 
+                            /*
                             this.socket.on("stg/client-added", () => {
+                                console.log("stg/client-added: length=" + announcements.length);
                                 console.log("client added");
-                            });
+                            });*/
 
                             return response.stage as Stage;
                         } else {

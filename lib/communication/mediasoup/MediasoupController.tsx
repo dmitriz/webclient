@@ -44,17 +44,18 @@ export default class MediasoupController {
                 this.sendTransport = await this.createSendTransport(this.device);
 
                 // Listen for added producers
-                this.socket.on('producer-added', async (data: {
-                    uid: string,
-                    producerId: string
+                this.socket.on('stg/ms/producer/added', async (data: {
+                    producer: string,
+                    userId: string,
                 }) => {
-                    console.log("mediasoup: new producer" + data.producerId + ' by ' + data.uid + ', so lets create an consumer for it');
-                    console.log("mediasoup: ask server for new consumer");
+                    console.log('s > *: stg/ms/producer/added: ' + data.userId);
+                    console.log('c > s: stg/ms/producer/consume');
                     const consumerOptions = await this.socket.request('stg/ms/consume', {
-                        producerId: data.producerId,
+                        producerId: data.producer,
                         transportId: this.recvTransport.id,
                         rtpCapabilities: this.device.rtpCapabilities
                     });
+                    console.log('c > s: stg/ms/producer/finish-consume');
                     const consumer: mediasoup.types.Consumer = await this.recvTransport.consume(consumerOptions);
                     await this.socket.request('stg/ms/finish-consume', {
                         id: consumerOptions.id
@@ -62,8 +63,8 @@ export default class MediasoupController {
                     consumer.resume();
                     this.consumers.push(consumer);
                     console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
-                    if (this.onConsumerAdded)
-                        this.onConsumerAdded(data.uid, consumer);
+                    if (this.onConsumerAdded && consumer.track.kind === "video")
+                        this.onConsumerAdded(data.userId, consumer);
                     //TODO: Throw new consumer event
                 });
                 return;
@@ -126,20 +127,21 @@ export default class MediasoupController {
             rtpCapabilities: this.device.rtpCapabilities,
         })
             .then((sendTransportOptions: mediasoup.types.TransportOptions) => {
+                console.log('c > s: stg/ms/create-send-transport');
                 const sendTransport: mediasoup.types.Transport = device.createSendTransport(sendTransportOptions);
 
                 // Add handler
                 sendTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
-                    console.log("mediasoup: sendTransport: connect");
                     this.socket.request('stg/ms/connect-transport', {
                         transportId: sendTransportOptions.id,
                         dtlsParameters
                     })
                         .then(callback)
+                        .then(() => console.log('c > s: stg/ms/connect-transport'))
                         .catch(errCallback);
                 });
                 sendTransport.on('produce', async ({kind, rtpParameters, appData}, callback) => {
-                    console.log("mediasoup: sendTransport: produce");
+                    console.log('c > s: stg/ms/send-track (kind=' + kind + ')');
                     const result = await this.socket.request('stg/ms/send-track', {
                         transportId: sendTransportOptions.id,
                         kind,
@@ -173,12 +175,12 @@ export default class MediasoupController {
 
                 // Add handler
                 receiveTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
-                    console.log("mediasoup: receive transport: connect");
                     await this.socket.request('stg/ms/connect-transport', {
                         transportId: receiveTransportOptions.id,
                         dtlsParameters
                     })
                         .then(callback)
+                        .then(() => console.log('c > s: stg/ms/connect-transport'))
                         .catch(errCallback);
                 });
                 receiveTransport.on('connectionstatechange', async (state) => {
