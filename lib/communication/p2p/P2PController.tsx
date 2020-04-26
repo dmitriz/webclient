@@ -28,7 +28,7 @@ export default class P2PController {
     } = {};
     private tracks: {
         [id: string]: MediaStreamTrack
-    };
+    } = {};
 
     constructor(socket: SocketWithRequest, userId: string) {
         this.socket = socket;
