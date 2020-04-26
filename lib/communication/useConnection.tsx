@@ -1,33 +1,32 @@
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useState} from "react";
 import Connection, {Participant, Stage} from "./Connection";
 import firebase from "firebase";
 
 export default () => {
-    const [connection] = useState(new Connection());
+    const [connection] = useState(() => {
+        const connection: Connection = new Connection();
+        connection.onParticipantAdded = (participant: Participant) => {
+            console.log("onParticipantsAdded");
+            setParticipants(prevState => ([...prevState, participant]));
+        };
+        connection.onParticipantChanged = (participant: Participant) => {
+            console.log("onParticipantChanged");
+            setParticipants(prevState => prevState.map((p: Participant) => {
+                if (p.userId === participant.userId) {
+                    p.tracks = participant.tracks;
+                }
+                return p;
+            }));
+        };
+        connection.onParticipantRemoved = (participant: Participant) => {
+            console.log("onParticipantRemoved");
+            setParticipants(prevState => prevState.filter((p: Participant) => p.userId !== participant.userId));
+        };
+        return connection;
+    });
     const [connected, setConnected] = useState<boolean>(false);
     const [stage, setStage] = useState<Stage>();
     const [participants, setParticipants] = useState<Participant[]>([]);
-
-    useEffect(() => {
-        // Register event listener
-        connection.addEventListener({
-            onParticipantAdded: (participant: Participant) => {
-                setParticipants(prevState => ([...prevState, participant]));
-            },
-            onParticipantChanged: (participant: Participant) => {
-                setParticipants(prevState => prevState.map((p: Participant) => {
-                    if (p.userId === participant.userId) {
-                        p.tracks = participant.tracks;
-                    }
-                    return p;
-                }));
-                console.log("onParticipantChanged");
-            },
-            onParticipantRemoved: (participant: Participant) => {
-                setParticipants(prevState => prevState.filter((p: Participant) => p.userId !== participant.userId));
-            },
-        });
-    }, [connection]);
 
     const connect = useCallback((host: string, port: number): Promise<void> => {
         if (connection.connected())

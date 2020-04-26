@@ -25,21 +25,19 @@ export interface Participant {
     tracks: MediaStreamTrack[];
 }
 
-export interface ConnectionEventListener {
-    onParticipantAdded: (participant: Participant) => void;
-    onParticipantRemoved: (participant: Participant) => void;
-    onParticipantChanged: (participant: Participant) => void;
-}
-
 export default class Connection {
     private readonly participants: {
         [userId: string]: Participant
     } = {};
-    private readonly eventListener: Set<ConnectionEventListener> = new Set<ConnectionEventListener>();
 
     private socket: SocketWithRequest;
     private p2pController: P2PController;
     private mediasoupController: MediasoupController;
+
+    //TODO: Make event handler out of this
+    public onParticipantAdded?: (participant: Participant) => void;
+    public onParticipantRemoved?: (participant: Participant) => void;
+    public onParticipantChanged?: (participant: Participant) => void;
 
     constructor() {
         if (typeof window !== "undefined")
@@ -66,14 +64,16 @@ export default class Connection {
                 tracks: []
             };
             this.p2pController.addClientManually(announcement.userId, announcement.socketId);
-            this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantAdded(this.participants[announcement.userId]));
+            if( this.onParticipantAdded )
+                this.onParticipantAdded(this.participants[announcement.userId]);
         });
 
         this.socket.on('stg/participant-removed', (announcement: StageParticipantAnnouncement) => {
             console.log("s > c: stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
             delete this.participants[announcement.userId];
-            this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantRemoved(participant));
+            if( this.onParticipantRemoved )
+                this.onParticipantRemoved(participant);
         });
 
         /*
@@ -125,7 +125,8 @@ export default class Connection {
                                 const participant = this.participants[userId];
                                 if (participant) {
                                     participant.tracks.push(consumer.track);
-                                    this.eventListener.forEach((l) => l.onParticipantChanged(participant));
+                                    if( this.onParticipantChanged )
+                                        this.onParticipantChanged(participant);
                                 } else {
                                     console.log("not found: " + userId);
                                 }
@@ -188,13 +189,5 @@ export default class Connection {
         } else {
             return this.p2pController.publishTack(track);
         }
-    }
-
-    addEventListener = (eventListener: ConnectionEventListener) => {
-        this.eventListener.add(eventListener);
-    };
-
-    removeEventListener = (eventListener: ConnectionEventListener) => {
-        this.eventListener.delete(eventListener);
     }
 }

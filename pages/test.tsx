@@ -13,7 +13,6 @@ import {Participant} from "../lib/communication/Connection";
 import CanvasPlayer from "../components/video/CanvasPlayer";
 import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
 import {styled} from "baseui";
-import VideoTrackPlayer from "../components/video/VideoTrackPlayer";
 
 const CornerVideo = styled(VideoPlayer, {
     position: 'fixed',
@@ -86,6 +85,8 @@ export default () => {
     if (!user) {
         router.push("/login");
     }
+
+    console.log(participants.length);
 
     return (
         <Layout>
