@@ -58,7 +58,7 @@ export default class Connection {
 
     private initializeSocketHandler = () => {
         this.socket.on('stg/participant-added', (announcement: StageParticipantAnnouncement) => {
-            console.log("stg/participant-added: " + announcement.userId);
+            console.log("s > c: stg/participant-added: " + announcement.userId);
             // Add participant to list
             this.participants[announcement.userId] = {
                 ...announcement,
@@ -68,14 +68,14 @@ export default class Connection {
         });
 
         this.socket.on('stg/participant-removed', (announcement: StageParticipantAnnouncement) => {
-            console.log("stg/participant-removed: " + announcement.userId);
+            console.log("s > c: stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
             delete this.participants[announcement.userId];
             this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantRemoved(participant));
         });
 
         this.socket.on('stg/participants/state', (announcements: StageParticipantAnnouncement[]) => {
-            console.log("stg/participants/state: length=" + announcements.length);
+            console.log("s > c: stg/participants/state: length=" + announcements.length);
             announcements.forEach((announcement: StageParticipantAnnouncement) => this.participants[announcement.userId] = {
                 ...announcement,
                 tracks: []
@@ -105,6 +105,7 @@ export default class Connection {
     joinStage = (user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
+                console.log("s > c: " + SocketEvents.stage.join + ": stageId=" + stageId + " userId=" + user.uid);
                 return this.socket.request(SocketEvents.stage.join, {
                     stageId,
                     token,
@@ -147,6 +148,7 @@ export default class Connection {
     createStage = (user: firebase.User, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
+                console.log("s > c: " + SocketEvents.stage.create + ": stageName=" + stageName + " userId=" + user.uid + " type=" + type);
                 return this.socket.request(SocketEvents.stage.create, {
                     stageName,
                     type,
