@@ -59,6 +59,7 @@ export default () => {
         connect,
         connected,
         publishTrack: connection.publishTrack,
+        publishStream: connection.publishStream,
         stage,
         participants,
         createStage,

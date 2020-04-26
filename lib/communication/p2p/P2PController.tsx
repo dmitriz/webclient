@@ -4,6 +4,7 @@ import {SocketWithRequest} from "../../../util/SocketWithRequest";
 export interface PeerConnection {
     userId: string;
     rtcpPeerConnection: RTCPeerConnection | null;
+    stream: MediaStream;
     established: boolean;
     tracks: MediaStreamTrack[];
     senders: {
@@ -12,6 +13,7 @@ export interface PeerConnection {
 }
 
 export default class P2PController {
+    private readonly localStream = new MediaStream();
     private readonly userId: string;
     private readonly socket: SocketWithRequest;
     private peerConnections: {
@@ -40,13 +42,30 @@ export default class P2PController {
         });
     }
 
-    publishTack(track: MediaStreamTrack): Promise<void> {
+    publishStream(stream: MediaStream): Promise<void> {
         return new Promise<void>(resolve => {
             Object.keys(this.peerConnections)
                 .forEach((socketId: string) => {
                     //TODO: Discuss, if we need to wait for the connection to be established
+                    console.log("Sending stream to " + socketId);
+                    stream.getTracks().forEach((track: MediaStreamTrack) => {
+                        this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, stream);
+                        //this.peerConnections[socketId].senders[track.id] = this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, this.localStream);
+                    })
+                });
+            resolve();
+        });
+    }
+
+    publishTack(track: MediaStreamTrack): Promise<void> {
+        return new Promise<void>(resolve => {
+            this.localStream.addTrack(track);
+            Object.keys(this.peerConnections)
+                .forEach((socketId: string) => {
+                    //TODO: Discuss, if we need to wait for the connection to be established
                     console.log("Sending track to " + socketId);
-                    this.peerConnections[socketId].senders[track.id] = this.peerConnections[socketId].rtcpPeerConnection.addTrack(track);
+                    this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, this.localStream);
+                    //this.peerConnections[socketId].senders[track.id] = this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, this.localStream);
                 });
             this.tracks[track.id] = track;
             resolve();
@@ -98,7 +117,7 @@ export default class P2PController {
             });
         });*/
 
-        this.socket.on("stg/p2p/peer-candidate-sent", (data: {
+        this.socket.on("stg/p2p/peer-candidate-sent", async (data: {
             userId: string;
             socketId: string;
             candidate: RTCIceCandidateInit;
@@ -106,10 +125,9 @@ export default class P2PController {
             console.log('s > c: stg/p2p/peer-candidate-sent: fromUserId=' + data.userId + " formSocketId=" + data.socketId);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
-                peerConnection.rtcpPeerConnection.addIceCandidate(data.candidate);
+                return peerConnection.rtcpPeerConnection.addIceCandidate(data.candidate);
             } else {
-                console.error("stg/p2p/peer-candidate-sent: Unknown peer '" + data.socketId + "' or peer has no rtcp connection:");
-                console.error(peerConnection);
+                throw Error("stg/p2p/peer-candidate-sent: Unknown peer '" + data.socketId + "' or peer has no rtcp connection");
             }
         });
 
@@ -179,6 +197,7 @@ export default class P2PController {
     private createPeerConnection = (remoteUserId: string, socketId: string): PeerConnection => {
         this.peerConnections[socketId] = {
             userId: remoteUserId,
+            stream: new MediaStream(),
             rtcpPeerConnection: new RTCPeerConnection(p2pConfiguration),
             established: false,
             tracks: [],
@@ -200,14 +219,18 @@ export default class P2PController {
                 console.log("ICE connection finally established");
             }
         };
+
         this.peerConnections[socketId].rtcpPeerConnection.ontrack = (ev: RTCTrackEvent) => {
+            //const tracks: MediaStreamTrack[] = connection.remoteStream ? connection.remoteStream.getTracks() : [];
+            //connection.remoteStream = ev.streams[0];
+            //tracks.forEach((track) => connection.remoteStream.addTrack(track));
+
             console.log("Got P2P Track");
             ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
                 this.peerConnections[socketId].tracks.push(track);
                 if (this.onTrackAdded)
                     this.onTrackAdded(remoteUserId, socketId, track);
             });
-
         };
         return this.peerConnections[socketId];
     };

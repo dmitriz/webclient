@@ -51,7 +51,7 @@ export default () => {
     const router = useRouter();
     const [useP2P, setP2P] = useState<boolean>(false);
     const [localStream, setLocalStream] = useState<MediaStream>();
-    const {connect, connected, createStage, joinStage, stage, participants, publishTrack} = useConnection();
+    const {connect, connected, createStage, joinStage, stage, participants, publishStream, publishTrack} = useConnection();
 
     const shareMedia = useCallback(() => {
         fixWebRTC();
@@ -71,7 +71,8 @@ export default () => {
 
     useEffect(() => {
         if (connected && stage && localStream) {
-            localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, useP2P ? "p2p" : "mediasoup"));
+            publishStream(localStream);
+            //localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, useP2P ? "p2p" : "mediasoup"));
         }
     }, [localStream, connected, stage, useP2P]);
 

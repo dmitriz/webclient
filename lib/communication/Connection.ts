@@ -215,6 +215,11 @@ export default class Connection {
             });
     };
 
+
+    publishStream = (stream: MediaStream): Promise<void> => {
+        return this.p2pController.publishStream(stream);
+    };
+
     publishTrack = (track: MediaStreamTrack, method: "mediasoup" | "p2p"): Promise<void> => {
         if (method === "mediasoup") {
             return this.mediasoupController.publishTack(track);
