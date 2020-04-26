@@ -102,7 +102,7 @@ export default () => {
                     <ul>
                         {participants.map((participant: Participant) => (<li>{participant.name}</li>))}
                     </ul>
-                    <CanvasPlayer width={400} height={300} videoTracks={participants.flatMap(p => p.tracks)}/>
+                    <CanvasPlayer width={1920} height={1080} videoTracks={participants.flatMap(p => p.tracks)}/>
                 </TextWrapper>
             )}
             {localStream && <CornerVideo stream={localStream}/>}

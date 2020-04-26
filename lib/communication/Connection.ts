@@ -114,6 +114,15 @@ export default class Connection {
                         if (response.stage) {
                             this.p2pController = new P2PController(this.socket, user.uid);
                             this.mediasoupController = new MediasoupController(this.socket, user.uid);
+                            this.mediasoupController.onConsumerAdded = (userId, consumer) => {
+                                const participant = this.participants[userId];
+                                if (participant) {
+                                    participant.tracks.push(consumer.track);
+                                    this.eventListener.forEach((l) => l.onParticipantChanged(participant));
+                                    console.log("ok");
+                                }
+                                console.log("not found: " + userId);
+                            };
                             await this.mediasoupController.connect();
 
                             this.socket.on("stg/client-added", () => {

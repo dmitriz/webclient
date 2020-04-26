@@ -17,10 +17,11 @@ export default () => {
             onParticipantChanged: (participant: Participant) => {
                 setParticipants(prevState => prevState.map((p: Participant) => {
                     if (p.userId === participant.userId) {
-                        return participant;
+                        p.tracks = participant.tracks;
                     }
                     return p;
-                }))
+                }));
+                console.log("onParticipantChanged");
             },
             onParticipantRemoved: (participant: Participant) => {
                 setParticipants(prevState => prevState.filter((p: Participant) => p.userId !== participant.userId));

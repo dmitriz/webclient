@@ -24,6 +24,8 @@ export default class MediasoupController {
     private producers: mediasoup.types.Producer[] = [];
     private consumers: mediasoup.types.Consumer[] = [];
 
+    public onConsumerAdded?: (userId: string, consumer: mediasoup.types.Consumer) => void;
+
     constructor(socket: SocketWithRequest, uid: string) {
         this.socket = socket;
         this.uid = uid;
@@ -43,10 +45,10 @@ export default class MediasoupController {
 
                 // Listen for added producers
                 this.socket.on('producer-added', async (data: {
-                    userId: string,
+                    uid: string,
                     producerId: string
                 }) => {
-                    console.log("mediasoup: new producer" + data.producerId + ', so lets create an consumer for it');
+                    console.log("mediasoup: new producer" + data.producerId + ' by ' + data.uid + ', so lets create an consumer for it');
                     console.log("mediasoup: ask server for new consumer");
                     const consumerOptions = await this.socket.request('stg/ms/consume', {
                         producerId: data.producerId,
@@ -60,6 +62,8 @@ export default class MediasoupController {
                     consumer.resume();
                     this.consumers.push(consumer);
                     console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
+                    if (this.onConsumerAdded)
+                        this.onConsumerAdded(data.uid, consumer);
                     //TODO: Throw new consumer event
                 });
                 return;
