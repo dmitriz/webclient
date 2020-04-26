@@ -8,11 +8,10 @@ import {Button} from "baseui/button";
 import * as config from "../env";
 import VideoPlayer from "../components/video/VideoPlayer";
 import useConnection from "../lib/communication/useConnection";
-import {Participant} from "../lib/communication/Connection";
-import CanvasPlayer from "../components/video/CanvasPlayer";
 import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
 import {styled} from "baseui";
 import {Checkbox} from "baseui/checkbox";
+import StageView from "../components/StageView";
 
 const CornerVideo = styled(VideoPlayer, {
     position: 'fixed',
@@ -88,22 +87,12 @@ export default () => {
                         onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button></>
                 )}
                 {connected && !stage &&
-                <Button onClick={() => joinStage(user, localStream, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
+                <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
 
                 {!useP2P && <Button
                     onClick={() => localStream.getTracks().forEach(track => publishTrack(track, "mediasoup"))}>Share</Button>}
             </div>
-            {participants && participants.length > 0 && (
-                <TextWrapper $darkMode={darkMode}>
-                    <h2>Participants</h2>
-                    <ul>
-                        {participants.map((participant: Participant) => (
-                            <li key={participant.userId}>{participant.name}</li>))}
-                    </ul>
-                    <CanvasPlayer
-                        videoTracks={participants.flatMap((participants: Participant) => participants.tracks.filter((track: MediaStreamTrack) => track.kind === "video"))}/>
-                </TextWrapper>
-            )}
+            {participants && <StageView stage={stage} participants={participants}/>}
             {localStream && <CornerVideo stream={localStream}/>}
         </Layout>
     );

@@ -22,7 +22,8 @@ export interface Participant {
         ip: string;
         port: number;
     }
-    tracks: MediaStreamTrack[];
+    videoTracks: MediaStreamTrack[];
+    audioTracks: MediaStreamTrack[];
 }
 
 export default class Connection {
@@ -33,7 +34,6 @@ export default class Connection {
     private socket: SocketWithRequest;
     private p2pController: P2PController;
     private mediasoupController: MediasoupController;
-    private localStream: MediaStream;
 
     //TODO: Make event handler out of this
     public onParticipantAdded?: (participant: Participant) => void;
@@ -46,7 +46,6 @@ export default class Connection {
                 ev.preventDefault();
                 this.disconnect();
             });
-            this.localStream = new MediaStream();
         }
     }
 
@@ -64,7 +63,8 @@ export default class Connection {
             // Add participant to list
             this.participants[announcement.userId] = {
                 ...announcement,
-                tracks: []
+                videoTracks: [],
+                audioTracks: []
             };
             //this.p2pController.addClientManually(announcement.userId, announcement.socketId);
             if (this.onParticipantAdded)
@@ -111,12 +111,18 @@ export default class Connection {
         //TODO: throw disconnected event
     };
 
-    private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[], localStream: MediaStream) => {
-        this.p2pController = new P2PController(this.socket, user.uid, localStream);
+    private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[]) => {
+        this.p2pController = new P2PController(this.socket, user.uid);
         this.p2pController.onTrackAdded = (userId: string, socketId: string, track: MediaStreamTrack) => {
             const participant = this.participants[userId];
             if (participant) {
-                participant.tracks.push(track);
+                if (track.kind === "audio") {
+                    participant.audioTracks.push(track);
+                } else if (track.kind === "video") {
+                    participant.videoTracks.push(track);
+                } else {
+                    console.warn("Unknown kind of track: " + track.kind);
+                }
                 if (this.onParticipantChanged)
                     this.onParticipantChanged(participant);
             } else {
@@ -127,7 +133,13 @@ export default class Connection {
         this.mediasoupController.onConsumerAdded = (userId, consumer) => {
             const participant = this.participants[userId];
             if (participant) {
-                participant.tracks.push(consumer.track);
+                if (consumer.track.kind === "audio") {
+                    participant.audioTracks.push(consumer.track);
+                } else if (consumer.track.kind === "video") {
+                    participant.videoTracks.push(consumer.track);
+                } else {
+                    console.warn("Unknown kind of track: " + consumer.track.kind);
+                }
                 if (this.onParticipantChanged)
                     this.onParticipantChanged(participant);
             } else {
@@ -141,7 +153,8 @@ export default class Connection {
                 userId: p.userId,
                 name: p.name,
                 socketId: p.socketId,
-                tracks: []
+                videoTracks: [],
+                audioTracks: [],
             };
             if (p.userId !== user.uid) {
                 if (this.onParticipantAdded)
@@ -151,8 +164,7 @@ export default class Connection {
         });
     };
 
-    joinStage = (user: firebase.User, localStream: MediaStream, stageId: string, password?: string): Promise<Stage> => {
-        this.localStream = localStream;
+    joinStage = (user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
                 console.log("s > c: " + SocketEvents.stage.join + ": stageId=" + stageId + " userId=" + user.uid);
@@ -167,7 +179,7 @@ export default class Connection {
                     } | any): Promise<Stage> => {
                         console.log(response.participants);
                         if (response.stage) {
-                            await this.initStage(user, response.stage, response.participants, this.localStream);
+                            await this.initStage(user, response.stage, response.participants);
                             return response.stage as Stage;
                         } else {
                             if (response.error) {
@@ -179,8 +191,7 @@ export default class Connection {
             });
     };
 
-    createStage = (user: firebase.User, localStream: MediaStream, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
-        this.localStream = localStream;
+    createStage = (user: firebase.User, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
                 console.log("s > c: " + SocketEvents.stage.create + ": stageName=" + stageName + " userId=" + user.uid + " type=" + type);
@@ -202,7 +213,7 @@ export default class Connection {
                                 password: password,
                                 directorUid: user.uid
                             };
-                            await this.initStage(user, stage, response.participants, this.localStream);
+                            await this.initStage(user, stage, response.participants);
                             return {
                                 id: response,
                                 name: stageName,

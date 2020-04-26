@@ -34,7 +34,7 @@ export default () => {
         )
     }
     if (!user) {
-        router.push("/stage/login");
+        router.push("/login");
     }
 
     if (!stage) {

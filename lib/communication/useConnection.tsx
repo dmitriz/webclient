@@ -11,9 +11,12 @@ export default () => {
         };
         connection.onParticipantChanged = (participant: Participant) => {
             console.log("onParticipantChanged");
+
             setParticipants(prevState => prevState.map((p: Participant) => {
                 if (p.userId === participant.userId) {
-                    p.tracks = participant.tracks;
+                    p.videoTracks = participant.videoTracks;
+                    p.audioTracks = participant.audioTracks;
+                    p.soundjack = participant.soundjack;
                 }
                 return p;
             }));
@@ -38,16 +41,16 @@ export default () => {
         return connection.disconnect().then(() => setConnected(false))
     }, [connection]);
 
-    const createStage = useCallback((user: firebase.User, localStream: MediaStream, name: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
+    const createStage = useCallback((user: firebase.User, name: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
         if (stage)
             throw new Error("Already in a stage");
-        return connection.createStage(user, localStream, password, type)
+        return connection.createStage(user, password, type)
     }, [connection, stage]);
 
-    const joinStage = useCallback((user: firebase.User, localStream: MediaStream, stageId: string, password?: string): Promise<Stage> => {
+    const joinStage = useCallback((user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
         if (stage)
             throw new Error("Already in a stage");
-        return connection.joinStage(user, localStream, stageId, password)
+        return connection.joinStage(user, stageId, password)
             .then((stage: Stage) => {
                 setStage(stage);
                 return stage;

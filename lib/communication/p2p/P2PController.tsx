@@ -57,7 +57,6 @@ const configuration: RTCConfiguration = {
 export default class P2PController {
     private readonly userId: string;
     private readonly socket: SocketWithRequest;
-    private readonly localStream: MediaStream;
     private peerConnections: {
         [socketId: string]: PeerConnection
     } = {};
@@ -68,8 +67,7 @@ export default class P2PController {
     onTrackAdded: (userId: string, socketId: string, track: MediaStreamTrack) => void;
     onTrackRemoved: (userId: string, socketId: string, track: MediaStreamTrack) => void;
 
-    constructor(socket: SocketWithRequest, userId: string, localStream: MediaStream) {
-        this.localStream = localStream;
+    constructor(socket: SocketWithRequest, userId: string) {
         this.socket = socket;
         this.userId = userId;
         fixWebRTC();
@@ -88,11 +86,10 @@ export default class P2PController {
 
     publishAdditionalTack(track: MediaStreamTrack): Promise<void> {
         return new Promise<void>(resolve => {
-            this.localStream.addTrack(track);
             Object.keys(this.peerConnections)
                 .forEach((socketId: string) => {
                     console.log("Sending track to " + socketId);
-                    this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, this.localStream);
+                    this.peerConnections[socketId].rtcpPeerConnection.addTrack(track);
                     //this.peerConnections[socketId].senders[track.id] = this.peerConnections[socketId].rtcpPeerConnection.addTrack(track, this.localStream);
                 });
             this.tracks[track.id] = track;
@@ -138,13 +135,6 @@ export default class P2PController {
     };
 
     private initializeSocketHandler = () => {
-        /*
-        this.socket.on(SocketEvents.stage.participants, (data: StageParticipantAnnouncement[]) => {
-            data.forEach((data: StageParticipantAnnouncement) => {
-                this.createOffer(data.userId, data.socketId);
-            });
-        });*/
-
         this.socket.on("stg/p2p/candidate-sent", async (data: {
             uid: string;
             socketId: string;
@@ -236,10 +226,6 @@ export default class P2PController {
             tracks: [],
             senders: {}
         };
-        this.localStream.getTracks().forEach(
-            (track: MediaStreamTrack) => {
-                connection.rtcpPeerConnection.addTrack(track, this.localStream);
-            });
         // And add playback track
         connection.rtcpPeerConnection.onicecandidateerror = (error) => {
             console.log('failed to add ICE Candidate');

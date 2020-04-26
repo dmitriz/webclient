@@ -1,19 +1,9 @@
 import {SocketWithRequest} from "../../../util/SocketWithRequest";
 import * as mediasoup from 'mediasoup-client';
 import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
+import {MediasoupProducerAnnouncement} from "../SocketEvents";
 
 
-interface MediasoupStage {
-    id: string;
-    clients: MediasoupClient[];
-}
-
-interface MediasoupClient {
-    uid: string;
-    producerIds: string[];
-    // Keine transports
-    // Keine cosumer
-}
 
 export default class MediasoupController {
     private readonly socket: SocketWithRequest;
@@ -49,23 +39,17 @@ export default class MediasoupController {
                     userId: string,
                 }) => {
                     console.log('s > c: stg/ms/producer/added: userId=' + data.userId + ' producer=' + data.producer);
-                    console.log('c > s: stg/ms/producer/consume');
-                    const consumerOptions = await this.socket.request('stg/ms/consume', {
-                        producerId: data.producer,
-                        transportId: this.recvTransport.id,
-                        rtpCapabilities: this.device.rtpCapabilities
-                    });
-                    console.log('c > s: stg/ms/producer/finish-consume');
-                    const consumer: mediasoup.types.Consumer = await this.recvTransport.consume(consumerOptions);
-                    await this.socket.request('stg/ms/finish-consume', {
-                        id: consumerOptions.id
-                    });
-                    consumer.resume();
-                    this.consumers.push(consumer);
-                    console.log("ms: emit onConsumerAdded for event listener");
-                    if (this.onConsumerAdded)
-                        this.onConsumerAdded(data.userId, consumer);
+                    return this.consume(data.userId, data.producer);
                 });
+
+                // And finally get the existing producers
+                this.socket.request("stg/ms/producers/state").then((data: MediasoupProducerAnnouncement[]) => {
+                    console.log('c > s: stg/ms/producers/state: length=' + data.length);
+                    data.forEach((d: MediasoupProducerAnnouncement) => {
+                        d.producer.forEach(p => this.consume(d.userId, p));
+                    });
+                });
+
                 return;
             })
     }
@@ -91,10 +75,7 @@ export default class MediasoupController {
         }
         console.log("ms: sendTransport.produce(" + track.kind + ")");
         return this.sendTransport.produce({
-            track: track,
-            appData: {
-                uid: this.uid
-            }
+            track: track
         }).then(
             (producer: mediasoup.types.Producer) => {
                 this.producers.push(producer);
@@ -113,6 +94,26 @@ export default class MediasoupController {
             }
         });
     }
+
+    consume = async (userId: string, producerId: string) => {
+        console.log('c > s: stg/ms/producer/consume');
+        const consumerOptions = await this.socket.request('stg/ms/consume', {
+            producerId: producerId,
+            transportId: this.recvTransport.id,
+            rtpCapabilities: this.device.rtpCapabilities
+        });
+        console.log('c > s: stg/ms/producer/finish-consume');
+        console.log(consumerOptions);
+        const consumer: mediasoup.types.Consumer = await this.recvTransport.consume(consumerOptions);
+        await this.socket.request('stg/ms/finish-consume', {
+            uid: userId,
+            consumerId: consumerOptions.id
+        });
+        consumer.resume();
+        this.consumers.push(consumer);
+        if (this.onConsumerAdded)
+            this.onConsumerAdded(userId, consumer);
+    };
 
     getRtcCapabilities = (): Promise<RtpCapabilities> => {
         console.log("c > s: stg/ms/get-rtp-capabilities");
@@ -134,7 +135,7 @@ export default class MediasoupController {
                 sendTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
                     this.socket.request('stg/ms/connect-transport', {
                         transportId: sendTransportOptions.id,
-                        dtlsParameters
+                        dtlsParameters: dtlsParameters
                     })
                         .then(callback)
                         .then(() => console.log('c > s: stg/ms/connect-transport'))
@@ -177,7 +178,7 @@ export default class MediasoupController {
                 receiveTransport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
                     await this.socket.request('stg/ms/connect-transport', {
                         transportId: receiveTransportOptions.id,
-                        dtlsParameters
+                        dtlsParameters: dtlsParameters
                     })
                         .then(callback)
                         .then(() => console.log('c > s: stg/ms/connect-transport'))
