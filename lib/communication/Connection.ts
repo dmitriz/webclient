@@ -105,6 +105,44 @@ export default class Connection {
         //TODO: throw disconnected event
     };
 
+    private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[]) => {
+        this.p2pController = new P2PController(this.socket, user.uid);
+        this.p2pController.onTrackAdded = (userId: string, socketId: string, track: MediaStreamTrack) => {
+            const participant = this.participants[userId];
+            if (participant) {
+                participant.tracks.push(track);
+                if (this.onParticipantChanged)
+                    this.onParticipantChanged(participant);
+            } else {
+                console.log("not found: " + userId);
+            }
+        };
+        this.mediasoupController = new MediasoupController(this.socket, user.uid);
+        this.mediasoupController.onConsumerAdded = (userId, consumer) => {
+            const participant = this.participants[userId];
+            if (participant) {
+                participant.tracks.push(consumer.track);
+                if (this.onParticipantChanged)
+                    this.onParticipantChanged(participant);
+            } else {
+                console.log("not found: " + userId);
+            }
+        };
+        await this.mediasoupController.connect();
+
+        participants.forEach((p: StageParticipantAnnouncement) => {
+            this.participants[p.userId] = {
+                userId: p.userId,
+                name: p.name,
+                socketId: p.socketId,
+                tracks: []
+            };
+            if (this.onParticipantAdded)
+                this.onParticipantAdded(this.participants[p.userId]);
+            this.p2pController.addClientManually(p.userId, p.socketId);
+        });
+    };
+
     joinStage = (user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
@@ -120,32 +158,7 @@ export default class Connection {
                     } | any): Promise<Stage> => {
                         console.log(response.participants);
                         if (response.stage) {
-                            this.p2pController = new P2PController(this.socket, user.uid);
-                            this.mediasoupController = new MediasoupController(this.socket, user.uid);
-                            this.mediasoupController.onConsumerAdded = (userId, consumer) => {
-                                const participant = this.participants[userId];
-                                if (participant) {
-                                    participant.tracks.push(consumer.track);
-                                    if (this.onParticipantChanged)
-                                        this.onParticipantChanged(participant);
-                                } else {
-                                    console.log("not found: " + userId);
-                                }
-                            };
-                            await this.mediasoupController.connect();
-
-                            response.participants.forEach((p: StageParticipantAnnouncement) => {
-                                this.participants[p.userId] = {
-                                    userId: p.userId,
-                                    name: p.name,
-                                    socketId: p.socketId,
-                                    tracks: []
-                                };
-                                if (this.onParticipantAdded)
-                                    this.onParticipantAdded(this.participants[p.userId]);
-                                this.p2pController.addClientManually(p.userId, p.socketId);
-                            });
-
+                            await this.initStage(user, response.stage, response.participants);
                             return response.stage as Stage;
                         } else {
                             if (response.error) {
@@ -167,8 +180,19 @@ export default class Connection {
                     token,
                     password: password ? password : null
                 })
-                    .then((response: string | { error: string }): Stage => {
-                        if (typeof response === "string") {
+                    .then(async (response: {
+                        stage: Stage,
+                        participants: StageParticipantAnnouncement[]
+                    } | { error: string } | any): Promise<Stage> => {
+                        if (response.stage) {
+                            const stage = {
+                                id: response,
+                                name: stageName,
+                                type: type,
+                                password: password,
+                                directorUid: user.uid
+                            };
+                            await this.initStage(user, stage, response.participants);
                             return {
                                 id: response,
                                 name: stageName,
@@ -177,7 +201,7 @@ export default class Connection {
                                 directorUid: user.uid
                             };
                         } else {
-                            if (typeof response === "object" && response.error) {
+                            if (response.error) {
                                 throw new Error(response.error);
                             }
                             throw new Error("Invalid response from server: " + response);

@@ -13,6 +13,7 @@ import {Participant} from "../lib/communication/Connection";
 import CanvasPlayer from "../components/video/CanvasPlayer";
 import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
 import {styled} from "baseui";
+import {Checkbox} from "baseui/checkbox";
 
 const CornerVideo = styled(VideoPlayer, {
     position: 'fixed',
@@ -48,6 +49,7 @@ export default () => {
     const {darkMode, setDarkMode} = useDarkModeSwitch();
     const {user, loading} = useAuth();
     const router = useRouter();
+    const [useP2P, setP2P] = useState<boolean>(false);
     const [localStream, setLocalStream] = useState<MediaStream>();
     const {connect, connected, createStage, joinStage, stage, participants, publishTrack} = useConnection();
 
@@ -69,9 +71,9 @@ export default () => {
 
     useEffect(() => {
         if (connected && stage && localStream) {
-            localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "mediasoup"));
+            localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, useP2P ? "p2p" : "mediasoup"));
         }
-    }, [localStream, connected, stage]);
+    }, [localStream, connected, stage, useP2P]);
 
 
     // Rendering webpage depending to states:
@@ -94,7 +96,14 @@ export default () => {
                 <Button onClick={() => connect(config.SERVER_URL, parseInt(config.SERVER_PORT))}>Connect</Button>}
                 {connected && !stage &&
                 <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
-                {!localStream && <Button onClick={shareMedia}>Share media</Button>}
+
+
+                {!localStream && (
+                    <>
+                        <Checkbox checked={useP2P} onChange={(e) => setP2P(e.currentTarget.checked)}>use P2P</Checkbox>
+                        <Button onClick={shareMedia}>Share media</Button>
+                    </>
+                )}
             </div>
             {participants && participants.length > 0 && (
                 <TextWrapper $darkMode={darkMode}>

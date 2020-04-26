@@ -11,14 +11,6 @@ export interface PeerConnection {
     }
 }
 
-export interface P2PControllerEventHandler {
-    onConnected: () => void;
-    onDisconnected: () => void;
-    onPeerAdded: (peer: PeerConnection) => void;
-    onPeerRemoved: (peer: PeerConnection) => void;
-    onPeerChanged: (peer: PeerConnection) => void;
-}
-
 export default class P2PController {
     private readonly userId: string;
     private readonly socket: SocketWithRequest;
@@ -28,6 +20,9 @@ export default class P2PController {
     private tracks: {
         [id: string]: MediaStreamTrack
     } = {};
+
+    onTrackAdded: (userId: string, socketId: string, track: MediaStreamTrack) => void;
+    onTrackRemoved: (userId: string, socketId: string, track: MediaStreamTrack) => void;
 
     constructor(socket: SocketWithRequest, userId: string) {
         this.socket = socket;
@@ -50,9 +45,11 @@ export default class P2PController {
             Object.keys(this.peerConnections)
                 .forEach((socketId: string) => {
                     //TODO: Discuss, if we need to wait for the connection to be established
+                    console.log("Sending track to " + socketId);
                     this.peerConnections[socketId].senders[track.id] = this.peerConnections[socketId].rtcpPeerConnection.addTrack(track);
                 });
             this.tracks[track.id] = track;
+            resolve();
         });
     }
 
@@ -197,7 +194,13 @@ export default class P2PController {
             }
         };
         this.peerConnections[socketId].rtcpPeerConnection.ontrack = (ev: RTCTrackEvent) => {
-            this.peerConnections[socketId].tracks.push(...ev.streams[0].getTracks());
+            console.log("Got P2P Track");
+            ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
+                this.peerConnections[socketId].tracks.push(track);
+                if (this.onTrackAdded)
+                    this.onTrackAdded(remoteUserId, socketId, track);
+            });
+
         };
         return this.peerConnections[socketId];
     };
