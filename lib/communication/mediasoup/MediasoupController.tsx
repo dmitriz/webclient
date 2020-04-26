@@ -1,4 +1,3 @@
-
 import {SocketWithRequest} from "../../../util/SocketWithRequest";
 import * as mediasoup from 'mediasoup-client';
 import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
@@ -35,6 +34,7 @@ export default class MediasoupController {
         // Get general informations from server
         return this.getRtcCapabilities()
             .then(async (rtpCapabilities: any) => {
+                console.log(rtpCapabilities);
                 await this.device.load({routerRtpCapabilities: rtpCapabilities});
                 // Create a transport to receive streams
                 this.recvTransport = await this.createRecvTransport(this.device);
@@ -42,7 +42,7 @@ export default class MediasoupController {
                 this.sendTransport = await this.createSendTransport(this.device);
 
                 // Listen for added producers
-                this.socket.on('stg/ms/producer-added', async (data: {
+                this.socket.on('stg/ms/producer/update', async (data: {
                     userId: string,
                     producerId: string
                 }) => {
@@ -62,26 +62,6 @@ export default class MediasoupController {
                     console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
                     //TODO: Throw new consumer event
                 });
-
-                this.socket.request("stg/ms/get-existing-clients").then(
-                    async (response: {
-                        clients: {
-                            userId: string;
-                            producerIds: string[]
-                        }[]
-                    }) => {
-                        response.clients.forEach((c) => {
-                            // I know who is who
-
-                            c.producerIds.forEach(async (pi) => {
-                                const consumerOptions = await this.socket.request('stg/ms/consume', {
-                                    producerId: pi,
-                                    transportId: this.recvTransport.id,
-                                    rtpCapabilities: this.device.rtpCapabilities
-                                });
-                            })
-                        })
-                    });
                 return;
             })
     }
@@ -97,6 +77,14 @@ export default class MediasoupController {
     }
 
     publishTack(track: MediaStreamTrack): Promise<void> {
+        if (!this.device.canProduce('video')) {
+            console.error('cannot produce video');
+            return;
+        }
+        if (!this.device.canProduce('audio')) {
+            console.error('cannot produce audio');
+            return;
+        }
         return this.sendTransport.produce({
             track: track,
             appData: {

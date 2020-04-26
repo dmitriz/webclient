@@ -69,7 +69,7 @@ export default () => {
 
     useEffect(() => {
         if (connected && stage && localStream) {
-            localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "p2p"));
+            localStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "mediasoup"));
         }
     }, [localStream, connected, stage]);
 
