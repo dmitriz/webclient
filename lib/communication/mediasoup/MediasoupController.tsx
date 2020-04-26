@@ -48,7 +48,7 @@ export default class MediasoupController {
                     producer: string,
                     userId: string,
                 }) => {
-                    console.log('s > c: stg/ms/producer/added: ' + data.userId);
+                    console.log('s > c: stg/ms/producer/added: userId=' + data.userId + ' producer=' + data.producer);
                     console.log('c > s: stg/ms/producer/consume');
                     const consumerOptions = await this.socket.request('stg/ms/consume', {
                         producerId: data.producer,

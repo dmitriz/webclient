@@ -25,8 +25,8 @@ interface AnimationFrame {
 }
 
 interface Props {
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     videoTracks: MediaStreamTrack[];
     onStreamAvailable?: (stream: MediaStream) => void
 }
@@ -79,8 +79,11 @@ export default class CanvasPlayer extends React.Component<Props, States> {
             console.log("Rows: " + numRows);
             console.log("Cols: " + numColsMax);
 
-            const elementWidth = Math.round(this.props.width / numColsMax);
-            const elementHeight = Math.round(this.props.height / numRows);
+            const width = this.props.width ? this.props.width : window.innerWidth;
+            const height = this.props.height ? this.props.height : window.innerHeight;
+
+            const elementWidth = Math.round(width / numColsMax);
+            const elementHeight = Math.round(height / numRows);
 
             // Get and directly clean up
             const currentAnimationFrames: AnimationFrame[] = this.state.animationFrames.filter((animationFrame: AnimationFrame) => this.getVideoTrack(animationFrame.id) != undefined);
@@ -152,7 +155,7 @@ export default class CanvasPlayer extends React.Component<Props, States> {
         console.log(this.state.animationFrames.length);
         context.fillStyle = 'black';
         context.strokeStyle = 'red';
-        context.fillRect(0, 0, this.props.width, this.props.height);
+        context.fillRect(0, 0, this.props.width ? this.props.width : window.innerWidth, this.props.height ? this.props.height : window.innerHeight);
         this.state.animationFrames.forEach(
             (animationFrame: AnimationFrame) => {
                 context.strokeRect(animationFrame.x, animationFrame.y, animationFrame.width, animationFrame.height);
