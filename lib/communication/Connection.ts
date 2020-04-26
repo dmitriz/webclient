@@ -140,6 +140,8 @@ export default class Connection {
                                     socketId: p.socketId,
                                     tracks: []
                                 };
+                                if( this.onParticipantAdded )
+                                    this.onParticipantAdded(this.participants[p.userId]);
                                 this.p2pController.addClientManually(p.userId, p.socketId);
                             });
 
