@@ -96,15 +96,15 @@ export default () => {
                 <Button onClick={() => joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello")}>Join</Button>}
                 {!localStream && <Button onClick={shareMedia}>Share media</Button>}
             </div>
-            <TextWrapper $darkMode={darkMode}>
-                <h2>Participants</h2>
-                <ul>
-                    {participants && participants.map((participant: Participant) => (<li>{participant.name}</li>))}
-                </ul>
-                {participants && (
+            {participants && participants.length > 0 && (
+                <TextWrapper $darkMode={darkMode}>
+                    <h2>Participants</h2>
+                    <ul>
+                        {participants.map((participant: Participant) => (<li>{participant.name}</li>))}
+                    </ul>
                     <CanvasPlayer width={400} height={300} videoTracks={participants.flatMap(p => p.tracks)}/>
-                )}
-            </TextWrapper>
+                </TextWrapper>
+            )}
             {localStream && <CornerVideo stream={localStream}/>}
         </Layout>
     );

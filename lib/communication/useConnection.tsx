@@ -6,7 +6,7 @@ export default () => {
     const [connection] = useState(new Connection());
     const [connected, setConnected] = useState<boolean>(false);
     const [stage, setStage] = useState<Stage>();
-    const [participants, setParticipants] = useState<Participant[]>();
+    const [participants, setParticipants] = useState<Participant[]>([]);
 
     useEffect(() => {
         // Register event listener
