@@ -42,7 +42,7 @@ export default class MediasoupController {
                 this.sendTransport = await this.createSendTransport(this.device);
 
                 // Listen for added producers
-                this.socket.on('stg/ms/producer/update', async (data: {
+                this.socket.on('producer-added', async (data: {
                     userId: string,
                     producerId: string
                 }) => {
