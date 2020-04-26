@@ -1,9 +1,9 @@
 import MediasoupController from "./mediasoup/MediasoupController";
 import firebase from "firebase";
-import { extend, SocketWithRequest } from "../../util/SocketWithRequest";
+import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
 import P2PController from "./p2p/P2PController";
-import { SocketEvents, StageJoinPayload, StageParticipantAnnouncement } from "./SocketEvents";
+import {SocketEvents, StageJoinPayload, StageParticipantAnnouncement} from "./SocketEvents";
 
 export interface Stage {
     id: string;
@@ -63,7 +63,7 @@ export default class Connection {
                 ...announcement,
                 tracks: []
             };
-            this.p2pController.addClientManually(announcement.userId, announcement.socketId);
+            //this.p2pController.addClientManually(announcement.userId, announcement.socketId);
             if (this.onParticipantAdded)
                 this.onParticipantAdded(this.participants[announcement.userId]);
         });
@@ -71,9 +71,12 @@ export default class Connection {
         this.socket.on('stg/participant/removed', (announcement: StageParticipantAnnouncement) => {
             console.log("s > c: stg/participant-removed: " + announcement.userId);
             const participant: Participant = this.participants[announcement.userId];
-            delete this.participants[announcement.userId];
-            if (this.onParticipantRemoved)
-                this.onParticipantRemoved(participant);
+            if (participant) {
+                delete this.participants[announcement.userId];
+                if (this.onParticipantRemoved)
+                    this.onParticipantRemoved(participant);
+                this.p2pController.removeClientManually(participant.userId, participant.socketId);
+            }
         });
 
         /*
@@ -137,9 +140,11 @@ export default class Connection {
                 socketId: p.socketId,
                 tracks: []
             };
-            if (this.onParticipantAdded)
-                this.onParticipantAdded(this.participants[p.userId]);
-            this.p2pController.addClientManually(p.userId, p.socketId);
+            if (p.userId !== user.uid) {
+                if (this.onParticipantAdded)
+                    this.onParticipantAdded(this.participants[p.userId]);
+                this.p2pController.addClientManually(p.userId, p.socketId);
+            }
         });
     };
 

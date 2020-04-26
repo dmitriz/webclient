@@ -68,7 +68,14 @@ export default class P2PController {
     }
 
     addClientManually = (userId: string, socketId: string) => {
+        console.log("addClientManually(" + userId + ", " + socketId + ")");
         this.createOffer(userId, socketId);
+    };
+
+    removeClientManually = (userId: string, socketId: string) => {
+        console.log("removeClientManually(" + userId + ", " + socketId + ")");
+        this.peerConnections[socketId].rtcpPeerConnection.close();
+        delete this.peerConnections[socketId];
     };
 
 
@@ -96,7 +103,7 @@ export default class P2PController {
             socketId: string;
             candidate: RTCIceCandidateInit;
         }) => {
-            console.log('s > c: stg/p2p/peer-candidate-sent: userId=' + data.userId + ", socketId=" + data.socketId);
+            console.log('s > c: stg/p2p/peer-candidate-sent: fromUserId=' + data.userId + " formSocketId=" + data.socketId);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
                 peerConnection.rtcpPeerConnection.addIceCandidate(data.candidate);
@@ -111,7 +118,7 @@ export default class P2PController {
             socketId: string;
             offer: RTCSessionDescriptionInit;
         }) => {
-            console.log('s > c: stg/p2p/offer-made: ' + data.uid);
+            console.log('s > c: stg/p2p/offer-made: fromUserId=' + data.uid + " formSocketId=" + data.socketId);
             const peerConnection: PeerConnection = this.createPeerConnection(data.uid, data.socketId);
             peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
                 .then(() => peerConnection.rtcpPeerConnection.createAnswer())
@@ -128,7 +135,7 @@ export default class P2PController {
             socketId: string;
             answer: RTCSessionDescriptionInit;
         }) => {
-            console.log('s > c: stg/p2p/answer-made: ' + data.uid);
+            console.log('s > c: stg/p2p/answer-made: fromUserId=' + data.uid + " formSocketId=" + data.socketId);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
                 peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -150,7 +157,7 @@ export default class P2PController {
     };
 
     private makeAnswer = (targetSocketId: string, answer: RTCSessionDescriptionInit) => {
-        console.log('c > s: stg/p2p/make-answer: targetSocketId=' + targetSocketId);
+        console.log('c > s: stg/p2p/make-answer: targetSocketId=' + targetSocketId + " mySocketId=" + this.socket.id);
         this.socket.emit('stg/p2p/make-answer', {
             userId: this.userId,
             socketId: this.socket.id,
