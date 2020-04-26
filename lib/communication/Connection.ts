@@ -105,7 +105,6 @@ export default class Connection {
     joinStage = (user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
-                console.log("join-stage");
                 return this.socket.request(SocketEvents.stage.join, {
                     stageId,
                     token,
@@ -122,9 +121,9 @@ export default class Connection {
                                 if (participant) {
                                     participant.tracks.push(consumer.track);
                                     this.eventListener.forEach((l) => l.onParticipantChanged(participant));
-                                    console.log("ok");
+                                } else {
+                                    console.log("not found: " + userId);
                                 }
-                                console.log("not found: " + userId);
                             };
                             await this.mediasoupController.connect();
 
@@ -148,7 +147,6 @@ export default class Connection {
     createStage = (user: firebase.User, stageName: string, password?: string, type: 'theater' | 'music' | 'conference' = 'theater'): Promise<Stage> => {
         return user.getIdToken()
             .then((token: string) => {
-                console.log("create-stage");
                 return this.socket.request(SocketEvents.stage.create, {
                     stageName,
                     type,

@@ -90,6 +90,7 @@ export default class P2PController {
             socketId: string;
             candidate: RTCIceCandidateInit;
         }) => {
+            console.log('s > c: stg/p2p/peer-candidate-sent: userId=' + data.userId + ", socketId=" + data.socketId);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
                 peerConnection.rtcpPeerConnection.addIceCandidate(data.candidate);
@@ -104,6 +105,7 @@ export default class P2PController {
             socketId: string;
             offer: RTCSessionDescriptionInit;
         }) => {
+            console.log('s > c: stg/p2p/offer-made: ' + data.userId);
             const peerConnection: PeerConnection = this.createPeerConnection(data.userId, data.socketId);
             peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
                 .then(() => peerConnection.rtcpPeerConnection.createAnswer())
@@ -120,6 +122,7 @@ export default class P2PController {
             socketId: string;
             answer: RTCSessionDescriptionInit;
         }) => {
+            console.log('s > c: stg/p2p/answer-made: ' + data.userId);
             const peerConnection: PeerConnection = this.peerConnections[data.socketId];
             if (peerConnection && peerConnection.rtcpPeerConnection) {
                 peerConnection.rtcpPeerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -131,6 +134,7 @@ export default class P2PController {
     };
 
     private makeOffer = (targetSocketId: string, offer: RTCSessionDescriptionInit) => {
+        console.log('s > *: stg/p2p/make-offer: targetSocketId=' + targetSocketId);
         this.socket.emit("stg/p2p/make-offer", {
             userId: this.userId,
             socketId: this.socket.id,
@@ -140,6 +144,7 @@ export default class P2PController {
     };
 
     private makeAnswer = (targetSocketId: string, answer: RTCSessionDescriptionInit) => {
+        console.log('c > s: stg/p2p/make-answer: targetSocketId=' + targetSocketId);
         this.socket.emit('stg/p2p/make-answer', {
             userId: this.userId,
             socketId: this.socket.id,
@@ -149,6 +154,7 @@ export default class P2PController {
     };
 
     private sendCandidate = (targetSocketId: string, candidate: RTCIceCandidate) => {
+        console.log('c > s: stg/p2p/send-candidate: targetSocketId=' + targetSocketId);
         this.socket.emit('stg/p2p/send-candidate', {
             userId: this.userId,
             socketId: this.socket.id,

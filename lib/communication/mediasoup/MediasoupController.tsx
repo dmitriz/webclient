@@ -48,7 +48,7 @@ export default class MediasoupController {
                     producer: string,
                     userId: string,
                 }) => {
-                    console.log('s > *: stg/ms/producer/added: ' + data.userId);
+                    console.log('s > c: stg/ms/producer/added: ' + data.userId);
                     console.log('c > s: stg/ms/producer/consume');
                     const consumerOptions = await this.socket.request('stg/ms/consume', {
                         producerId: data.producer,
@@ -62,10 +62,9 @@ export default class MediasoupController {
                     });
                     consumer.resume();
                     this.consumers.push(consumer);
-                    console.log("mediasoup: We finally got an consumer for the producer! We will now receive its stream!");
-                    if (this.onConsumerAdded && consumer.track.kind === "video")
+                    console.log("ms: emit onConsumerAdded for event listener");
+                    if (this.onConsumerAdded)
                         this.onConsumerAdded(data.userId, consumer);
-                    //TODO: Throw new consumer event
                 });
                 return;
             })
@@ -90,6 +89,7 @@ export default class MediasoupController {
             console.error('cannot produce audio');
             return;
         }
+        console.log("ms: sendTransport.produce(" + track.kind + ")");
         return this.sendTransport.produce({
             track: track,
             appData: {
@@ -115,13 +115,13 @@ export default class MediasoupController {
     }
 
     getRtcCapabilities = (): Promise<RtpCapabilities> => {
-        console.log("mediasoup: getRtcCapabilities");
+        console.log("c > s: stg/ms/get-rtp-capabilities");
         return this.socket.request('stg/ms/get-rtp-capabilities', {})
             .then((routerRtpCapabilities) => routerRtpCapabilities);
     };
 
     createSendTransport = (device: mediasoup.Device): Promise<mediasoup.types.Transport> => {
-        console.log("mediasoup: createSendTransport");
+        console.log("c > s: stg/ms/create-send-transport");
         return this.socket.request('stg/ms/create-send-transport', {
             forceTcp: false,
             rtpCapabilities: this.device.rtpCapabilities,
@@ -165,7 +165,7 @@ export default class MediasoupController {
     };
 
     createRecvTransport = (device: mediasoup.Device): Promise<mediasoup.types.Transport> => {
-        console.log("mediasoup: createRecvTransport");
+        console.log("c > s: stg/ms/create-receive-transport");
         return this.socket.request('stg/ms/create-receive-transport', {
             forceTcp: false,
             rtpCapabilities: this.device.rtpCapabilities,
