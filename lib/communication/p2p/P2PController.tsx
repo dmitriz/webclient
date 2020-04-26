@@ -1,6 +1,5 @@
 import {p2pConfiguration} from "./config";
 import {SocketWithRequest} from "../../../util/SocketWithRequest";
-import {SocketEvents, StageParticipantAnnouncement} from "../SocketEvents";
 
 export interface PeerConnection {
     userId: string;
@@ -71,19 +70,29 @@ export default class P2PController {
         });
     }
 
+    addClientManually = (userId: string, socketId: string) => {
+        this.createOffer(userId, socketId);
+    };
+
+
+    private createOffer = (userId: string, socketId: string) => {
+        const peerConnection: PeerConnection = this.createPeerConnection(userId, socketId);
+        peerConnection.rtcpPeerConnection.createOffer()
+            .then((offer: RTCSessionDescriptionInit) => {
+                // offer.sdp = offer.sdp.replace('useinbandfec=1', 'useinbandfec=1; maxaveragebitrate=510000');
+                peerConnection.rtcpPeerConnection.setLocalDescription(new RTCSessionDescription(offer)).then(
+                    () => this.makeOffer(socketId, offer)
+                );
+            });
+    };
+
     private initializeSocketHandler = () => {
+        /*
         this.socket.on(SocketEvents.stage.participants, (data: StageParticipantAnnouncement[]) => {
             data.forEach((data: StageParticipantAnnouncement) => {
-                const peerConnection: PeerConnection = this.createPeerConnection(data.userId, data.socketId);
-                peerConnection.rtcpPeerConnection.createOffer()
-                    .then((offer: RTCSessionDescriptionInit) => {
-                        // offer.sdp = offer.sdp.replace('useinbandfec=1', 'useinbandfec=1; maxaveragebitrate=510000');
-                        peerConnection.rtcpPeerConnection.setLocalDescription(new RTCSessionDescription(offer)).then(
-                            () => this.makeOffer(data.socketId, offer)
-                        );
-                    });
+                this.createOffer(data.userId, data.socketId);
             });
-        });
+        });*/
 
         this.socket.on("stg/p2p/peer-candidate-sent", (data: {
             userId: string;

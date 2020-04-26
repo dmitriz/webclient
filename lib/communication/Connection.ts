@@ -16,6 +16,7 @@ export interface Stage {
 export interface Participant {
     userId: string;
     name: string;
+    socketId: string;
 
     soundjack?: {
         ip: string;
@@ -64,6 +65,7 @@ export default class Connection {
                 ...announcement,
                 tracks: []
             };
+            this.p2pController.addClientManually(announcement.userId, announcement.socketId);
             this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantAdded(this.participants[announcement.userId]));
         });
 
@@ -74,14 +76,15 @@ export default class Connection {
             this.eventListener.forEach((l: ConnectionEventListener) => l.onParticipantRemoved(participant));
         });
 
+        /*
         this.socket.on('stg/participants/state', (announcements: StageParticipantAnnouncement[]) => {
             console.log("s > c: stg/participants/state: length=" + announcements.length);
             announcements.forEach((announcement: StageParticipantAnnouncement) => this.participants[announcement.userId] = {
                 ...announcement,
                 tracks: []
             });
-        });
-
+            Object.keys(this.participants).forEach((userId: string) => this.p2pController.addClientManually(userId, this.participants[userId].socketId));
+        });*/
     };
 
     connected = (): boolean => {
@@ -112,7 +115,8 @@ export default class Connection {
                     password: password ? password : null
                 } as StageJoinPayload)
                     .then(async (response: {
-                        stage: Stage
+                        stage: Stage,
+                        participants: StageParticipantAnnouncement[]
                     } | any): Promise<Stage> => {
                         if (response.stage) {
                             this.p2pController = new P2PController(this.socket, user.uid);
@@ -128,11 +132,15 @@ export default class Connection {
                             };
                             await this.mediasoupController.connect();
 
-                            /*
-                            this.socket.on("stg/client-added", () => {
-                                console.log("stg/client-added: length=" + announcements.length);
-                                console.log("client added");
-                            });*/
+                            response.participants.forEach((p: StageParticipantAnnouncement) => {
+                                this.participants[p.userId] = {
+                                    userId: p.userId,
+                                    name: p.name,
+                                    socketId: p.socketId,
+                                    tracks: []
+                                };
+                                this.p2pController.addClientManually(p.userId, p.socketId);
+                            });
 
                             return response.stage as Stage;
                         } else {
