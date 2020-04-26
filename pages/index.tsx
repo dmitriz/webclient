@@ -1,25 +1,57 @@
 import * as React from "react";
+import {useCallback, useEffect, useState} from "react";
 import Layout from "../components/ui/Layout";
 import {useAuth} from "../lib/useAuth";
 import Loading from "../components/ui/Loading";
 import {useRouter} from "next/router";
-import {useState} from "react";
 import useConnection from "../lib/communication/useConnection";
-import {useEffect} from "react";
 import * as config from "../env";
-import {useCallback} from "react";
 import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
 import StageView from "../components/StageView";
+import {styled} from "baseui";
+import VideoPlayer from "../components/video/VideoPlayer";
+import {useDarkModeSwitch} from "../lib/useDarkModeSwitch";
 
+const CornerVideo = styled(VideoPlayer, {
+    position: 'fixed',
+    bottom: '1vmin',
+    right: '1vmin',
+    maxWidth: '300px',
+    maxHeight: '200px',
+    height: '30vmin',
+    width: '30vmin',
+    objectPosition: 'bottom',
+    zIndex: 999
+});
+const Background = styled('div', (props: {
+    $darkMode: boolean
+}) => ({
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    zIndex: -1,
+    backgroundColor: props.$darkMode ? 'black' : 'white'
+}));
 export default () => {
+    const {darkMode, setDarkMode} = useDarkModeSwitch();
     const router = useRouter();
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
     const {user, loading} = useAuth();
     const [localStream, setLocalStream] = useState<MediaStream>();
-    const {connect, connected, createStage, joinStage, stage, participants, publishTrack} = useConnection();
+    const {connect, joinStage, stage, participants, publishTrack} = useConnection();
+
+    useEffect(() => {
+        if (stage) {
+            setDarkMode(true);
+        } else {
+            setDarkMode(false);
+        }
+    }, [stage]);
 
     useEffect(() => {
         connect(config.SERVER_URL, parseInt(config.SERVER_PORT));
@@ -45,26 +77,29 @@ export default () => {
         router.push("/login");
     }
 
-    if (!stage)
-        return (
-            <Layout>
-                <h1>Join stage</h1>
-                <FormControl label={"Stage ID"}>
-                    <Input value={stageId} onChange={e => setStageId(e.currentTarget.value)}/>
-                </FormControl>
-                <FormControl label={"Passwort"}
-                             caption={"Ask your director or creator of the stage for the password"}>
-                    <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
-                </FormControl>
-                <Button onClick={join} size={SIZE.large}>
-                    Join
-                </Button>
-            </Layout>
-        );
-
     return (
         <Layout>
-            <StageView stage={stage} participants={participants}/>
+            <Background $darkMode={darkMode}/>
+            {stage ? (
+                <>
+                    <StageView stage={stage} participants={participants}/>
+                    {localStream && <CornerVideo stream={localStream}/>}
+                </>
+            ) : (
+                <>
+                    <h1>Join stage</h1>
+                    <FormControl label={"Stage ID"}>
+                        <Input value={stageId} onChange={e => setStageId(e.currentTarget.value)}/>
+                    </FormControl>
+                    <FormControl label={"Passwort"}
+                                 caption={"Ask your director or creator of the stage for the password"}>
+                        <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
+                    </FormControl>
+                    <Button onClick={join} size={SIZE.large}>
+                        Join
+                    </Button>
+                </>
+            )}
         </Layout>
     )
 }
