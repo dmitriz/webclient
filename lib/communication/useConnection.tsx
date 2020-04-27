@@ -14,9 +14,7 @@ export default () => {
 
             setParticipants(prevState => prevState.map((p: Participant) => {
                 if (p.userId === participant.userId) {
-                    p.videoTracks = participant.videoTracks;
-                    p.audioTracks = participant.audioTracks;
-                    p.soundjack = participant.soundjack;
+                    return participant;
                 }
                 return p;
             }));

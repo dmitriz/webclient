@@ -2,7 +2,6 @@ import MediasoupController from "./mediasoup/MediasoupController";
 import firebase from "firebase";
 import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
-import P2PController from "./p2p/P2PController";
 import {SocketEvents, StageJoinPayload, StageParticipantAnnouncement} from "./SocketEvents";
 
 export interface Stage {
@@ -22,8 +21,7 @@ export interface Participant {
         ip: string;
         port: number;
     }
-    videoTracks: MediaStreamTrack[];
-    audioTracks: MediaStreamTrack[];
+    stream: MediaStream;
 }
 
 export default class Connection {
@@ -32,7 +30,7 @@ export default class Connection {
     } = {};
 
     private socket: SocketWithRequest;
-    private p2pController: P2PController;
+    //private p2pController: P2PController;
     private mediasoupController: MediasoupController;
 
     //TODO: Make event handler out of this
@@ -63,8 +61,7 @@ export default class Connection {
             // Add participant to list
             this.participants[announcement.userId] = {
                 ...announcement,
-                videoTracks: [],
-                audioTracks: []
+                stream: new MediaStream()
             };
             //this.p2pController.addClientManually(announcement.userId, announcement.socketId);
             if (this.onParticipantAdded)
@@ -78,7 +75,7 @@ export default class Connection {
                 delete this.participants[announcement.userId];
                 if (this.onParticipantRemoved)
                     this.onParticipantRemoved(participant);
-                this.p2pController.removeClientManually(participant.userId, participant.socketId);
+                //this.p2pController.removeClientManually(participant.userId, participant.socketId);
             }
         });
 
@@ -102,18 +99,18 @@ export default class Connection {
             await this.mediasoupController.disconnect();
             this.mediasoupController = undefined;
         }
-        if (this.p2pController) {
+        /*if (this.p2pController) {
             await this.p2pController.disconnect();
             this.p2pController = undefined;
-        }
+        }*/
         this.socket.close();
         this.socket = undefined;
         //TODO: throw disconnected event
     };
 
     private initStage = async (user: firebase.User, stage: Stage, participants: StageParticipantAnnouncement[]) => {
-        this.p2pController = new P2PController(this.socket, user.uid);
-        this.p2pController.onTrackAdded = (userId: string, socketId: string, track: MediaStreamTrack) => {
+        //this.p2pController = new P2PController(this.socket, user.uid);
+        /*this.p2pController.onTrackAdded = (userId: string, socketId: string, track: MediaStreamTrack) => {
             const participant = this.participants[userId];
             if (participant) {
                 if (track.kind === "audio") {
@@ -128,18 +125,12 @@ export default class Connection {
             } else {
                 console.log("not found: " + userId);
             }
-        };
+        };*/
         this.mediasoupController = new MediasoupController(this.socket, user.uid);
         this.mediasoupController.onConsumerAdded = (userId, consumer) => {
             const participant = this.participants[userId];
             if (participant) {
-                if (consumer.track.kind === "audio") {
-                    participant.audioTracks.push(consumer.track);
-                } else if (consumer.track.kind === "video") {
-                    participant.videoTracks.push(consumer.track);
-                } else {
-                    console.warn("Unknown kind of track: " + consumer.track.kind);
-                }
+                participant.stream.addTrack(consumer.track);
                 if (this.onParticipantChanged)
                     this.onParticipantChanged(participant);
             } else {
@@ -153,13 +144,12 @@ export default class Connection {
                 userId: p.userId,
                 name: p.name,
                 socketId: p.socketId,
-                videoTracks: [],
-                audioTracks: [],
+                stream: new MediaStream()
             };
             if (p.userId !== user.uid) {
                 if (this.onParticipantAdded)
                     this.onParticipantAdded(this.participants[p.userId]);
-                this.p2pController.addClientManually(p.userId, p.socketId);
+                //this.p2pController.addClientManually(p.userId, p.socketId);
             }
         });
     };
@@ -235,7 +225,7 @@ export default class Connection {
         if (method === "mediasoup") {
             return this.mediasoupController.publishTack(track);
         } else {
-            return this.p2pController.publishAdditionalTack(track);
+            //return this.p2pController.publishAdditionalTack(track);
         }
     }
 }

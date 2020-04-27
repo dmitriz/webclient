@@ -9,7 +9,7 @@ export default (props: {
 
     return (
         <>
-            {props.participants.map((participant: Participant) => participant.videoTracks.map((track: MediaStreamTrack) => {
+            {props.participants.map((participant: Participant) => participant.stream.getVideoTracks().map((track: MediaStreamTrack) => {
                 console.log(track);
                 return <VideoTrackPlayer key={track.id} track={track}/>;
             }))}

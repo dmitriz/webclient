@@ -96,13 +96,13 @@ export default class MediasoupController {
     }
 
     consume = async (userId: string, producerId: string) => {
-        console.log('c > s: stg/ms/producer/consume');
+        console.log('c > s: stg/ms/consume');
         const consumerOptions = await this.socket.request('stg/ms/consume', {
             producerId: producerId,
             transportId: this.recvTransport.id,
             rtpCapabilities: this.device.rtpCapabilities
         });
-        console.log('c > s: stg/ms/producer/finish-consume');
+        console.log('c > s: stg/ms/finish-consume');
         console.log(consumerOptions);
         const consumer: mediasoup.types.Consumer = await this.recvTransport.consume(consumerOptions);
         await this.socket.request('stg/ms/finish-consume', {
