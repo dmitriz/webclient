@@ -1,7 +1,7 @@
 import omit from 'lodash.omit';
 import debounce from 'lodash.debounce';
 
-export interface Stream {
+export interface SoundjackStream {
     ip: string;
     port: string;
     decodeFactor: string;
@@ -12,7 +12,7 @@ export interface Stream {
     status: "active" | "disconnecting";
 }
 
-export interface ConnectionInfo {
+export interface SoundjackInterface {
     NAT: number;
     OS: string;
     interfaceIP: string;
@@ -38,28 +38,29 @@ export interface SoundjackEventHandler {
     onConnected?: () => void;
     onDisconnected?: () => void;
     onAudioDeviceAdded?: (id: string, name: string) => void;
-    onAudioDeviceRemoved?: (id: string, name: string) => void;
-    onStreamAdded?: (id: string, stream: Stream) => void;
-    onStreamRemoved?: (id: string, stream: Stream) => void;
-    onStreamChanged?: (id: string, stream: Stream) => void;
+    onStreamAdded?: (id: string, stream: SoundjackStream) => void;
+    onStreamRemoved?: (id: string, stream: SoundjackStream) => void;
+    onStreamChanged?: (id: string, stream: SoundjackStream) => void;
     onSettingsUpdated?: (settings: SoundjackSettings) => void;
     onSoundLevelChanged?: (soundLevel: number) => void;
-    onConnectionInfoUpdated?: (connection: ConnectionInfo) => void;
+    onConnectionInfoUpdated?: (connection: SoundjackInterface) => void;
 }
 
 export default class SoundjackController {
     private eventHandler: SoundjackEventHandler[] = [];
     private websocket: WebSocket | null = null;
     private version: string | null = null;
-    private connectionInfo: ConnectionInfo | null = null;
+    private connectionInfo: SoundjackInterface | null = null;
     private connected: boolean = false;
     private soundLevel: number = 0;
+    private streams: {
+        [id: string]: SoundjackStream
+    } = {};
+
+    // Audio management
     private audioDevices: {
         [id: number]: string
     } = {};
-    private streams: {
-        [id: string]: Stream
-    };
     private settings: SoundjackSettings = {
         valid: false,
         inputAudioDevice: 0,
@@ -112,7 +113,7 @@ export default class SoundjackController {
     };
 
     public stopStream = (id: string) => {
-        const stream: Stream = this.streams[id];
+        const stream: SoundjackStream = this.streams[id];
         if (stream) {
             this.websocket.send(JSON.stringify({
                 type: "stopStream",
@@ -134,6 +135,7 @@ export default class SoundjackController {
 
     public setInputDevice = (id: number) => {
         if (this.audioDevices[id] && this.settings.inputAudioDevice !== id) {
+            console.log("setInputDevice");
             this.settings.inputAudioDevice = id;
             this.debouncedInitializeAudio();
         }
@@ -189,6 +191,7 @@ export default class SoundjackController {
             sampleRate: this.settings.sampleRate.toString(),
             type: "startAudioEngine"
         }));
+        this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onSettingsUpdated && eventHandler.onSettingsUpdated(this.settings));
     };
     private debouncedInitializeAudio = debounce(this.initializeAudio, 200);
 
@@ -206,6 +209,8 @@ export default class SoundjackController {
                 [key: string]: any;
             } = JSON.parse(event.data);
 
+            console.log(message.type);
+
             switch (message.type) {
                 case 'standalone':
                     this.version = message.version;
@@ -215,6 +220,7 @@ export default class SoundjackController {
                         }));
                         this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onConnected && eventHandler.onConnected());
                         this.connected = true;
+                        this.initializeAudio();
                     }, 10);
                     this.websocket.send(JSON.stringify({
                         type: "bind",
@@ -226,38 +232,43 @@ export default class SoundjackController {
                     // Ignore
                     break;
                 case 'setAudioDeviceInfo':
-                    this.audioDevices = {
-                        ...this.audioDevices,
-                        [message.audioCount]: message.audioName
-                    };
+                    console.log(message);
+                    if (!this.audioDevices[message.audioCount]) {
+                        this.audioDevices = {
+                            ...this.audioDevices,
+                            [message.audioCount]: message.audioName
+                        };
+                        this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onAudioDeviceAdded && eventHandler.onAudioDeviceAdded(message.audioCount, message.audioName));
+                    }
                     break;
                 case 'streamIsHere':
                     //TODO: Handle remote streams (!)
-                    if (message.ID !== "X") {
-                        let stream: Stream = this.streams[message.ID];
-                        if (!stream) {
-                            stream = {
-                                ip: message.IP,
-                                port: message.port,
-                                decodeFactor: message.decodeFactor,
-                                channelCount: message.channelCount,
-                                frameSize: message.frameSize,
-                                status: "active"
-                            };
-                            this.streams[message.ID] = stream;
-                        } else {
-                            stream.ip = message.IP;
-                            stream.port = message.port;
-                            stream.decodeFactor = message.decodeFactor;
-                            stream.frameSize = message.frameSize;
-                            stream.status = "active";
-                        }
-                        this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onStreamAdded && eventHandler.onStreamAdded(message.ID, stream));
+                    console.log("Stream is here: " + message.ID);
+                    console.log(message);
+                    let stream: SoundjackStream = this.streams[message.ID];
+                    if (!stream) {
+                        stream = {
+                            ip: message.IP,
+                            port: message.port,
+                            decodeFactor: message.decodeFactor,
+                            channelCount: message.channelCount,
+                            frameSize: message.frameSize,
+                            status: "active"
+                        };
+                        this.streams[message.ID] = stream;
+                    } else {
+                        stream.ip = message.IP;
+                        stream.port = message.port;
+                        stream.decodeFactor = message.decodeFactor;
+                        stream.frameSize = message.frameSize;
+                        stream.status = "active";
                     }
+                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onStreamAdded && eventHandler.onStreamAdded(message.ID, stream));
+
                     break;
                 case 'setRemoteSoundLevel':
                     const handleSetRemoteSoundLevel = () => {
-                        const stream: Stream = this.streams[message.data1];
+                        const stream: SoundjackStream = this.streams[message.data1];
                         if (stream && stream.remoteSoundLevel !== message.data2) {
                             //TODO: What is new here?
                             stream.remoteSoundLevel = message.data2;
@@ -269,7 +280,8 @@ export default class SoundjackController {
                 case 'streamIsGone':
                     const handleStreamIsGone = () => {
                         //TODO: Handle remote streams (!)
-                        const stream: Stream = this.streams[message.data1];
+                        console.log("Stream is gone: " + message.data1);
+                        const stream: SoundjackStream = this.streams[message.data1];
                         if (stream) {
                             this.streams = omit(this.streams, message.data1);
                             this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onStreamRemoved && eventHandler.onStreamRemoved(message.data1, stream));
@@ -280,7 +292,7 @@ export default class SoundjackController {
                 case 'tellLatency':
                     // Only accept active streams
                     const handleTellLatency = () => {
-                        const stream: Stream = this.streams[message.data1];
+                        const stream: SoundjackStream = this.streams[message.data1];
                         if (stream) {
                             stream.latency = message.data2;
                             this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onStreamChanged && eventHandler.onStreamChanged(message.data1, stream));
@@ -292,6 +304,9 @@ export default class SoundjackController {
                     //TODO: Shall we store the data somewhere?
                     break;
                 case 'soundCardStatus':
+                    console.log(message);
+                    this.settings.valid = message.data1 === "YES";
+                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onSettingsUpdated && eventHandler.onSettingsUpdated(this.settings));
                     break;
                 case 'setLocalSoundLevel':
                     if (this.soundLevel !== message.maxSampleValue) {
@@ -306,7 +321,7 @@ export default class SoundjackController {
                         localIP: message.localIP,
                         localIP2: message.localIP2,
                         localBindPort: message.localBindPort,
-                    } as ConnectionInfo;
+                    } as SoundjackInterface;
                     this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onConnectionInfoUpdated && eventHandler.onConnectionInfoUpdated(this.connectionInfo));
                     break;
                 case 'tellDropout':

@@ -1,4 +1,4 @@
-export const p2pConfiguration: RTCConfiguration = {
+export const configuration: RTCConfiguration = {
     iceServers: [
         {
             urls: ["stun:u3.xirsys.com"]
