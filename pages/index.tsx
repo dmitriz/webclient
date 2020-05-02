@@ -8,6 +8,11 @@ export default () => {
                     WebRTC Test
                 </a>
             </Link>
+            <Link href="/tests/soundjack">
+                <a>
+                    Soundjack Test
+                </a>
+            </Link>
         </div>
     );
 }

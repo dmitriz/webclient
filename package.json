@@ -27,6 +27,7 @@
     "next": "^9.3.5",
     "next-cookies": "latest",
     "now": "^18.0.0",
+    "public-ip": "^4.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "socket.io-client": "latest",

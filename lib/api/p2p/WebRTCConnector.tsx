@@ -33,7 +33,7 @@ export interface PeerConnection {
 //  instance.connect(anoterhUserId)
 //  instance.disconnect(anotherUserId)  <-- could be connect/disconnect or add and remove
 //  instance.publishTrack(track) <-- will always stream to all connected, even if later users are connected
-export default class WebRTCController {
+export default class WebRTCConnector {
     private readonly socket: SocketWithRequest;
     private connections: {
         [socketId: string]: PeerConnection

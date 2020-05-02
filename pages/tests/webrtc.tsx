@@ -1,8 +1,8 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {Button} from "baseui/button";
 import firebase from "firebase/app";
 import "firebase/auth";
-import {useStage} from "../../lib/api/StageConnector";
+import {useStage} from "../../lib/api/useStage";
 
 import * as config from "../../env";
 import {Select, Value} from "baseui/select";
@@ -11,23 +11,30 @@ import {Select, Value} from "baseui/select";
 export default () => {
     const [account, setAccount] = React.useState<Value>([]);
     const [user, setUser] = useState<firebase.User>();
-    const {stage, joinStage, publishTrack} = useStage(config.SERVER_URL, parseInt(config.SERVER_PORT));
+    const {stage, joinStage, publishTrack} = useStage({
+        user: user,
+        host: config.SERVER_URL,
+        port: parseInt(config.SERVER_PORT)
+    });
+
+    useEffect(() => {
+        firebase.auth().onAuthStateChanged((user: firebase.User | null) => {
+            if (user) {
+                setUser(user);
+            }
+        });
+    }, []);
 
     const connect = useCallback(() => {
         // Sign in manually
         firebase.auth().signInWithEmailAndPassword(
             "" + account[0].id, "testtesttest"
         ).catch((error) => console.error(error));
-        firebase.auth().onAuthStateChanged((user: firebase.User | null) => {
-            if (user) {
-                setUser(user);
-            }
-        });
     }, [account]);
 
     const join = useCallback(() => {
         if (user) {
-            joinStage(user, "VmaFVwEGz9CO7odY0Vbw", "hello").then(() => console.log("Joined!"));
+            joinStage("VmaFVwEGz9CO7odY0Vbw", "hello").then(() => console.log("Joined!"));
         }
     }, [user]);
 
@@ -52,7 +59,6 @@ export default () => {
         return (
             <div>
                 <Button disabled={!user} isLoading={!user} onClick={join}>Join</Button>
-
             </div>
         )
     }

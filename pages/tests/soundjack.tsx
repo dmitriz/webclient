@@ -1,17 +1,34 @@
 import React, {useCallback, useEffect, useState} from "react";
-import SoundjackController, {SoundjackSettings, SoundjackStream} from "../../lib/api/soundjack/SoundjackController";
+import OldSoundjackController, {
+    SoundjackAudioSettings,
+    SoundjackPortSettings,
+    SoundjackStream
+} from "../../lib/api/soundjack/OldSoundjackController";
 import {Button} from "baseui/button";
 import AudioDeviceSelector from "../../components/audio/AudioDeviceSelector";
 import {FormControl} from "baseui/form-control";
 import omit from 'lodash.omit';
 import {Slider} from "baseui/slider";
+import publicIp from "public-ip";
+import {Input} from "baseui/input";
 
 export default () => {
-    const [soundjack] = useState<SoundjackController>(new SoundjackController());
+    const [ip, setIp] = useState<string>();
+
+    const [targetIp, setTargetIp] = useState<string>("");
+
+    const [soundjack] = useState<OldSoundjackController>(new OldSoundjackController());
     const [connected, setConnected] = useState<boolean>(false);
+    const [portSettings, setPortSettings] = useState<SoundjackPortSettings>();
     const [audioDevices, setAudioDevices] = useState<{ [id: string]: string }>({});
-    const [settings, setSettings] = useState<SoundjackSettings>();
+    const [settings, setSettings] = useState<SoundjackAudioSettings>();
     const [streams, setStreams] = useState<{ [id: string]: SoundjackStream }>({});
+
+    useEffect(() => {
+        publicIp.v4().then(
+            (ip: string) => setIp(ip)
+        );
+    }, []);
 
     useEffect(() => {
         if (soundjack) {
@@ -25,16 +42,17 @@ export default () => {
                     console.log("onDisconnected");
                     setConnected(false)
                 },
-                onSettingsUpdated: (settings: SoundjackSettings) => {
+                onAudioSettingsUpdated: (settings: SoundjackAudioSettings) => {
                     console.log("onSettingsUpdated");
                     setSettings(prevState => ({
                         ...prevState,
                         ...settings
                     }));
                 },
-                onConnectionInfoUpdated: connection => {
-                    console.log("onConnectionInfoUpdated");
+                onPortSettingsUpdated: connection => {
+                    console.log("onPortSettingsUpdated");
                     console.log(connection);
+                    setPortSettings(connection);
                 },
                 onStreamAdded: (id, stream) => {
                     console.log("onStreamAdded");
@@ -91,6 +109,7 @@ export default () => {
 
     return (
         <div>
+            {ip && <h1>{ip}</h1>}
             <FormControl
                 label="Input device">
                 <AudioDeviceSelector
@@ -125,7 +144,11 @@ export default () => {
                                 min={128}
                                 step={64}/>
                     </FormControl>
-                    <Button disabled={!settings.valid} onClick={() => startStream("127.0.0.1", 50000)}>Start</Button>
+                    <FormControl
+                        label="Target IP">
+                        <Input onChange={(e) => setTargetIp(e.currentTarget.value)} value={targetIp}/>
+                    </FormControl>
+                    <Button disabled={!settings.valid} onClick={() => startStream(targetIp, 50000)}>Start</Button>
                 </>
             )}
             <ul>

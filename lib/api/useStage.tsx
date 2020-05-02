@@ -1,9 +1,12 @@
-import {useCallback, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
 import firebase from "firebase/app";
 import "firebase/auth";
-import WebRTCController from "./p2p/WebRTCController";
+import WebRTCConnector from "./p2p/WebRTCConnector";
+import publicIp from "public-ip";
+import OldSoundjackController from "./soundjack/OldSoundjackController";
+import MediasoupConnector from "./mediasoup/MediasoupConnector";
 
 const SocketEvents = {
     Send: {
@@ -27,7 +30,11 @@ interface Stage {
     name: string;
 }
 
-class StageConnector {
+interface Participant {
+
+}
+
+class UseStage {
     private readonly socket: SocketWithRequest;
 
     constructor(host: string, port: number) {
@@ -36,27 +43,61 @@ class StageConnector {
 }
 
 
-export const useStage = (host: string, port: number) => {
-    const [socket] = useState<SocketWithRequest>(extend(SocketIOClient(host + ":" + port)));
+export const useStage = (props: { user: firebase.User, host: string, port: number }) => {
+    const [socket, setSocket] = useState<SocketWithRequest>();
+
+    const [ip, setIp] = useState<string>();
+
+    const [mediasoup, setMediasoup] = useState<MediasoupConnector>();
+    const [webRTC, setWebRTC] = useState<WebRTCConnector>();
+    const [soundjackController] = useState<OldSoundjackController>(new OldSoundjackController());
+
+
     const [stage, setStage] = useState<Stage>();
-    const [webRTCController] = useState<WebRTCController>(new WebRTCController(socket));
+    const [participants, setParticipants] = useState<Participant>();
+
+    const [isSoundjackStreaming, setSoundjackStreaming] = useState<boolean>(false);
+
+    useEffect(() => {
+        publicIp.v4().then(
+            (ip: string) => setIp(ip)
+        );
+    }, []);
+
+    useEffect(() => {
+        setSocket(extend(SocketIOClient(props.host + ":" + props.port)));
+    }, [props.host, props.port]);
+
+    useEffect(() => {
+        if (socket && props.user) {
+            const webRTC = new WebRTCConnector(socket);
+            const mediasoup = new MediasoupConnector(socket, props.user.uid);
+            webRTC.connect();
+            soundjackController.connect();
+            setMediasoup(mediasoup);
+            setWebRTC(webRTC);
+        }
+    }, [props.user, socket]);
 
     const initializeSocketHandlers = useCallback(() => {
         if (!socket)
             throw new Error("Socket not initialized");
 
-        // Attach WebRTC handling
-        webRTCController.connect();
 
         socket.on(SocketEvents.Receive.PeerAdded, (data) => {
             console.log("peer added ! ");
             console.log(data);
-            webRTCController.addPeer(data.socketId);
+            webRTC.addPeer(data.socketId);
+            if (isSoundjackStreaming) {
+                //TODO: Let soundjack stream to user
+            }
         })
     }, [socket]);
 
-    const joinStage = useCallback((user: firebase.User, stageId: string, password?: string): Promise<Stage> => {
-        return user.getIdToken()
+    const joinStage = useCallback((stageId: string, password?: string): Promise<Stage> => {
+        if (!props.user)
+            throw new Error("No user");
+        return props.user.getIdToken()
             .then((token: string) => {
                 return socket.request(SocketEvents.Request.JoinStage, {
                     stageId,
@@ -83,9 +124,14 @@ export const useStage = (host: string, port: number) => {
             });
     }, [socket]);
 
+
     const publishTrack = useCallback((track: MediaStreamTrack) => {
-        webRTCController.publishTrack(track);
-    }, [webRTCController]);
+        webRTC.publishTrack(track);
+    }, [webRTC]);
+
+    const publishSoundjack = useCallback(() => {
+
+    }, [soundjackController]);
 
     const disconnect = useCallback(() => {
         socket.disconnect();
@@ -94,6 +140,7 @@ export const useStage = (host: string, port: number) => {
     return {
         stage,
         joinStage,
-        publishTrack
+        publishTrack,
+        participants
     };
 };

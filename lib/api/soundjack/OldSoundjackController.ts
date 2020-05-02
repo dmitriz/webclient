@@ -12,18 +12,7 @@ export interface SoundjackStream {
     status: "active" | "disconnecting";
 }
 
-export interface SoundjackInterface {
-    NAT: number;
-    OS: string;
-    interfaceIP: string;
-    localBindPort: string;
-    localIP: string;
-    localIP2: string;
-    localPort: string;
-    localPort2: string;
-}
-
-export interface SoundjackSettings {
+export interface SoundjackAudioSettings {
     valid: boolean;
     inputAudioDevice: number;
     outputAudioDevice: number;
@@ -34,34 +23,48 @@ export interface SoundjackSettings {
     frameSize: number;  // networkBlockSize
 }
 
+export interface SoundjackPortSettings {
+    NAT: number;
+    OS: string;
+    interfaceIP: string;
+    localBindPort: string;
+    localIP: string;
+    localIP2: string;
+    localPort: string;
+    localPort2: string;
+}
+
+
 export interface SoundjackEventHandler {
     onConnected?: () => void;
     onDisconnected?: () => void;
+
+    onSoundLevelChanged?: (soundLevel: number) => void;
     onAudioDeviceAdded?: (id: string, name: string) => void;
+    onAudioSettingsUpdated?: (settings: SoundjackAudioSettings) => void;
+
     onStreamAdded?: (id: string, stream: SoundjackStream) => void;
     onStreamRemoved?: (id: string, stream: SoundjackStream) => void;
     onStreamChanged?: (id: string, stream: SoundjackStream) => void;
-    onSettingsUpdated?: (settings: SoundjackSettings) => void;
-    onSoundLevelChanged?: (soundLevel: number) => void;
-    onConnectionInfoUpdated?: (connection: SoundjackInterface) => void;
+
+    // Deprecated?
+    onPortSettingsUpdated?: (connection: SoundjackPortSettings) => void;
 }
 
-export default class SoundjackController {
+export default class OldSoundjackController {
+    // Connection handling
     private eventHandler: SoundjackEventHandler[] = [];
     private websocket: WebSocket | null = null;
-    private version: string | null = null;
-    private connectionInfo: SoundjackInterface | null = null;
     private connected: boolean = false;
-    private soundLevel: number = 0;
-    private streams: {
-        [id: string]: SoundjackStream
-    } = {};
 
-    // Audio management
+    private version: string | null = null;
+
+    // Audio settings
+    private soundLevel: number = 0;
     private audioDevices: {
         [id: number]: string
     } = {};
-    private settings: SoundjackSettings = {
+    private audioSettings: SoundjackAudioSettings = {
         valid: false,
         inputAudioDevice: 0,
         outputAudioDevice: 0,
@@ -71,6 +74,16 @@ export default class SoundjackController {
         bufferSize: 512,
         frameSize: 512
     };
+
+    // Further internal soundjack settings
+    private interfaces: string[] = [];
+    private portSettings: SoundjackPortSettings | null = null;
+
+    // Stream handling
+    private streams: {
+        [id: string]: SoundjackStream
+    } = {};
+
 
     constructor() {
         if (typeof window !== "undefined")
@@ -134,29 +147,29 @@ export default class SoundjackController {
     };
 
     public setInputDevice = (id: number) => {
-        if (this.audioDevices[id] && this.settings.inputAudioDevice !== id) {
+        if (this.audioDevices[id] && this.audioSettings.inputAudioDevice !== id) {
             console.log("setInputDevice");
-            this.settings.inputAudioDevice = id;
+            this.audioSettings.inputAudioDevice = id;
             this.debouncedInitializeAudio();
         }
     };
 
     public setOutputDevice = (id: number) => {
-        if (this.audioDevices[id] && this.settings.outputAudioDevice !== id) {
-            this.settings.outputAudioDevice = id;
+        if (this.audioDevices[id] && this.audioSettings.outputAudioDevice !== id) {
+            this.audioSettings.outputAudioDevice = id;
             this.debouncedInitializeAudio();
         }
     };
 
     public setFrameSize = (frameSize: number) => {
-        if (this.settings.frameSize !== frameSize) {
-            this.settings.frameSize = frameSize;
+        if (this.audioSettings.frameSize !== frameSize) {
+            this.audioSettings.frameSize = frameSize;
             this.debouncedInitializeAudio();
         }
     };
     public setBufferSize = (bufferSize: number) => {
-        if (this.settings.bufferSize !== bufferSize) {
-            this.settings.bufferSize = bufferSize;
+        if (this.audioSettings.bufferSize !== bufferSize) {
+            this.audioSettings.bufferSize = bufferSize;
             this.debouncedInitializeAudio();
         }
     };
@@ -174,8 +187,8 @@ export default class SoundjackController {
             type: "stopAudioEngine"
         }));
         this.websocket.send(JSON.stringify({
-            audioChannelIndex: this.settings.channelConfiguration.toString(),
-            bitDepth: this.settings.bitDepth.toString(),
+            audioChannelIndex: this.audioSettings.channelConfiguration.toString(),
+            bitDepth: this.audioSettings.bitDepth.toString(),
             buchse1: "on",
             buchse2: "on",
             buchse3: "off",
@@ -184,14 +197,14 @@ export default class SoundjackController {
             buchse6: "off",
             buchse7: "off",
             buchse8: "off",
-            frameSize: this.settings.bufferSize.toString(),
-            frameSizeSend: this.settings.frameSize.toString(),
-            inputIndex: this.settings.inputAudioDevice.toString(),
-            outputIndex: this.settings.outputAudioDevice.toString(),
-            sampleRate: this.settings.sampleRate.toString(),
+            frameSize: this.audioSettings.bufferSize.toString(),
+            frameSizeSend: this.audioSettings.frameSize.toString(),
+            inputIndex: this.audioSettings.inputAudioDevice.toString(),
+            outputIndex: this.audioSettings.outputAudioDevice.toString(),
+            sampleRate: this.audioSettings.sampleRate.toString(),
             type: "startAudioEngine"
         }));
-        this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onSettingsUpdated && eventHandler.onSettingsUpdated(this.settings));
+        this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onAudioSettingsUpdated && eventHandler.onAudioSettingsUpdated(this.audioSettings));
     };
     private debouncedInitializeAudio = debounce(this.initializeAudio, 200);
 
@@ -302,11 +315,12 @@ export default class SoundjackController {
                     break;
                 case 'setNICOptions':
                     //TODO: Shall we store the data somewhere?
+                    console.log(message);
                     break;
                 case 'soundCardStatus':
                     console.log(message);
-                    this.settings.valid = message.data1 === "YES";
-                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onSettingsUpdated && eventHandler.onSettingsUpdated(this.settings));
+                    this.audioSettings.valid = message.data1 === "YES";
+                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onAudioSettingsUpdated && eventHandler.onAudioSettingsUpdated(this.audioSettings));
                     break;
                 case 'setLocalSoundLevel':
                     if (this.soundLevel !== message.maxSampleValue) {
@@ -315,14 +329,14 @@ export default class SoundjackController {
                     }
                     break;
                 case 'tellPort':
-                    this.connectionInfo = {
+                    this.portSettings = {
                         NAT: message.NAT,
                         interfaceIP: message.interfaceIP,
                         localIP: message.localIP,
                         localIP2: message.localIP2,
                         localBindPort: message.localBindPort,
-                    } as SoundjackInterface;
-                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onConnectionInfoUpdated && eventHandler.onConnectionInfoUpdated(this.connectionInfo));
+                    } as SoundjackPortSettings;
+                    this.eventHandler.forEach((eventHandler: SoundjackEventHandler) => eventHandler.onPortSettingsUpdated && eventHandler.onPortSettingsUpdated(this.portSettings));
                     break;
                 case 'tellDropout':
                     break;
