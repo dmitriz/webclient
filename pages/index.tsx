@@ -21,10 +21,11 @@ export default () => {
     const join = useCallback(() => {
         const stageConnection = new StageConnector();
         console.log("Connecting to " + HOST + ":" + PORT);
-        stageConnection.connect(HOST, PORT);
+        stageConnection.connect(user, HOST, PORT);
+        /*
         stageConnection.joinStage(user, stageId, password)
             .then(() => console.log("joined"))
-            .catch(error => console.error(error));
+            .catch(error => console.error(error));*/
     }, [user, stageId, password]);
 
     if (loading) {

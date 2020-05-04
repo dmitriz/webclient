@@ -26,10 +26,15 @@ export default class StageConnector {
     constructor() {
     }
 
-    connect = (host: string, port: number) => {
+    connect = (user: firebase.User, host: string, port: number) => {
         //TODO: Reorganize connection and extension handling
-        this.socket = extend(SocketIOClient(host + ":" + port));
-        this.mediasoup = new MediasoupConnector(this.socket);
+        return user.getIdToken()
+            .then((token: string) => {
+                this.socket = extend(SocketIOClient(host + ":" + port, {
+                    query: {token}
+                }));
+                this.mediasoup = new MediasoupConnector(this.socket);
+            });
     };
 
     disconnect = () => {
@@ -65,6 +70,7 @@ export default class StageConnector {
                     password: password ? password : null
                 })
                     .then((response) => {
+                        console.log(response);
                         if (response.error) {
                             throw new Error(response.error);
                         }
