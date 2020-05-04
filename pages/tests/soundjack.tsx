@@ -3,7 +3,7 @@ import OldSoundjackController, {
     SoundjackAudioSettings,
     SoundjackPortSettings,
     SoundjackStream
-} from "../../lib/api/soundjack/OldSoundjackController";
+} from "../../oldlib/api/soundjack/OldSoundjackController";
 import {Button} from "baseui/button";
 import AudioDeviceSelector from "../../components/audio/AudioDeviceSelector";
 import {FormControl} from "baseui/form-control";

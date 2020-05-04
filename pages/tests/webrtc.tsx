@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from "react";
 import {Button} from "baseui/button";
 import firebase from "firebase/app";
 import "firebase/auth";
-import {useStage} from "../../lib/api/useStage";
+import {useStage} from "../../oldlib/api/useStage";
 
 import * as config from "../../env";
 import {Select, Value} from "baseui/select";
