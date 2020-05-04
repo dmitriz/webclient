@@ -20,7 +20,6 @@ const MediasoupSocketEvents = {
 
 export default class MediasoupConnector {
     private readonly socket: SocketWithRequest;
-    private readonly uid: string;
     private device: mediasoup.Device;
     private sendTransport: mediasoup.types.Transport;
     private recvTransport: mediasoup.types.Transport;
@@ -29,9 +28,8 @@ export default class MediasoupConnector {
 
     public onConsumerAdded?: (userId: string, consumer: mediasoup.types.Consumer) => void;
 
-    constructor(socket: SocketWithRequest, uid: string) {
+    constructor(socket: SocketWithRequest) {
         this.socket = socket;
-        this.uid = uid;
     }
 
     connect(): Promise<void> {
@@ -80,6 +78,8 @@ export default class MediasoupConnector {
             this.consumers.forEach((consumer: mediasoup.types.Consumer) => consumer.close());
             this.sendTransport.close();
             this.recvTransport.close();
+            this.sendTransport = undefined;
+            this.recvTransport = undefined;
             return;
         });
     }

@@ -2,12 +2,8 @@ import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
 import SocketIOClient from "socket.io-client";
 import firebase from "firebase/app";
 import "firebase/auth";
+import MediasoupConnector from "./extensions/MediasoupConnector";
 
-interface Participant {
-    userId: string;
-    name: string;
-    socketId: string;
-}
 
 interface CreateStageResult {
     id: string;
@@ -24,13 +20,16 @@ export class NotConnectedError extends Error {
 
 export default class StageConnector {
     private socket: SocketWithRequest;
+    private mediasoup: MediasoupConnector;
 
 
     constructor() {
     }
 
     connect = (host: string, port: number) => {
+        //TODO: Reorganize connection and extension handling
         this.socket = extend(SocketIOClient(host + ":" + port));
+        this.mediasoup = new MediasoupConnector(this.socket);
     };
 
     disconnect = () => {
@@ -61,10 +60,16 @@ export default class StageConnector {
         return user.getIdToken()
             .then((token: string) => {
                 return this.socket.request("stg/join", {
-                    token,
-                    stageId,
+                    token: token,
+                    stageId: stageId,
                     password: password ? password : null
                 })
+                    .then((response) => {
+                        if (response.error) {
+                            throw new Error(response.error);
+                        }
+                        return response.data;
+                    })
             });
     };
 }

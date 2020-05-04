@@ -3,8 +3,8 @@ import App from 'next/app'
 import {Provider as StyletronProvider} from 'styletron-react'
 import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
-import {DarkModeContext} from '../oldlib/useDarkModeSwitch';
-import {AuthContextProvider} from "../oldlib/useAuth";
+import {DarkModeContext} from '../lib/useDarkModeSwitch';
+import {AuthContextProvider} from "../lib/useAuth";
 
 interface Props {
 
