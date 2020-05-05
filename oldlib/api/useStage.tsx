@@ -71,7 +71,7 @@ export const useStage = (props: { user: firebase.User, host: string, port: numbe
     useEffect(() => {
         if (socket && props.user) {
             const webRTC = new WebRTCConnector(socket);
-            const mediasoup = new MediasoupConnector(socket, props.user.uid);
+            //const mediasoup = new MediasoupConnector(socket, props.user.uid);
             webRTC.connect();
             soundjackController.connect();
             setMediasoup(mediasoup);

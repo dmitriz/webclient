@@ -3,16 +3,7 @@ import SocketIOClient from "socket.io-client";
 import firebase from "firebase/app";
 import "firebase/auth";
 import MediasoupConnector from "./extensions/MediasoupConnector";
-
-
-interface CreateStageResult {
-    id: string;
-}
-
-interface JoinStageResult {
-    // Will be changed soon
-    success: boolean;
-}
+import {CreateStagePayload, CreateStageResult, JoinStagePayload, JoinStageResult, StageRequests} from "./events";
 
 
 export class NotConnectedError extends Error {
@@ -26,7 +17,7 @@ export default class StageConnector {
     constructor() {
     }
 
-    connect = (user: firebase.User, host: string, port: number) => {
+    connect = (user: firebase.User, host: string, port: number): Promise<void> => {
         //TODO: Reorganize connection and extension handling
         return user.getIdToken()
             .then((token: string) => {
@@ -34,6 +25,7 @@ export default class StageConnector {
                     query: {token}
                 }));
                 this.mediasoup = new MediasoupConnector(this.socket);
+                return;
             });
     };
 
@@ -44,38 +36,38 @@ export default class StageConnector {
         this.socket = undefined;
     };
 
-    createStage = (user: firebase.User, stageName: string, type: "theater" | "music" | "conference", password?: string): Promise<CreateStageResult> => {
+
+    createStage = (stageName: string, type: "theater" | "music" | "conference", password?: string): Promise<CreateStageResult> => {
         if (!this.socket)
             throw new NotConnectedError();
-        return user.getIdToken()
-            .then((token: string) => {
-                return this.socket.request("stg/create", {
-                    token,
-                    stageName,
-                    type,
-                    password: password ? password : null
-                })
+        return this.socket.request(StageRequests.CreateStage, {
+            stageName: stageName,
+            password: password ? password : null,
+            soundjack: false
+        } as CreateStagePayload)
+            .then((response) => {
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+                return response.stage;
             });
     };
 
-    joinStage = (user: firebase.User, stageId: string, password?: string): Promise<JoinStageResult> => {
+    joinStage = (stageId: string, password?: string): Promise<JoinStageResult> => {
         if (!this.socket)
             throw new NotConnectedError();
 
-        return user.getIdToken()
-            .then((token: string) => {
-                return this.socket.request("stg/join", {
-                    token: token,
-                    stageId: stageId,
-                    password: password ? password : null
-                })
-                    .then((response) => {
-                        console.log(response);
-                        if (response.error) {
-                            throw new Error(response.error);
-                        }
-                        return response.data;
-                    })
+        return this.socket.request(StageRequests.JoinStage, {
+            stageId: stageId,
+            password: password ? password : null,
+            soundjack: false
+        } as JoinStagePayload)
+            .then((response) => {
+                console.log(response);
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+                return response.stage;
             });
     };
 }

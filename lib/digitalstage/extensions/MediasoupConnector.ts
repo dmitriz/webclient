@@ -49,16 +49,16 @@ export default class MediasoupConnector {
                     producer: string,
                     userId: string,
                 }) => {
-                    console.log('s > c: stg/ms/producer/added: userId=' + data.userId + ' producer=' + data.producer);
+                    console.log('s > c: ms/producer/added: userId=' + data.userId + ' producer=' + data.producer);
                     return this.consume(data.userId, data.producer);
                 });
 
                 // And finally get the existing producers
-                this.socket.request("stg/ms/producers/state").then((data: {
+                this.socket.request("ms/producers/state").then((data: {
                     userId: string;
                     producer: string[]
                 }[]) => {
-                    console.log('c > s: stg/ms/producers/state: length=' + data.length);
+                    console.log('c > s: ms/producers/state: length=' + data.length);
                     data.forEach((d: {
                         userId: string;
                         producer: string[]

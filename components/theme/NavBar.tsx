@@ -58,7 +58,7 @@ export default () => {
                                 </Link>
                             </StyledNavigationItem>
                             <StyledNavigationItem>
-                                <Link href="/stage">
+                                <Link href="/">
                                     <a>
                                         Join stage
                                     </a>
