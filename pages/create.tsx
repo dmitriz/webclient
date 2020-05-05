@@ -4,9 +4,8 @@ import {Button} from "baseui/button";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
-import {useStage, useStageControl} from "../lib/digitalstage/useStage";
+import {useStageControl} from "../lib/digitalstage/useStage";
 import Layout from "../components/theme/Layout";
-import {Participant} from "../lib/digitalstage/model";
 import Loading from "../components/theme/Loading";
 
 export default () => {
@@ -22,7 +21,7 @@ export default () => {
         )
     }
     if (!user) {
-        router.push("/stage/login");
+        router.push("/login");
     }
 
     if (stage) {
@@ -40,13 +39,7 @@ export default () => {
                         <li>Password: {stage.password}</li>
                     )}
                 </p>
-                <ul>
-                    {Object.values(stage.participants).map((participant: Participant) => (
-                        <li>
-                            {participant.ipv4}
-                        </li>
-                    ))}
-                </ul>
+                <Button onClick={() => router.push("/")}>Ok, let's start</Button>
             </Layout>
         )
     }

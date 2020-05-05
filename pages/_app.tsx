@@ -39,6 +39,8 @@ export default class MyApp extends App<Props, States> {
                         margin: 0;
                         padding: 0;
                         font-family: var(--font-sans);
+                        color: ${this.state.darkMode ? "white" : "black"};
+                        transition: color 0.25s ease-in;
                     }
                     h1, h2, h3, h4, h5 {
                         font-family: var(--font-sans);

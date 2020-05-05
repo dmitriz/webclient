@@ -9,12 +9,23 @@ import {useDarkModeSwitch} from "../../lib/useDarkModeSwitch";
 const MarginTop = styled("div", {
     marginTop: '10vh'
 });
+const Background = styled('div', (props: {
+    $darkMode: boolean
+}) => ({
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: props.$darkMode ? 'black' : 'white',
+    zIndex: -1
+}));
 
 export default (props: {
     children: React.ReactNode
 }) => {
     const {stage} = useStage();
-    const {setDarkMode} = useDarkModeSwitch();
+    const {darkMode, setDarkMode} = useDarkModeSwitch();
 
     useEffect(() => {
         setDarkMode(stage !== undefined);
@@ -22,6 +33,7 @@ export default (props: {
 
     return (
         <>
+            <Background $darkMode={darkMode}/>
             <NavBar/>
             <Container>
                 <MarginTop>

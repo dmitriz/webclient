@@ -6,13 +6,9 @@ import {FormControl} from "baseui/form-control";
 import {useState} from "react";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
-import * as config from "./../env";
-import {useStage, useStageControl} from "../lib/digitalstage/useStage";
+import {useStageControl} from "../lib/digitalstage/useStage";
 import {KIND, Notification} from "baseui/notification";
-
-
-const HOST: string = config.SERVER_URL;
-const PORT: number = config.SERVER_PORT;
+import StageView from "../components/StageView";
 
 export default () => {
     const router = useRouter();
@@ -31,6 +27,10 @@ export default () => {
         router.push("/login");
     }
 
+    if (stage) {
+        return <StageView stage={stage}/>
+    }
+
     return (
         <Layout>
             <h1>Join stage</h1>
@@ -43,7 +43,7 @@ export default () => {
             </FormControl>
             {error && (
                 <Notification kind={KIND.negative}>
-                    {error}
+                    {error.message}
                 </Notification>
             )}
             <Button onClick={() => join(stageId, password)} size={SIZE.large}>

@@ -4,10 +4,16 @@ import {Button} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
+import {useStage} from "../../lib/digitalstage/useStage";
 
-const NavContainer = styled("div", {
-    width: '100%'
-});
+const NavContainer = styled("div", (props: {
+    $visible: boolean
+}) => ({
+    width: '100%',
+    maxHeight: props.$visible ? '80px' : '0px',
+    transition: 'max-height 0.25s ease-in',
+    overflow: 'hidden',
+}));
 
 const CenterVertical = styled("div", {
     display: 'flex',
@@ -21,9 +27,10 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
+    const {stage} = useStage();
 
     return (
-        <NavContainer>
+        <NavContainer $visible={stage === undefined}>
             <HeaderNavigation>
                 <StyledNavigationList $align={ALIGN.left}>
                     <StyledNavigationItem>
