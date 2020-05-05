@@ -29,6 +29,7 @@ export default class StageConnector {
             });
     };
 
+
     disconnect = () => {
         if (this.socket) {
             this.socket.disconnect();
@@ -49,7 +50,8 @@ export default class StageConnector {
                 if (response.error) {
                     throw new Error(response.error);
                 }
-                return response.stage;
+                console.log(response);
+                return response;
             });
     };
 
@@ -67,7 +69,7 @@ export default class StageConnector {
                 if (response.error) {
                     throw new Error(response.error);
                 }
-                return response.stage;
+                return response;
             });
     };
 }

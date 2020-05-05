@@ -14,40 +14,6 @@ export interface AuthProps {
 }
 
 const AuthContext = React.createContext(undefined);
-export const useAuthDep = (): AuthProps => {
-    const [state, setState] = useState<AuthProps>(() => {
-        const user = firebase.auth().currentUser;
-        return {
-            loading: !user,
-            user
-        };
-    });
-
-    function onChange(user: firebase.User | null) {
-        console.log("Have a new onAuthStateChanged");
-        setState({loading: false, user});
-
-        if (user) {
-            user.getIdToken().then(
-                (token: string) => {
-                    cookie.set('token', token, {expires: 1});
-                }
-            );
-        } else {
-            cookie.remove('token');
-        }
-    }
-
-    useEffect(() => {
-        // Listen for auth state changes.
-        const unsubscribe = firebase.auth().onAuthStateChanged(onChange);
-
-        // Unsubscribe to the listener when unmounting.
-        return () => unsubscribe();
-    }, []);
-
-    return state;
-};
 
 export const useAuth = (): AuthProps => React.useContext<AuthProps>(AuthContext);
 

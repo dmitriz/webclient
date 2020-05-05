@@ -18,6 +18,10 @@ export interface Session {
 
 }
 
+export interface StageFromServer {
+
+}
+
 export interface Stage {
     id: string;
     name: string;

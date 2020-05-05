@@ -4,18 +4,17 @@ import {Button} from "baseui/button";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
-import {useStage} from "../lib/digitalstage/useStage";
+import {useStage, useStageControl} from "../lib/digitalstage/useStage";
 import Layout from "../components/theme/Layout";
 import {Participant} from "../lib/digitalstage/model";
 import Loading from "../components/theme/Loading";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {stage, join, create} = useStage({user});
+    const {stage, join, create} = useStageControl({user});
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
-
 
     if (loading) {
         return (
@@ -44,7 +43,7 @@ export default () => {
                 <ul>
                     {Object.values(stage.participants).map((participant: Participant) => (
                         <li>
-                            {participant.soundjack}
+                            {participant.ipv4}
                         </li>
                     ))}
                 </ul>

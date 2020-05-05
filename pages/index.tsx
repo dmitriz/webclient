@@ -7,7 +7,7 @@ import {useState} from "react";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
 import * as config from "./../env";
-import {useStage} from "../lib/digitalstage/useStage";
+import {useStage, useStageControl} from "../lib/digitalstage/useStage";
 import {KIND, Notification} from "baseui/notification";
 
 
@@ -17,7 +17,7 @@ const PORT: number = config.SERVER_PORT;
 export default () => {
     const router = useRouter();
     const {user, loading} = useAuth();
-    const {stage, join, error} = useStage({user});
+    const {stage, join, error} = useStageControl({user});
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
 
