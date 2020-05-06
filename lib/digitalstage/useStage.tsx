@@ -1,20 +1,37 @@
-import React, {useCallback, useContext, useEffect, useState} from "react";
-import StageConnector from "./StageConnector";
+import React, {Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
 import * as config from "../../env";
-import {Stage} from "./model";
-import {CreateStageResult, JoinStageResult} from "./events/stage";
+import {Participant, Stage} from "./model";
+import {
+    CreateStagePayload,
+    CreateStageResult,
+    JoinStagePayload,
+    ParticipantAddedPayload,
+    ParticipantChangedPayload,
+    ParticipantRemovedPayload,
+    StageEvents,
+    StageRequests
+} from "./events/stage";
+import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
+import firebase from "firebase";
+import SocketIOClient from "socket.io-client";
+import {useWebRTC} from "./extensions/WebRTCP2PExtension";
+import omit from 'lodash.omit';
 
 const HOST: string = config.SERVER_URL;
 const PORT: number = config.SERVER_PORT;
 
 export interface StageProps {
-    stage?: Stage,
-    setStage: (stage: Stage) => void;
+    stage?: Stage;
+    setStage: Dispatch<SetStateAction<Stage | undefined>>;
+    //remoteParticipants?: { [userId: string]: Participant }
+    //setRemoteParticipants: Dispatch<SetStateAction<{ [userId: string]: Participant } | undefined>>;
 }
 
 const StageContext = React.createContext<StageProps>({
     setStage: () => {
-    }
+    },
+    //setRemoteParticipants: () => {
+    //}
 });
 
 export const StageConsumer = StageContext.Consumer;
@@ -23,11 +40,14 @@ export const StageProvider = (props: {
     children: React.ReactNode,
 }) => {
     const [stage, setStage] = useState<Stage>();
+    //const [remoteParticipants, setRemoteParticipants] = useState<{ [userId: string]: Participant }>();
 
     return (
         <StageContext.Provider value={{
             stage: stage,
-            setStage: setStage
+            setStage: setStage,
+            //remoteParticipants: remoteParticipants,
+            //setRemoteParticipants: setRemoteParticipants
         }}>
             {props.children}
         </StageContext.Provider>
@@ -36,60 +56,187 @@ export const StageProvider = (props: {
 
 export const useStage = () => useContext<StageProps>(StageContext);
 
-export const useStageControl = (props: {
+export const useStageController = (props: {
     user: firebase.User
 }) => {
-    const [stageConnection, setStageConnection] = useState<StageConnector>();
-    const {stage, setStage} = useContext<StageProps>(StageContext);
+    const [socket, setSocket] = useState<SocketWithRequest>();
     const [error, setError] = useState<Error>();
-
-    const connect = useCallback(() => {
-        console.log("Connecting to " + HOST + ":" + PORT);
-        const stageConnection = new StageConnector();
-        stageConnection.connect(props.user, HOST, PORT).then(
-            () => {
-                setStageConnection(stageConnection);
-            }
-        );
-    }, [props.user]);
-
-    const create = useCallback((stageName: string, password: string) => {
-        if (stage) {
-            return;
+    const {stage, setStage, /*remoteParticipants, setRemoteParticipants*/} = useContext<StageProps>(StageContext);
+    const {setPublishedTracks: setP2PTracks} = useWebRTC({socket, stage, useHighBitrate: false});
+    const [localMediasoupStream, setLocalMediasoupStream] = useState<{
+        [trackId: string]: MediaStreamTrack
+    }>();
+    const publishTrack = useCallback((track: MediaStreamTrack, type: "mediasoup" | "p2p" = "p2p") => {
+        if (type === "mediasoup") {
+            setLocalMediasoupStream(prevState => ({
+                ...prevState,
+                [track.id]: track
+            }));
+        } else {
+            console.log("Adding track to webrtc");
+            setP2PTracks(prevState => ({
+                ...prevState,
+                [track.id]: track
+            }));
         }
-        console.log("Create stage");
-        stageConnection.createStage(stageName, "music", password)
-            .then((result: CreateStageResult) => {
-                console.log("Got stage");
-                setStage(result.stage);
-                setError(undefined);
-            })
-            .catch((error: Error) => setError(error));
-    }, [stageConnection]);
+    }, []);
 
-    const join = useCallback((stageId: string, password: string) => {
-        if (stage) {
-            return;
+    const unpublishTrack = useCallback((trackId: string, type: "mediasoup" | "p2p" = "p2p") => {
+        if (type === "mediasoup") {
+            setLocalMediasoupStream(prevState => omit(prevState, trackId));
+        } else {
+            setP2PTracks(prevState => omit(prevState, trackId));
         }
-        console.log("Join stage");
-        stageConnection.joinStage(stageId, password)
-            .then((result: JoinStageResult) => {
-                console.log("Got stage");
-                setStage(result.stage);
-                setError(undefined);
-            })
-            .catch((error: Error) => setError(error));
-    }, [stageConnection]);
+    }, [localMediasoupStream, setP2PTracks]);
 
     useEffect(() => {
         if (props.user)
             connect();
     }, [props.user]);
 
+    const connect = useCallback(() => {
+        console.log("Connecting to " + HOST + ":" + PORT);
+        props.user.getIdToken()
+            .then((token: string) => {
+                const socket: SocketWithRequest = extend(SocketIOClient(HOST + ":" + PORT, {
+                    query: {token}
+                }));
+                setSocket(socket);
+            });
+    }, [props.user]);
+
+    const onParticipantAdded = useCallback((data: ParticipantAddedPayload) => {
+        if (data.userId !== props.user.uid)
+            setStage(prevState => ({
+                ...prevState,
+                participants: {
+                    ...prevState.participants,
+                    [data.userId]: {
+                        ...data,
+                        webRTC: {
+                            established: false
+                        },
+                        stream: new MediaStream(),
+                        consumers: {}
+                    }
+                }
+            }));
+    }, [stage]);
+
+    const onParticipantChanged = useCallback((data: ParticipantChangedPayload) => {
+        setStage(prevState => ({
+            ...prevState,
+            participants: {
+                ...prevState.participants,
+                [data.userId]: {
+                    ...prevState.participants[data.userId],
+                    ...data
+                }
+            }
+        }));
+    }, [stage]);
+
+    const onParticipantRemoved = useCallback((data: ParticipantRemovedPayload) => {
+        setStage(prevState => ({
+            ...prevState,
+            participants: omit(prevState.participants, data.userId)
+        }));
+    }, [stage]);
+
+    const disconnect = useCallback(() => {
+        if (socket) {
+            socket.disconnect();
+            setStage(undefined);
+            setSocket(undefined);
+        }
+    }, [socket]);
+
+    const create = useCallback((stageName: string, password: string) => {
+        if (!socket || stage)
+            return;
+        console.log("Create stage");
+        socket.request(StageRequests.CreateStage, {
+            stageName: stageName,
+            password: password ? password : null,
+            soundjack: false
+        } as CreateStagePayload)
+            .then((response: CreateStageResult) => {
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+                const remoteParticipants: { [userId: string]: Participant } = {};
+                Object.keys(response.stage.participants).forEach((userId: string) => {
+                    if (userId !== props.user.uid) {
+                        remoteParticipants[userId] = {
+                            ...response.stage.participants[userId],
+                            webRTC: {
+                                established: false
+                            },
+                            stream: new MediaStream(),
+                            consumers: {}
+                        };
+                    }
+                });
+                socket.on(StageEvents.ParticipantAdded, onParticipantAdded);
+                socket.on(StageEvents.ParticipantChanged, onParticipantChanged);
+                socket.on(StageEvents.ParticipantRemoved, onParticipantRemoved);
+                const stage: Stage = {
+                    ...response.stage,
+                    participants: remoteParticipants
+                };
+                setError(undefined);
+                setStage(stage);
+            })
+            .catch((error) => setError(error));
+    }, [socket]);
+
+    const join = useCallback((stageId: string, password: string) => {
+        if (!socket || stage)
+            return;
+        console.log("Join stage");
+        return socket.request(StageRequests.JoinStage, {
+            stageId: stageId,
+            password: password ? password : null,
+            soundjack: false
+        } as JoinStagePayload)
+            .then((response: CreateStageResult) => {
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+                const remoteParticipants: { [userId: string]: Participant } = {};
+                Object.keys(response.stage.participants).forEach((userId: string) => {
+                    if (userId !== props.user.uid) {
+                        remoteParticipants[userId] = {
+                            ...response.stage.participants[userId],
+                            webRTC: {
+                                established: false
+                            },
+                            stream: new MediaStream(),
+                            consumers: {}
+                        };
+                    }
+                });
+                const stage: Stage = {
+                    ...response.stage,
+                    participants: remoteParticipants
+                };
+                socket.on(StageEvents.ParticipantAdded, onParticipantAdded);
+                socket.on(StageEvents.ParticipantChanged, onParticipantChanged);
+                socket.on(StageEvents.ParticipantRemoved, onParticipantRemoved);
+                setError(undefined);
+                setStage(stage);
+                //setRemoteParticipants(remoteParticipants);
+            })
+            .catch((error) => setError(error));
+    }, [socket]);
+
     return {
         create,
         join,
         stage,
-        error
-    }
+        error,
+        //remoteParticipants,
+        publishTrack,
+        unpublishTrack
+    };
 };

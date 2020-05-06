@@ -6,14 +6,14 @@ import {FormControl} from "baseui/form-control";
 import {useState} from "react";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
-import {useStageControl} from "../lib/digitalstage/useStage";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/StageView";
+import {useStageController} from "../lib/digitalstage/useStage";
 
 export default () => {
     const router = useRouter();
     const {user, loading} = useAuth();
-    const {stage, join, error} = useStageControl({user});
+    const {stage, join, error} = useStageController({user});
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
 
@@ -28,7 +28,9 @@ export default () => {
     }
 
     if (stage) {
-        return <StageView stage={stage}/>
+
+
+        return <StageView/>
     }
 
     return (

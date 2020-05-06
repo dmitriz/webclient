@@ -4,13 +4,13 @@ import {Button} from "baseui/button";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
-import {useStageControl} from "../lib/digitalstage/useStage";
 import Layout from "../components/theme/Layout";
 import Loading from "../components/theme/Loading";
+import {useStageController} from "../lib/digitalstage/useStage";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {stage, join, create} = useStageControl({user});
+    const {stage, create} = useStageController({user});
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");

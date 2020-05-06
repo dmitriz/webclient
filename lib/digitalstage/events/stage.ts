@@ -1,4 +1,5 @@
-import {Participant, Stage} from "../model";
+import {Participant, ParticipantFromServer, Stage, StageFromServer} from "../model";
+
 export * from "./mediasoup";
 
 /**
@@ -32,7 +33,8 @@ export interface CreateStagePayload {
 }
 
 export interface CreateStageResult {
-    stage: Stage
+    stage?: StageFromServer;
+    error?: string;
 }
 
 export interface JoinStagePayload {
@@ -42,15 +44,16 @@ export interface JoinStagePayload {
 }
 
 export interface JoinStageResult {
-    stage: Stage
+    stage?: StageFromServer;
+    error?: string;
 }
 
-export interface ParticipantAddedPayload extends Participant {
+export interface ParticipantAddedPayload extends ParticipantFromServer {
 }
 
-export interface ParticipantRemovedPayload extends Participant {
+export interface ParticipantRemovedPayload extends ParticipantFromServer {
 }
 
-export interface ParticipantChangedPayload extends Participant {
+export interface ParticipantChangedPayload extends ParticipantFromServer {
 }
 

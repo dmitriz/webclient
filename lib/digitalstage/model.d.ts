@@ -13,10 +13,14 @@ export interface ParticipantFromServer {
 export interface Participant extends ParticipantFromServer {
     audioLatency?: number;
     videoLatency?: number;
-    stream?: MediaStreamTrack;
+    stream: MediaStream;  // Common stream track from webrtc and mediasoup ;)
     consumers: {
         [consumerId: string]: Consumer
     };
+    webRTC: {
+        rtcPeerConnection?: RTCPeerConnection;
+        established: boolean;
+    }
 }
 
 export interface StageFromServer {
