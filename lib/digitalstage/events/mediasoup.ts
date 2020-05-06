@@ -17,7 +17,7 @@ export const MediasoupRequests = {
     CreateReceiveTransport: "ms/create-receive-transport",
     CreateSendTransport: "ms/create-send-transport",
     ConnectTransport: "ms/create-receive-transport",
-    SentTrack: "ms/send-track",
+    SendTrack: "ms/send-track",
     Consume: "ms/consume",
     FinishConsume: "ms/finish-consume"
 };

@@ -1,4 +1,4 @@
-import {SocketWithRequest} from "../../../util/SocketWithRequest";
+import {SocketWithRequest} from "../../../../util/SocketWithRequest";
 import * as mediasoup from 'mediasoup-client';
 import {RtpCapabilities} from "mediasoup-client/src/RtpParameters";
 

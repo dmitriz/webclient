@@ -1,5 +1,5 @@
-import {SocketWithRequest} from "../../../util/SocketWithRequest";
-import {Participant, Stage} from "../model";
+import {SocketWithRequest} from "../../../../util/SocketWithRequest";
+import {Participant, Stage} from "../../model";
 import {useCallback, useEffect, useState} from "react";
 import {
     AnswerMadePayload,
@@ -10,7 +10,7 @@ import {
     SendCandidatePayload,
     WebP2PEvents,
     WebP2PSends
-} from "../events/webrtcp2p";
+} from "../../events/webrtcp2p";
 
 const configuration: RTCConfiguration = {
     iceServers: [
@@ -88,7 +88,8 @@ export const useWebRTC = (props: {
                             }
                         });
                         Object.keys(publishedTracks).forEach((trackId: string) => {
-                            if (!remoteParticipant.webRTC.rtcPeerConnection.getSenders().find((sender: RTCRtpSender) => sender.track.id === trackId)) {
+                            console.log(remoteParticipant.webRTC.rtcPeerConnection.getSenders());
+                            if (!remoteParticipant.webRTC.rtcPeerConnection.getSenders().find((sender: RTCRtpSender) => sender.track !== null && sender.track.id === trackId)) {
                                 console.log("Sending webrtc track " + trackId);
                                 remoteParticipant.webRTC.rtcPeerConnection.addTrack(publishedTracks[trackId]);
                             }
@@ -107,7 +108,7 @@ export const useWebRTC = (props: {
                         });
                 });
         }
-    }, [props.stage, publishedTracks]);
+    }, [publishedTracks]);
 
     const [greetingsSent, setGreetingsSent] = useState<boolean>(false);
     useEffect(() => {
@@ -246,6 +247,7 @@ export const useWebRTC = (props: {
             }
         };
         rtcPeerConnection.ontrack = (ev: RTCTrackEvent) => {
+            console.log("GOT TRACK");
             ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
                 remoteParticipant.stream.addTrack(track);
             });

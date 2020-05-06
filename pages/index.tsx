@@ -3,19 +3,27 @@ import {useAuth} from "../lib/useAuth";
 import Layout from "../components/theme/Layout";
 import Loading from "../components/theme/Loading";
 import {FormControl} from "baseui/form-control";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/StageView";
-import {useStageController} from "../lib/digitalstage/useStage";
+import {useStageController} from "../lib/digitalstage/hooks/useStage";
 
 export default () => {
     const router = useRouter();
     const {user, loading} = useAuth();
-    const {stage, join, error} = useStageController({user});
+    const {stage, join, error, publishTrack} = useStageController({user});
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
+
+    useEffect(() => {
+        navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        })
+            .then((mediaStream: MediaStream) => mediaStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "mediasoup")))
+    }, []);
 
     if (loading) {
         return (
@@ -28,8 +36,6 @@ export default () => {
     }
 
     if (stage) {
-
-
         return <StageView/>
     }
 

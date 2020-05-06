@@ -6,7 +6,7 @@ import "firebase/auth";
 import WebRTCConnector from "./p2p/WebRTCConnector";
 import publicIp from "public-ip";
 import OldSoundjackController from "./soundjack/OldSoundjackController";
-import MediasoupConnector from "../../lib/digitalstage/extensions/MediasoupConnector";
+import MediasoupConnector from "../../lib/digitalstage/hooks/extensions/MediasoupConnector";
 
 const SocketEvents = {
     Send: {

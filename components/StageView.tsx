@@ -1,6 +1,6 @@
 import Layout from "./theme/Layout";
 import {useCallback, useEffect, useState} from "react";
-import {useStageController} from "../lib/digitalstage/useStage";
+import {useStageController} from "../lib/digitalstage/hooks/useStage";
 import {Button} from "baseui/button";
 import Video from "./video/Video";
 import {useAuth} from "../lib/useAuth";
@@ -33,7 +33,7 @@ export default (props: {}) => {
             <h1>{stage.name}</h1>
             <div>
                 {Object.keys(stage.participants).map((userId: string) => (
-                    <div>
+                    <div key={userId}>
                         {stage.participants[userId].stream.getTracks().length > 0 && (
                             <Video id={userId} stream={stage.participants[userId].stream}/>
                         )}

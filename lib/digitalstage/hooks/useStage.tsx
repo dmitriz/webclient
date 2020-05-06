@@ -1,6 +1,6 @@
 import React, {Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
-import * as config from "../../env";
-import {Participant, Stage} from "./model";
+import * as config from "../../../env";
+import {Participant, Stage} from "../model";
 import {
     CreateStagePayload,
     CreateStageResult,
@@ -10,12 +10,13 @@ import {
     ParticipantRemovedPayload,
     StageEvents,
     StageRequests
-} from "./events/stage";
-import {extend, SocketWithRequest} from "../../util/SocketWithRequest";
+} from "../events/stage";
+import {extend, SocketWithRequest} from "../../../util/SocketWithRequest";
 import firebase from "firebase";
 import SocketIOClient from "socket.io-client";
 import {useWebRTC} from "./extensions/WebRTCP2PExtension";
 import omit from 'lodash.omit';
+import {useMediasoup} from "./extensions/MediasoupExtension";
 
 const HOST: string = config.SERVER_URL;
 const PORT: number = config.SERVER_PORT;
@@ -63,12 +64,11 @@ export const useStageController = (props: {
     const [error, setError] = useState<Error>();
     const {stage, setStage, /*remoteParticipants, setRemoteParticipants*/} = useContext<StageProps>(StageContext);
     const {setPublishedTracks: setP2PTracks} = useWebRTC({socket, stage, useHighBitrate: false});
-    const [localMediasoupStream, setLocalMediasoupStream] = useState<{
-        [trackId: string]: MediaStreamTrack
-    }>();
+    const {setPublishedTracks: setMediasoupTrack} = useMediasoup({socket, stage});
+
     const publishTrack = useCallback((track: MediaStreamTrack, type: "mediasoup" | "p2p" = "p2p") => {
         if (type === "mediasoup") {
-            setLocalMediasoupStream(prevState => ({
+            setMediasoupTrack(prevState => ({
                 ...prevState,
                 [track.id]: track
             }));
@@ -83,11 +83,11 @@ export const useStageController = (props: {
 
     const unpublishTrack = useCallback((trackId: string, type: "mediasoup" | "p2p" = "p2p") => {
         if (type === "mediasoup") {
-            setLocalMediasoupStream(prevState => omit(prevState, trackId));
+            setMediasoupTrack(prevState => omit(prevState, trackId));
         } else {
             setP2PTracks(prevState => omit(prevState, trackId));
         }
-    }, [localMediasoupStream, setP2PTracks]);
+    }, [setMediasoupTrack, setP2PTracks]);
 
     useEffect(() => {
         if (props.user)

@@ -6,7 +6,7 @@ import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/theme/Layout";
 import Loading from "../components/theme/Loading";
-import {useStageController} from "../lib/digitalstage/useStage";
+import {useStageController} from "../lib/digitalstage/hooks/useStage";
 
 export default () => {
     const {user, loading} = useAuth();

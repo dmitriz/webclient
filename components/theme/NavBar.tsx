@@ -4,7 +4,7 @@ import {Button} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
-import {useStage} from "../../lib/digitalstage/useStage";
+import {useStage} from "../../lib/digitalstage/hooks/useStage";
 
 const NavContainer = styled("div", (props: {
     $visible: boolean

@@ -3,7 +3,7 @@ import CenteredCard from "./CenteredCard";
 import {styled} from "baseui";
 import React, {useEffect} from "react";
 import NavBar from "./NavBar";
-import {useStage} from "../../lib/digitalstage/useStage";
+import {useStage} from "../../lib/digitalstage/hooks/useStage";
 import {useDarkModeSwitch} from "../../lib/useDarkModeSwitch";
 
 const MarginTop = styled("div", {
