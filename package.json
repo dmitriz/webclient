@@ -22,7 +22,6 @@
     "js-cookie": "latest",
     "lodash.debounce": "^4.0.8",
     "lodash.omit": "^4.5.0",
-    "mediasoup": "^3.5.9",
     "mediasoup-client": "^3.6.5",
     "next": "^9.3.5",
     "next-cookies": "latest",

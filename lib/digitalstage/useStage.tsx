@@ -2,7 +2,7 @@ import React, {useCallback, useContext, useEffect, useState} from "react";
 import StageConnector from "./StageConnector";
 import * as config from "../../env";
 import {Stage} from "./model";
-import {CreateStageResult, JoinStageResult} from "./events";
+import {CreateStageResult, JoinStageResult} from "./events/stage";
 
 const HOST: string = config.SERVER_URL;
 const PORT: number = config.SERVER_PORT;

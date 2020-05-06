@@ -3,7 +3,7 @@ import SocketIOClient from "socket.io-client";
 import firebase from "firebase/app";
 import "firebase/auth";
 import MediasoupConnector from "./extensions/MediasoupConnector";
-import {CreateStagePayload, CreateStageResult, JoinStagePayload, JoinStageResult, StageRequests} from "./events";
+import {CreateStagePayload, CreateStageResult, JoinStagePayload, JoinStageResult, StageRequests} from "./events/stage";
 
 
 export class NotConnectedError extends Error {
