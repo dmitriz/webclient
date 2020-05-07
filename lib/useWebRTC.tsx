@@ -34,11 +34,18 @@ const configuration: RTCConfiguration = {
 };
 
 export default (props: {
-    localStream?: MediaStream,
+    tracks?: {
+        [trackId: string]: MediaStreamTrack
+    },
     useHighBitrate?: boolean
 }) => {
     const [initialized, setInitialized] = useState<boolean>(false);
     const {stage, setStage, socket} = useConnection();
+    const [mediaStream, setMediaStream] = useState<MediaStream>();
+
+    useEffect(() => {
+        setMediaStream(new MediaStream());
+    }, []);
 
     useEffect(() => {
         if (socket && stage) {
@@ -75,21 +82,21 @@ export default (props: {
 
     useEffect(() => {
         console.log("local stream changed?");
-        if (stage && props.localStream) {
+        if (stage && props.tracks) {
             Object.values(stage.participants)
                 .forEach((remoteParticipant: Participant) => {
                     if (remoteParticipant.webRTC.rtcPeerConnection) {
-                        props.localStream.getTracks().forEach(
-                            (track: MediaStreamTrack) => {
-                                if (!remoteParticipant.webRTC.rtcPeerConnection.getSenders().find((sender: RTCRtpSender) => sender.track.id === track.id)) {
+                        Object.values(props.tracks)
+                            .forEach((track: MediaStreamTrack) => {
+                                if (!remoteParticipant.webRTC.rtcPeerConnection.getSenders().find((sender: RTCRtpSender) => sender.track && sender.track.id === track.id)) {
                                     console.log("Send " + track.kind + " to " + remoteParticipant.displayName);
-                                    remoteParticipant.webRTC.rtcPeerConnection.addTrack(track, props.localStream);
+                                    remoteParticipant.webRTC.rtcPeerConnection.addTrack(track);
                                 }
                             });
-                        // Also clrean up
+                        // Also clean up
                         remoteParticipant.webRTC.rtcPeerConnection.getSenders()
                             .forEach((sender: RTCRtpSender) => {
-                                if (!props.localStream.getTrackById(sender.track.id)) {
+                                if (sender.track && !props.tracks[sender.track.id]) {
                                     console.log("Remove " + sender.track.kind + " from " + remoteParticipant.displayName);
                                     remoteParticipant.webRTC.rtcPeerConnection.removeTrack(sender);
                                 }
@@ -97,7 +104,7 @@ export default (props: {
                     }
                 });
         }
-    }, [props.localStream, stage]);
+    }, [props.tracks, stage]);
 
 
     const makeOffer = useCallback((remoteParticipant: Participant) => {
@@ -204,10 +211,10 @@ export default (props: {
         // And add playback track
         //TODO: Is this fallback for chrome still neccessary? ICE need at least one track to connect
         rtcPeerConnection.createDataChannel("initChannel");
-        if (props.localStream) {
-            props.localStream.getTracks().forEach(
+        if (props.tracks) {
+            Object.values(props.tracks).forEach(
                 (track: MediaStreamTrack) => {
-                    rtcPeerConnection.addTrack(track, props.localStream)
+                    rtcPeerConnection.addTrack(track, mediaStream)
                 });
         }
         rtcPeerConnection.onicecandidateerror = (error) => {
@@ -226,6 +233,7 @@ export default (props: {
             }
         };
         rtcPeerConnection.ontrack = (ev: RTCTrackEvent) => {
+            console.log("ontrack");
             const stream: MediaStream = remoteParticipant.stream;
             ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
                 stream.addTrack(track);
@@ -243,7 +251,7 @@ export default (props: {
             }));
         };
         return rtcPeerConnection;
-    }, [socket, props.localStream]);
+    }, [socket, props.tracks]);
 
     return {}
 }

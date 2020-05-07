@@ -5,6 +5,7 @@ import Loading from "../components/theme/Loading";
 import {FormControl} from "baseui/form-control";
 import {useCallback, useEffect, useState} from "react";
 import {Input} from "baseui/input";
+import omit from 'lodash.omit';
 import {Button, SIZE} from "baseui/button";
 import useConnector from "../lib/useConnector";
 import useWebRTC from "../lib/useWebRTC";
@@ -23,17 +24,6 @@ const AudioTransferOptions: Value = [
     {label: "Soundjack", id: "soundjack"}
 ];
 
-const removeTrackFromStream = (stream: MediaStream, track: MediaStreamTrack): MediaStream => {
-    stream.removeTrack(track);
-    return stream;
-};
-const addTrackToStream = (stream: MediaStream, track: MediaStreamTrack): MediaStream => {
-    stream.addTrack(track);
-    console.log("Added track: ");
-    console.log(track);
-    return stream;
-};
-
 export default () => {
     const router = useRouter();
     const {user, loading} = useAuth();
@@ -42,62 +32,56 @@ export default () => {
     const {connected, stage, join} = useConnector({user});
 
     // Streaming
-    const [webRTCStream, setWebRTCStream] = useState<MediaStream>();
-    const [mediasoupStream, setMediasoupStream] = useState<MediaStream>();
-    const {} = useWebRTC({localStream: webRTCStream});
-    const {} = useMediasoup({localStream: mediasoupStream});
+    const [webRTCTracks, setWebRTCTracks] = useState<{
+        [trackId: string]: MediaStreamTrack
+    }>();
+    const [mediasoupTracks, setMediasoupTracks] = useState<{
+        [trackId: string]: MediaStreamTrack
+    }>();
+    const {} = useWebRTC({tracks: webRTCTracks});
+    const {} = useMediasoup({tracks: mediasoupTracks});
 
     // Streaming video/audio distribution
-    const [localAudioStream, setLocalAudioStream] = useState<MediaStream>();
-    const [localVideoStream, setLocalVideoStream] = useState<MediaStream>();
+    const [localAudioTracks, setLocalAudioTracks] = useState<{
+        [trackId: string]: MediaStreamTrack
+    }>();
+    const [localVideoStream, setLocalVideoStream] = useState<{
+        [trackId: string]: MediaStreamTrack
+    }>();
     const [videoTransferMethod, setVideoTransferMethod] = useState<Value>([VideoTransferOptions[0]]);
     const [audioTransferMethod, setAudioTransferMethod] = useState<Value>([AudioTransferOptions[0]]);
 
     useEffect(() => {
-        setLocalAudioStream(new MediaStream());
-        setLocalVideoStream(new MediaStream());
-        setWebRTCStream(new MediaStream());
-        setMediasoupStream(new MediaStream());
-    }, []);
-
-    useEffect(() => {
         if (localVideoStream)
-            localVideoStream.getVideoTracks().forEach((track: MediaStreamTrack) => {
+            Object.values(localVideoStream).forEach((track: MediaStreamTrack) => {
                 if (videoTransferMethod[0].id === "p2p") {
                     console.log("Set to webrtc");
-                    setMediasoupStream(prev => removeTrackFromStream(prev, track));
-                    setWebRTCStream(prev => {
-                        prev.addTrack(track);
-                        return prev;
-                    });
+                    setMediasoupTracks(prev => omit(prev, track.id));
+                    setWebRTCTracks(prev => ({...prev, [track.id]: track}));
                 } else {
-                    setMediasoupStream(prev => addTrackToStream(prev, track));
-                    setWebRTCStream(prev => removeTrackFromStream(prev, track));
+                    setWebRTCTracks(prev => omit(prev, track.id));
+                    setMediasoupTracks(prev => ({...prev, [track.id]: track}));
                 }
             });
     }, [localVideoStream, videoTransferMethod]);
 
     useEffect(() => {
         console.log("update");
-    }, [webRTCStream]);
+    }, [webRTCTracks]);
 
     useEffect(() => {
-        if (localAudioStream)
-            localAudioStream.getAudioTracks().forEach((track: MediaStreamTrack) => {
-                if (audioTransferMethod[0].id === "p2p") {
+        if (localAudioTracks)
+            Object.values(localAudioTracks).forEach((track: MediaStreamTrack) => {
+                if (videoTransferMethod[0].id === "p2p") {
                     console.log("Set to webrtc");
-                    setMediasoupStream(prev => removeTrackFromStream(prev, track));
-                    setWebRTCStream(prev => addTrackToStream(prev, track));
-                } else if (audioTransferMethod[0].id === "mediasoup") {
-                    setMediasoupStream(prev => addTrackToStream(prev, track));
-                    setWebRTCStream(prev => removeTrackFromStream(prev, track));
+                    setMediasoupTracks(prev => omit(prev, track.id));
+                    setWebRTCTracks(prev => ({...prev, [track.id]: track}));
                 } else {
-                    // Soundjack
-                    setMediasoupStream(prev => removeTrackFromStream(prev, track));
-                    setWebRTCStream(prev => removeTrackFromStream(prev, track));
+                    setWebRTCTracks(prev => omit(prev, track.id));
+                    setMediasoupTracks(prev => ({...prev, [track.id]: track}));
                 }
             });
-    }, [localAudioStream, videoTransferMethod]);
+    }, [localAudioTracks, videoTransferMethod]);
 
     const joinStage = useCallback(() => {
         if (user && connected) {
@@ -106,10 +90,14 @@ export default () => {
                 audio: true
             })
                 .then((mediaStream: MediaStream) => {
-                    mediaStream.getAudioTracks().forEach((track: MediaStreamTrack) => localAudioStream.addTrack(track));
-                    mediaStream.getVideoTracks().forEach((track: MediaStreamTrack) => localVideoStream.addTrack(track));
-
-                    mediaStream.getVideoTracks().forEach((track: MediaStreamTrack) => webRTCStream.addTrack(track));
+                    mediaStream.getAudioTracks().forEach((track: MediaStreamTrack) => setLocalAudioTracks(prev => ({
+                        ...prev,
+                        [track.id]: track
+                    })));
+                    mediaStream.getVideoTracks().forEach((track: MediaStreamTrack) => setLocalVideoStream(prev => ({
+                        ...prev,
+                        [track.id]: track
+                    })));
 
                     join(stageId, password)
                         .then(() => {
@@ -133,7 +121,6 @@ export default () => {
     if (stage) {
         console.log(stage)
     }
-
 
     return (
         <Layout>
