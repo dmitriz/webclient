@@ -6,10 +6,10 @@ import {FormControl} from "baseui/form-control";
 import {useCallback, useState} from "react";
 import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
-import useConnector from "../lib2/useConnector";
-import useWebRTC from "../lib2/useWebRTC";
-import useMediasoup from "../lib2/useMediasoup";
-import {Participant} from "../lib/digitalstage/model";
+import useConnector from "../lib/useConnector";
+import useWebRTC from "../lib/useWebRTC";
+import useMediasoup from "../lib/useMediasoup";
+import {Participant} from "../lib/model";
 import Video from "../components/video/Video";
 
 export default () => {

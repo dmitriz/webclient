@@ -1,5 +1,5 @@
 import React, {Dispatch, SetStateAction, useContext, useState} from "react";
-import {Stage} from "../lib/digitalstage/model";
+import {Stage} from "./model";
 import {SocketWithRequest} from "../util/SocketWithRequest";
 
 export interface ConnectionProps {

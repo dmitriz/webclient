@@ -9,8 +9,8 @@ import {
     SendCandidatePayload,
     WebP2PEvents,
     WebP2PSends
-} from "../lib/digitalstage/events/webrtcp2p";
-import {Participant} from "../lib/digitalstage/model";
+} from "./events/webrtcp2p";
+import {Participant} from "./model";
 
 const configuration: RTCConfiguration = {
     iceServers: [

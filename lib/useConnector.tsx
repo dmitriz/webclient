@@ -1,5 +1,5 @@
 import {useCallback, useEffect} from "react";
-import {Participant, Stage, StageFromServer} from "../lib/digitalstage/model";
+import {Participant, Stage, StageFromServer} from "./model";
 import {extend, SocketWithRequest} from "../util/SocketWithRequest";
 import firebase from "firebase/app";
 import SocketIOClient from "socket.io-client";
@@ -12,7 +12,7 @@ import {
     ParticipantAddedPayload,
     StageEvents,
     StageRequests
-} from "../lib/digitalstage/events/stage";
+} from "./events/stage";
 import {useConnection} from "./useConnection";
 
 const HOST: string = config.SERVER_URL;

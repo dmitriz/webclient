@@ -5,7 +5,7 @@ import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {AuthContextProvider} from "../lib/useAuth";
 import {DarkModeContext} from '../lib/useDarkModeSwitch';
-import {ConnectionProvider} from "../lib2/useConnection";
+import {ConnectionProvider} from "../lib/useConnection";
 
 interface Props {
 
