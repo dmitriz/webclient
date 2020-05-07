@@ -1,19 +1,25 @@
 import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
 import {Button} from "baseui/button";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/theme/Layout";
 import Loading from "../components/theme/Loading";
-import {useStageController} from "../lib/digitalstage/hooks/useStage";
+import {useStage} from "../lib/digitalstage/repositories/StageConnector";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {stage, create} = useStageController({user});
+    const {connect, stage, create} = useStage();
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
+
+    useEffect(() => {
+        if (user) {
+            connect(user);
+        }
+    }, [user]);
 
     if (loading) {
         return (

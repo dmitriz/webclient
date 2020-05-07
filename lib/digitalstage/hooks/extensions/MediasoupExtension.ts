@@ -104,7 +104,7 @@ export const useMediasoup = (props: {
         console.log(consumerOptions);
         const consumer: Consumer = await receiveTransport.consume(consumerOptions);
         await props.socket.request(MediasoupRequests.FinishConsume, {
-            userId: remoteParticipant.userId,
+            transportId: receiveTransport.id,
             consumerId: consumerOptions.id
         } as MediasoupFinishConsumePayload);
         consumer.resume();
@@ -132,10 +132,11 @@ export const useMediasoup = (props: {
                         .then(() => console.log('c > s: stg/ms/connect-transport'))
                         .catch(errCallback);
                 });
-                sendTransport.on('produce', async ({kind, rtpParameters, appData}, callback) => {
+                sendTransport.on('produce', async ({id, kind, rtpParameters, appData}, callback) => {
                     console.log('c > s: stg/ms/send-track (kind=' + kind + ')');
                     const result = await props.socket.request(MediasoupRequests.SendTrack, {
                         transportId: sendTransportOptions.id,
+                        id,
                         kind,
                         rtpParameters,
                     } as MediasoupSendTrackPayload);

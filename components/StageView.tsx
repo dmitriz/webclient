@@ -1,48 +1,69 @@
-import Layout from "./theme/Layout";
-import {useCallback, useEffect, useState} from "react";
-import {useStageController} from "../lib/digitalstage/hooks/useStage";
+import React, {useCallback, useEffect, useState} from "react";
 import {Button} from "baseui/button";
 import Video from "./video/Video";
 import {useAuth} from "../lib/useAuth";
+import {useStage} from "../lib/digitalstage/repositories/StageConnector";
+import {ALIGN, HeaderNavigation, StyledNavigationList} from "baseui/header-navigation";
+import {styled} from "baseui";
+import {Checkbox, STYLE_TYPE} from "baseui/checkbox";
 
-export default (props: {}) => {
+const StageNav = styled("div", {});
+
+export default () => {
     const {user} = useAuth();
-    const {stage, publishTrack, unpublishTrack} = useStageController({user});
-    const [useP2P, setP2P] = useState<boolean>();
-    const [localStream, setLocalStream] = useState<MediaStream>();
+    const {stage, publishTrack} = useStage();
+    const [useSoundjack, setUseSoundjack] = useState<boolean>(false);
 
     useEffect(() => {
-        if (localStream) {
-            localStream.getTracks().forEach((track: MediaStreamTrack) => {
-                publishTrack(track);
-            })
-        }
-    }, [localStream]);
+        console.log("STAGE UPDATED");
+    }, [stage]);
 
     const publish = useCallback(() => {
         navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
         })
-            .then((mediaStream: MediaStream) => setLocalStream(mediaStream))
+            .then((mediaStream: MediaStream) => mediaStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "mediasoup")));
     }, []);
 
+    console.log(stage);
+
     return (
-        <Layout>
+        <>
+            <StageNav>
+                <HeaderNavigation>
+                    <StyledNavigationList $align={ALIGN.left}>
+                        <Button>
+
+                        </Button>
+                        <Checkbox
+                            checked={useSoundjack}
+                            onChange={e => {
+                                setUseSoundjack(e.currentTarget.checked)
+                            }}
+                            checkmarkType={STYLE_TYPE.toggle_round}
+                        >
+                            Soundjack
+                        </Checkbox>
+                    </StyledNavigationList>
+                </HeaderNavigation>
+            </StageNav>
             <Button onClick={() => publish()}>PUBLISH</Button>
             <h1>{stage.name}</h1>
+            <h2>{user.displayName}</h2>
             <div>
                 {Object.keys(stage.participants).map((userId: string) => (
                     <div key={userId}>
-                        {stage.participants[userId].stream.getTracks().length > 0 && (
-                            <Video id={userId} stream={stage.participants[userId].stream}/>
-                        )}
+                        <h3>{stage.participants[userId].displayName}</h3>
+                        {Object.keys(stage.participants[userId].videoTracks).map((trackId: string) => (
+                            <Video id={userId} track={stage.participants[userId].videoTracks[trackId]}/>
+                        ))}
                     </div>
                 ))}
             </div>
             <p>
                 {Object.keys(stage.participants).length} Participants
             </p>
-        </Layout>
+        </>
     )
 }

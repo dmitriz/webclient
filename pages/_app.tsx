@@ -4,8 +4,8 @@ import {Provider as StyletronProvider} from 'styletron-react'
 import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {AuthContextProvider} from "../lib/useAuth";
-import {StageProvider} from "../lib/digitalstage/hooks/useStage";
 import {DarkModeContext} from '../lib/useDarkModeSwitch';
+import {StageProvider} from '../lib/digitalstage/repositories/StageConnector';
 
 interface Props {
 

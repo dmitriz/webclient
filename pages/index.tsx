@@ -8,22 +8,20 @@ import {Input} from "baseui/input";
 import {Button, SIZE} from "baseui/button";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/StageView";
-import {useStageController} from "../lib/digitalstage/hooks/useStage";
+import {useStage} from "../lib/digitalstage/repositories/StageConnector";
 
 export default () => {
     const router = useRouter();
     const {user, loading} = useAuth();
-    const {stage, join, error, publishTrack} = useStageController({user});
+    const {connect, stage, join, error} = useStage();
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
 
     useEffect(() => {
-        navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        })
-            .then((mediaStream: MediaStream) => mediaStream.getTracks().forEach((track: MediaStreamTrack) => publishTrack(track, "mediasoup")))
-    }, []);
+        if (user) {
+            connect(user);
+        }
+    }, [user]);
 
     if (loading) {
         return (

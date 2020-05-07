@@ -113,6 +113,8 @@ export const useStageController = (props: {
                     ...prevState.participants,
                     [data.userId]: {
                         ...data,
+                        videoTracks: {},
+                        audioTracks: {},
                         webRTC: {
                             established: false
                         },
@@ -172,6 +174,8 @@ export const useStageController = (props: {
                             webRTC: {
                                 established: false
                             },
+                            videoTracks: {},
+                            audioTracks: {},
                             stream: new MediaStream(),
                             consumers: {}
                         };
@@ -211,6 +215,8 @@ export const useStageController = (props: {
                             webRTC: {
                                 established: false
                             },
+                            videoTracks: {},
+                            audioTracks: {},
                             stream: new MediaStream(),
                             consumers: {}
                         };

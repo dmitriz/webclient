@@ -4,7 +4,8 @@ import {
     IceParameters,
     MediaKind,
     RtpCapabilities,
-    RtpParameters
+    RtpParameters,
+    SctpParameters
 } from "mediasoup-client/lib/types";
 
 /**
@@ -16,7 +17,7 @@ export const MediasoupRequests = {
     GetRTPCapabilities: "ms/get-rtp-capabilities",
     CreateReceiveTransport: "ms/create-receive-transport",
     CreateSendTransport: "ms/create-send-transport",
-    ConnectTransport: "ms/create-receive-transport",
+    ConnectTransport: "ms/connect-transport",
     SendTrack: "ms/send-track",
     Consume: "ms/consume",
     FinishConsume: "ms/finish-consume"
@@ -33,9 +34,16 @@ export interface MediasoupSentTransportPayload {
 // For both send and receive
 export interface MediasoupTransportResult {
     id: string;
-    iceParameters: IceParameters,
-    iceCandidates: IceCandidate[],
-    dtlsParameters: DtlsParameters
+    iceParameters: IceParameters;
+    iceCandidates: IceCandidate[];
+    dtlsParameters: DtlsParameters;
+    sctpParameters?: SctpParameters;
+    iceServers?: RTCIceServer[];
+    iceTransportPolicy?: RTCIceTransportPolicy;
+    additionalSettings?: any;
+    proprietaryConstraints?: any;
+    appData?: any;
+    error?: string;
 }
 
 // For both send and receive
@@ -56,7 +64,7 @@ export interface MediasoupSendTrackPayload {
 }
 
 export interface MediasoupSendTrackResult {
-    producerId: string;
+    id: string;
 }
 
 export interface MediasoupConsumePayload {
@@ -66,7 +74,7 @@ export interface MediasoupConsumePayload {
 }
 
 export interface MediasoupConsumeResult {
-    consumerId: string;
+    id: string;
     kind: MediaKind;
     rtpParameters: RtpParameters;
     producerPaused: boolean;
@@ -74,7 +82,7 @@ export interface MediasoupConsumeResult {
 }
 
 export interface MediasoupFinishConsumePayload {
-    userId: string;
+    transportId: string;
     consumerId: string;
 }
 
