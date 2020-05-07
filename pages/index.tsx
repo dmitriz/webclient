@@ -18,7 +18,7 @@ export default () => {
     const [stageId, setStageId] = useState<string>("VmaFVwEGz9CO7odY0Vbw");
     const [password, setPassword] = useState<string>("hello");
     const [localStream, setLocalStream] = useState<MediaStream>();
-    const {connected, stage, join, create} = useConnector({user});
+    const {connected, stage, join} = useConnector({user});
     const {} = useWebRTC({localStream});
     const {} = useMediasoup({localStream});
 

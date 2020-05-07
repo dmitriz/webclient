@@ -6,20 +6,14 @@ import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/theme/Layout";
 import Loading from "../components/theme/Loading";
-import {useStage} from "../lib/digitalstage/repositories/StageConnector";
+import useConnector from "../lib/useConnector";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {connect, stage, create} = useStage();
+    const {stage, create} = useConnector({user});
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
-
-    useEffect(() => {
-        if (user) {
-            connect(user);
-        }
-    }, [user]);
 
     if (loading) {
         return (

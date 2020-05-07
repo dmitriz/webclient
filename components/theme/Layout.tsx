@@ -3,8 +3,8 @@ import CenteredCard from "./CenteredCard";
 import {styled} from "baseui";
 import React, {useEffect} from "react";
 import NavBar from "./NavBar";
-import {useStage} from "../../lib/digitalstage/hooks/useStage";
 import {useDarkModeSwitch} from "../../lib/useDarkModeSwitch";
+import {useConnection} from "../../lib/useConnection";
 
 const MarginTop = styled("div", {
     marginTop: '10vh'
@@ -24,7 +24,7 @@ const Background = styled('div', (props: {
 export default (props: {
     children: React.ReactNode
 }) => {
-    const {stage} = useStage();
+    const {stage} = useConnection();
     const {darkMode, setDarkMode} = useDarkModeSwitch();
 
     useEffect(() => {

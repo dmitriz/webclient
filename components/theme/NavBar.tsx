@@ -4,7 +4,7 @@ import {Button} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
-import {useStage} from "../../lib/digitalstage/hooks/useStage";
+import {useConnection} from "../../lib/useConnection";
 
 const NavContainer = styled("div", (props: {
     $visible: boolean
@@ -27,7 +27,7 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
-    const {stage} = useStage();
+    const {stage} = useConnection();
 
     return (
         <NavContainer $visible={stage === undefined}>

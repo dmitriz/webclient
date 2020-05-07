@@ -46,20 +46,21 @@ export default (props: {
                 socket.on(WebP2PEvents.AnswerMade, onAnswerMade);
                 socket.on(WebP2PEvents.CandidateSent, onCandidateSend);
 
-                Object.values(stage.participants)
-                    .forEach((remoteParticipant: Participant) => {
-                        console.log("Make offer to: " + remoteParticipant.displayName);
-                        makeOffer(remoteParticipant)
-                    });
 
                 setInitialized(true)
+            } else {
+                // Existing participants make offers to the new participant
+                Object.values(stage.participants)
+                    .forEach((remoteParticipant: Participant) => {
+                        if (!remoteParticipant.webRTC.rtcPeerConnection) {
+                            makeOffer(remoteParticipant);
+                        }
+                    });
             }
+
         }
     }, [socket, stage, initialized]);
 
-    useEffect(() => {
-        console.log("WEBRTC: Stage updated");
-    }, [stage]);
 
     const makeOffer = useCallback((remoteParticipant: Participant) => {
         console.log("makeOffer");
@@ -88,8 +89,10 @@ export default (props: {
     const onOfferMade = useCallback((data: OfferMadePayload) => {
         console.log("onOfferMade");
         const remoteParticipant: Participant = stage.participants[data.userId];
-        if (!remoteParticipant)
-            throw new Error("Not found");
+        if (!remoteParticipant) {
+            console.log(stage.participants);
+            throw new Error("Not found: " + data.userId);
+        }
         if (remoteParticipant.webRTC.rtcPeerConnection) {
             console.error("Got offer but have already peer connection established");
         }

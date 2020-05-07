@@ -22,18 +22,18 @@ const PORT: number = config.SERVER_PORT;
 const convertStageFromServer = (stageFromServer: StageFromServer, ownUserId: string): Stage => {
     const remoteParticipants: { [userId: string]: Participant } = {};
     Object.keys(stageFromServer.participants).forEach((userId: string) => {
-        //if (userId !== ownUserId) {
-        remoteParticipants[userId] = {
-            ...stageFromServer.participants[userId],
-            webRTC: {
-                established: false
-            },
-            videoTracks: {},
-            audioTracks: {},
-            stream: new MediaStream(),
-            consumers: {}
-        };
-        //}
+        if (userId !== ownUserId) {
+            remoteParticipants[userId] = {
+                ...stageFromServer.participants[userId],
+                webRTC: {
+                    established: false
+                },
+                videoTracks: {},
+                audioTracks: {},
+                stream: new MediaStream(),
+                consumers: {}
+            };
+        }
     });
     return {
         ...stageFromServer,
@@ -72,7 +72,7 @@ export default (props: {
             soundjack: false
         } as CreateStagePayload)
             .then((response: CreateStageResult) => {
-                if( response.stage ) {
+                if (response.stage) {
                     const stage: Stage = convertStageFromServer(response.stage, props.user.uid);
                     setStage(stage);
                 }
@@ -90,7 +90,7 @@ export default (props: {
             soundjack: false
         } as JoinStagePayload)
             .then((response: CreateStageResult) => {
-                if( response.stage ) {
+                if (response.stage) {
                     const stage: Stage = convertStageFromServer(response.stage, props.user.uid);
                     setStage(stage);
                 }
