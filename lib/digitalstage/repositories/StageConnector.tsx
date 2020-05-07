@@ -93,11 +93,19 @@ export class StageConnector {
             });
     };
 
+    public publishStream = (stream: MediaStream, type: "mediasoup" | "p2p") => {
+        if (type === "mediasoup") {
+        } else {
+            return this.webRTCConnector.setLocalStream(stream);
+        }
+    };
+
+
     public publishTrack = (track: MediaStreamTrack, type: "mediasoup" | "p2p") => {
         if (type === "mediasoup") {
             return this.mediasoupConnector.publishTrack(track);
         } else {
-            return this.mediasoupConnector.publishTrack(track);
+            return this.webRTCConnector.publishTrack(track);
         }
     };
 
@@ -125,11 +133,16 @@ export class StageConnector {
             participants: remoteParticipants
         };
         this.webRTCConnector = new WebRTCConnector(this.socket, this.stage);
+        this.webRTCConnector.onRemoteStreamAdded = (remoteParticipants: Participant, stream: MediaStream) => {
+            this.stage.participants[remoteParticipants.userId] = remoteParticipants;
+            if (this.onStageChanged)
+                this.onStageChanged(this.stage);
+        };
         this.mediasoupConnector = new MediasoupConnector(this.socket, this.stage);
         this.mediasoupConnector.onConsumerCreated = (userId: string, producerId: string, consumer: Consumer) => {
             this.stage.participants[userId].consumers[producerId] = consumer;
             this.stage.participants[userId].stream.addTrack(consumer.track);
-            if( consumer.track.kind === "video" ) {
+            if (consumer.track.kind === "video") {
                 this.stage.participants[userId].videoTracks[consumer.track.id] = consumer.track;
             } else {
                 this.stage.participants[userId].audioTracks[consumer.track.id] = consumer.track;
@@ -147,13 +160,12 @@ export class StageConnector {
     };
 
     private handleAddedOrUpdatedParticipant = (remoteParticipant: Participant) => {
+        console.log("handleAddedOrUpdatedParticipant");
         // Update mediasoup
         remoteParticipant.producerIds.forEach((producerId: string) => {
             if (!remoteParticipant.consumers[producerId])
                 this.mediasoupConnector.consume(remoteParticipant, producerId);
         });
-        // Update WebRTC
-        //TODO
     };
 
     private onParticipantAdded = (data: ParticipantAddedPayload) => {
@@ -211,6 +223,7 @@ export interface StageProps {
     join: any;
     error?: any;
     publishTrack: any;
+    publishStream: any;
     unpublishTrack: any;
 }
 
@@ -249,6 +262,10 @@ export const StageProvider = (props: {
         return stageConnector.publishTrack(track, type);
     }, [stageConnector]);
 
+    const publishStream = useCallback(async (stream: MediaStream, type: "mediasoup" | "p2p" = "p2p") => {
+        return stageConnector.publishStream(stream, type);
+    }, [stageConnector]);
+
     const unpublishTrack = useCallback((track: MediaStreamTrack) => {
 
     }, []);
@@ -258,6 +275,7 @@ export const StageProvider = (props: {
             create: create,
             connect: connect,
             join: join,
+            publishStream: publishStream,
             publishTrack: publishTrack,
             unpublishTrack: unpublishTrack,
             stage: stage,

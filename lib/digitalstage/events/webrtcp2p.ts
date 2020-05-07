@@ -6,7 +6,7 @@ export const WebP2PEvents = {
 };
 export const WebP2PSends = {
     MakeAnswer: "p2p/make-answer",
-    MakeOffer: "p2p/make-answer",
+    MakeOffer: "p2p/make-offer",
     SendCandidate: "p2p/send-candidate"
 };
 export interface MakeAnswerPayload {

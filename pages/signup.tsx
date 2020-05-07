@@ -1,5 +1,5 @@
 import SignUpForm from "../components/SignUpForm";
-import Layout from "../components/ui/Layout";
+import Layout from "../components/theme/Layout";
 
 export default () => {
 

@@ -82,8 +82,7 @@ export interface MediasoupConsumeResult {
 }
 
 export interface MediasoupFinishConsumePayload {
-    transportId: string;
-    consumerId: string;
+    id: string;
 }
 
 export interface MediasoupFinishConsumeResult {

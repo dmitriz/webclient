@@ -16,6 +16,18 @@ import {
 import {Consumer} from "mediasoup-client/lib/Consumer";
 import {Producer} from "mediasoup-client/lib/Producer";
 
+const iceServer: RTCIceServer = {
+    credential: "95ddd1a4-769f-11ea-a962-bea250b72c66",
+    credentialType: "password",
+    urls: ["turn:u3.xirsys.com:80?transport=udp",
+        "turn:u3.xirsys.com:3478?transport=udp",
+        "turn:u3.xirsys.com:80?transport=tcp",
+        "turn:u3.xirsys.com:3478?transport=tcp",
+        "turns:u3.xirsys.com:443?transport=tcp",
+        "turns:u3.xirsys.com:5349?transport=tcp"],
+    username: "A9V03PuTW8N9A3K8aEFra1taQjecR5LHlhW9DrjvZj1SvoGtMyhkj3XJLrYzAQpdAAAAAF6IzZ10b2JpYXM="
+};
+
 export class MediasoupConnector {
     private readonly socket: SocketWithRequest;
     private readonly stage: Stage;
@@ -59,8 +71,7 @@ export class MediasoupConnector {
         console.log('c > s: stg/ms/finish-consume');
         const consumer: Consumer = await this.recvTransport.consume(consumerOptions);
         await this.socket.request(MediasoupRequests.FinishConsume, {
-            transportId: this.recvTransport.id,
-            consumerId: consumerOptions.id
+            id: consumerOptions.id
         } as MediasoupFinishConsumePayload);
         consumer.resume();
         if (this.onConsumerCreated)
@@ -109,6 +120,7 @@ export class MediasoupConnector {
                     console.error(sendTransportOptions.error);
                     return;
                 }
+                sendTransportOptions.iceServers = [iceServer];
                 const sendTransport: mediasoup.types.Transport = device.createSendTransport(sendTransportOptions);
 
                 // Add handler
@@ -153,6 +165,7 @@ export class MediasoupConnector {
                     console.error(receiveTransportOptions.error);
                     return;
                 }
+                receiveTransportOptions.iceServers = [iceServer];
                 const receiveTransport: mediasoup.types.Transport = device.createRecvTransport(receiveTransportOptions);
 
                 // Add handler

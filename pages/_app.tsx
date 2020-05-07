@@ -5,7 +5,7 @@ import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {AuthContextProvider} from "../lib/useAuth";
 import {DarkModeContext} from '../lib/useDarkModeSwitch';
-import {StageProvider} from '../lib/digitalstage/repositories/StageConnector';
+import {ConnectionProvider} from "../lib2/useConnection";
 
 interface Props {
 
@@ -72,9 +72,9 @@ export default class MyApp extends App<Props, States> {
                         }
                         </style>
                         <AuthContextProvider>
-                            <StageProvider>
+                            <ConnectionProvider>
                                 <Component {...pageProps} />
-                            </StageProvider>
+                            </ConnectionProvider>
                         </AuthContextProvider>
                     </BaseProvider>
                 </DarkModeContext.Provider>

@@ -16,7 +16,7 @@ const OverlayControls = styled("div", {
 });
 
 export default (props: {
-    track: MediaStreamTrack,
+    stream: MediaStream,
     gainNode?: GainNode,
     muted?: boolean,
     className?: string,
@@ -26,13 +26,13 @@ export default (props: {
     const videoRef = useRef<HTMLVideoElement>();
 
     useEffect(() => {
-        if (props.track) {
-            videoRef.current.srcObject = new MediaStream([props.track]);
+        if (props.stream) {
+            videoRef.current.srcObject = props.stream;
         }
         return () => {
             videoRef.current.srcObject = null;
         };
-    }, [props.track]);
+    }, [props.stream]);
 
     useEffect(() => {
         if (props.gainNode)

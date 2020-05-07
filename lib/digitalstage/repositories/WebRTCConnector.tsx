@@ -35,6 +35,9 @@ const configuration: RTCConfiguration = {
 export class WebRTCConnector {
     private readonly socket: SocketWithRequest;
     private readonly stage: Stage;
+    private localStream: MediaStream;
+
+    public onRemoteStreamAdded: (remoteParticipant: Participant, stream: MediaStream) => void;
 
 
     public constructor(socket: SocketWithRequest, stage: Stage) {
@@ -46,11 +49,26 @@ export class WebRTCConnector {
         this.socket.on(WebP2PEvents.CandidateSent, this.onCandidateSend);
 
         Object.values(this.stage.participants).forEach((remoteParticipant: Participant) => {
+            console.log("Make offer");
             this.makeOffer(remoteParticipant);
         })
     };
 
+    public setLocalStream = (stream: MediaStream) => {
+        this.localStream = stream;
+    };
+
+    public publishTrack = (track: MediaStreamTrack) => {
+        Object.keys(this.stage.participants)
+            .forEach((userId: string) => {
+                if (this.stage.participants[userId].webRTC.rtcPeerConnection) {
+                    this.stage.participants[userId].webRTC.rtcPeerConnection.addTrack(track);
+                }
+            })
+    };
+
     private onOfferMade = (data: OfferMadePayload) => {
+        console.log("onOfferMade");
         if (!this.socket)
             return;
         // Find participant
@@ -79,10 +97,13 @@ export class WebRTCConnector {
                         answer: answer
                     } as MakeAnswerPayload)
                 });
+        } else {
+            console.error("Offer from unknown remote participant")
         }
     };
 
     private onAnswerMade = (data: AnswerMadePayload) => {
+        console.log("onAnswerMade");
         // Find participant
         const participant: Participant = this.stage.participants[data.userId];
         if (participant) {
@@ -95,13 +116,14 @@ export class WebRTCConnector {
     };
 
     private onCandidateSend = (data: CandidateSentPayload) => {
+        console.log("onCandidateSend");
         const remoteParticipant: Participant = this.stage.participants[data.userId];
         if (remoteParticipant) {
             return remoteParticipant.webRTC.rtcPeerConnection.addIceCandidate(data.candidate);
         }
     };
 
-    private makeOffer = (remoteParticipant: Participant) => {
+    public makeOffer = (remoteParticipant: Participant) => {
         if (!this.socket)
             return;
         if (remoteParticipant.webRTC.rtcPeerConnection) {
@@ -128,6 +150,7 @@ export class WebRTCConnector {
     };
 
     private sendCandidate = (targetUserId: string, candidate: RTCIceCandidateInit) => {
+        console.log("sendCandidate");
         if (!this.socket)
             return;
         this.socket.emit(WebP2PSends.SendCandidate, {
@@ -139,12 +162,11 @@ export class WebRTCConnector {
     private createRemoteConnection = (remoteParticipant: Participant): RTCPeerConnection => {
         const rtcPeerConnection: RTCPeerConnection = new RTCPeerConnection(configuration);
         // And add playback track
-        /*if (publishedTracks)
-            Object.values(publishedTracks).forEach(
-                (track: MediaStreamTrack) => {
-                    console.log("Adding playback track");
-                    rtcPeerConnection.addTrack(track)
-                });*/
+        if (this.localStream) {
+            this.localStream.getTracks().forEach((track: MediaStreamTrack) => {
+                rtcPeerConnection.addTrack(track, this.localStream);
+            })
+        }
         rtcPeerConnection.onicecandidateerror = (error) => {
             console.log('failed to add ICE Candidate');
             console.log(error.errorText);
@@ -163,9 +185,11 @@ export class WebRTCConnector {
         };
         rtcPeerConnection.ontrack = (ev: RTCTrackEvent) => {
             console.log("GOT TRACK");
-            ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
-                remoteParticipant.stream.addTrack(track);
-            });
+            const tracks: MediaStreamTrack[] = remoteParticipant.stream ? remoteParticipant.stream.getTracks() : [];
+            remoteParticipant.stream = ev.streams[0];
+            tracks.forEach((track) => remoteParticipant.stream.addTrack(track));
+            if (this.onRemoteStreamAdded)
+                this.onRemoteStreamAdded(remoteParticipant, remoteParticipant.stream);
         };
         return rtcPeerConnection;
     }

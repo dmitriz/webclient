@@ -14,7 +14,7 @@ export default () => {
     const {stage, joinStage, publishTrack} = useStage({
         user: user,
         host: config.SERVER_URL,
-        port: parseInt(config.SERVER_PORT)
+        port: config.SERVER_PORT
     });
 
     useEffect(() => {

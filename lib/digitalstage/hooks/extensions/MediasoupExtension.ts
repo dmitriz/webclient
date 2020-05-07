@@ -104,8 +104,7 @@ export const useMediasoup = (props: {
         console.log(consumerOptions);
         const consumer: Consumer = await receiveTransport.consume(consumerOptions);
         await props.socket.request(MediasoupRequests.FinishConsume, {
-            transportId: receiveTransport.id,
-            consumerId: consumerOptions.id
+            id: consumerOptions.id
         } as MediasoupFinishConsumePayload);
         consumer.resume();
         remoteParticipant.consumers[producerId] = consumer; // Without setStage
