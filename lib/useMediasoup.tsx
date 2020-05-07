@@ -2,7 +2,7 @@ import {useConnection} from "./useConnection";
 import {useEffect} from "react";
 
 export default (props: {
-    localStream: MediaStream
+    localStream?: MediaStream
 }) => {
     const {stage, socket} = useConnection();
 

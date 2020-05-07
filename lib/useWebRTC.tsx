@@ -11,6 +11,8 @@ import {
     WebP2PSends
 } from "./events/webrtcp2p";
 import {Participant} from "./model";
+import {convertParticipantFromServer} from "./useConnector";
+import {fixWebRTC} from "../util/fixWebRTC";
 
 const configuration: RTCConfiguration = {
     iceServers: [
@@ -32,7 +34,7 @@ const configuration: RTCConfiguration = {
 };
 
 export default (props: {
-    localStream: MediaStream,
+    localStream?: MediaStream,
     useHighBitrate?: boolean
 }) => {
     const [initialized, setInitialized] = useState<boolean>(false);
@@ -41,14 +43,21 @@ export default (props: {
     useEffect(() => {
         if (socket && stage) {
             if (!initialized) {
+                fixWebRTC();
+
                 console.log("WEBRTC: Initializing");
-                socket.on(WebP2PEvents.OfferMade, onOfferMade);
-                socket.on(WebP2PEvents.AnswerMade, onAnswerMade);
-                socket.on(WebP2PEvents.CandidateSent, onCandidateSend);
+                if (socket.connected) {
+                    socket.on(WebP2PEvents.OfferMade, onOfferMade);
+                    socket.on(WebP2PEvents.AnswerMade, onAnswerMade);
+                    socket.on(WebP2PEvents.CandidateSent, onCandidateSend);
+                } else {
+                    socket.on("connect", () => {
+                        socket.on(WebP2PEvents.OfferMade, onOfferMade);
+                        socket.on(WebP2PEvents.AnswerMade, onAnswerMade);
+                        socket.on(WebP2PEvents.CandidateSent, onCandidateSend);
+                    });
+                }
 
-
-                setInitialized(true)
-            } else {
                 // Existing participants make offers to the new participant
                 Object.values(stage.participants)
                     .forEach((remoteParticipant: Participant) => {
@@ -56,17 +65,43 @@ export default (props: {
                             makeOffer(remoteParticipant);
                         }
                     });
+
+                setInitialized(true)
+            } else {
             }
 
         }
     }, [socket, stage, initialized]);
 
+    useEffect(() => {
+        console.log("local stream changed?");
+        if (stage && props.localStream) {
+            Object.values(stage.participants)
+                .forEach((remoteParticipant: Participant) => {
+                    if (remoteParticipant.webRTC.rtcPeerConnection) {
+                        props.localStream.getTracks().forEach(
+                            (track: MediaStreamTrack) => {
+                                if (!remoteParticipant.webRTC.rtcPeerConnection.getSenders().find((sender: RTCRtpSender) => sender.track.id === track.id)) {
+                                    console.log("Send " + track.kind + " to " + remoteParticipant.displayName);
+                                    remoteParticipant.webRTC.rtcPeerConnection.addTrack(track, props.localStream);
+                                }
+                            });
+                        // Also clrean up
+                        remoteParticipant.webRTC.rtcPeerConnection.getSenders()
+                            .forEach((sender: RTCRtpSender) => {
+                                if (!props.localStream.getTrackById(sender.track.id)) {
+                                    console.log("Remove " + sender.track.kind + " from " + remoteParticipant.displayName);
+                                    remoteParticipant.webRTC.rtcPeerConnection.removeTrack(sender);
+                                }
+                            })
+                    }
+                });
+        }
+    }, [props.localStream, stage]);
+
 
     const makeOffer = useCallback((remoteParticipant: Participant) => {
         console.log("makeOffer");
-        if (remoteParticipant.webRTC.rtcPeerConnection) {
-            console.error("Handle this: make offer, but connection already there...");
-        }
         remoteParticipant.webRTC.rtcPeerConnection = createRemoteConnection(remoteParticipant);
         remoteParticipant.webRTC.rtcPeerConnection.createOffer()
             .then((offer: RTCSessionDescriptionInit) => {
@@ -88,13 +123,18 @@ export default (props: {
 
     const onOfferMade = useCallback((data: OfferMadePayload) => {
         console.log("onOfferMade");
-        const remoteParticipant: Participant = stage.participants[data.userId];
+        let remoteParticipant: Participant = stage.participants[data.participant.userId];
+        // Create participant
         if (!remoteParticipant) {
-            console.log(stage.participants);
-            throw new Error("Not found: " + data.userId);
-        }
-        if (remoteParticipant.webRTC.rtcPeerConnection) {
-            console.error("Got offer but have already peer connection established");
+            console.log("Participant " + data.participant.displayName + " not existing yet, creating it");
+            remoteParticipant = convertParticipantFromServer(data.participant);
+            setStage(prevState => ({
+                ...prevState,
+                participants: {
+                    ...prevState.participants,
+                    [remoteParticipant.userId]: remoteParticipant
+                }
+            }));
         }
         remoteParticipant.webRTC.rtcPeerConnection = createRemoteConnection(remoteParticipant);
         remoteParticipant.webRTC.rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
@@ -114,21 +154,31 @@ export default (props: {
                     targetUserId: remoteParticipant.userId,
                     answer: answer
                 } as MakeAnswerPayload)
-            });
+            })
+            .catch((error) => {
+                console.log("Cannot set local offer when createOffer has not been called.");
+                console.error(error);
+            })
     }, [socket, stage]);
 
     const onAnswerMade = useCallback((data: AnswerMadePayload) => {
         console.log("onAnswerMade");
         const remoteParticipant: Participant = stage.participants[data.userId];
-        if (!remoteParticipant)
-            throw new Error("Not found");
+        if (!remoteParticipant) {
+            console.error("Got answer from unknown peer");
+            return;
+        }
         if (!remoteParticipant.webRTC.rtcPeerConnection) {
             console.error("Got answer without established RTC peer connection");
             return;
         }
+        //TODO: Cannot create answer ...
         remoteParticipant.webRTC.rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
             console.log("Got answer");
-        })
+        }).catch((error) => {
+            console.log("No answer");
+            console.error(error)
+        });
     }, [socket, stage]);
 
     const onCandidateSend = useCallback((data: CandidateSentPayload) => {
@@ -152,11 +202,14 @@ export default (props: {
         console.log("createRemoteConnection");
         const rtcPeerConnection: RTCPeerConnection = new RTCPeerConnection(configuration);
         // And add playback track
-        if (props.localStream)
+        //TODO: Is this fallback for chrome still neccessary? ICE need at least one track to connect
+        rtcPeerConnection.createDataChannel("initChannel");
+        if (props.localStream) {
             props.localStream.getTracks().forEach(
                 (track: MediaStreamTrack) => {
                     rtcPeerConnection.addTrack(track, props.localStream)
                 });
+        }
         rtcPeerConnection.onicecandidateerror = (error) => {
             console.log('failed to add ICE Candidate');
             console.log(error.errorText);
@@ -165,16 +218,14 @@ export default (props: {
             console.log('ICE state change event: ', event);
         };
         rtcPeerConnection.onicecandidate = (ev: RTCPeerConnectionIceEvent) => {
-            console.log("ICE connected");
             if (ev.candidate && ev.candidate.candidate.length > 0) {
                 sendCandidate(remoteParticipant.userId, ev.candidate);
             } else {
-                console.log("Finished");
+                console.log("ICE finally finished :-)");
                 remoteParticipant.webRTC.established = true;
             }
         };
         rtcPeerConnection.ontrack = (ev: RTCTrackEvent) => {
-            console.log("GOT TRACK");
             const stream: MediaStream = remoteParticipant.stream;
             ev.streams[0].getTracks().forEach((track: MediaStreamTrack) => {
                 stream.addTrack(track);
@@ -192,7 +243,7 @@ export default (props: {
             }));
         };
         return rtcPeerConnection;
-    }, [socket]);
+    }, [socket, props.localStream]);
 
     return {}
 }

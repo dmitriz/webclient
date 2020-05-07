@@ -1,3 +1,4 @@
+import {ParticipantFromServer} from "../model";
 
 export const WebP2PEvents = {
     AnswerMade: "p2p/answer-made",
@@ -9,6 +10,7 @@ export const WebP2PSends = {
     MakeOffer: "p2p/make-offer",
     SendCandidate: "p2p/send-candidate"
 };
+
 export interface MakeAnswerPayload {
     answer: RTCSessionDescriptionInit,
     targetUserId: string;
@@ -26,7 +28,7 @@ export interface MakeOfferPayload {
 
 export interface OfferMadePayload {
     offer: RTCSessionDescriptionInit;
-    userId: string;
+    participant: ParticipantFromServer;
 }
 
 export interface SendCandidatePayload {

@@ -1,5 +1,5 @@
 import {useCallback, useEffect} from "react";
-import {Participant, Stage, StageFromServer} from "./model";
+import {Participant, ParticipantFromServer, Stage, StageFromServer} from "./model";
 import {extend, SocketWithRequest} from "../util/SocketWithRequest";
 import firebase from "firebase/app";
 import SocketIOClient from "socket.io-client";
@@ -18,6 +18,18 @@ import {useConnection} from "./useConnection";
 const HOST: string = config.SERVER_URL;
 const PORT: number = config.SERVER_PORT;
 
+export const convertParticipantFromServer = (participantFromServer: ParticipantFromServer): Participant => {
+    return {
+        ...participantFromServer,
+        webRTC: {
+            established: false
+        },
+        videoTracks: {},
+        audioTracks: {},
+        stream: new MediaStream(),
+        consumers: {}
+    };
+}
 
 const convertStageFromServer = (stageFromServer: StageFromServer, ownUserId: string): Stage => {
     const remoteParticipants: { [userId: string]: Participant } = {};
@@ -53,9 +65,17 @@ export default (props: {
                     const socket: SocketWithRequest = extend(SocketIOClient(HOST + ":" + PORT, {
                         query: {token}
                     }));
-                    socket.on(StageEvents.ParticipantAdded, onParticipantAdded);
-                    socket.on(StageEvents.ParticipantChanged, onParticipantChanged);
-                    socket.on(StageEvents.ParticipantRemoved, onParticipantRemoved);
+                    if( socket.connected ) {
+                        socket.on(StageEvents.ParticipantAdded, onParticipantAdded);
+                        socket.on(StageEvents.ParticipantChanged, onParticipantChanged);
+                        socket.on(StageEvents.ParticipantRemoved, onParticipantRemoved);
+                    } else {
+                        socket.on("connect", () => {
+                            socket.on(StageEvents.ParticipantAdded, onParticipantAdded);
+                            socket.on(StageEvents.ParticipantChanged, onParticipantChanged);
+                            socket.on(StageEvents.ParticipantRemoved, onParticipantRemoved);
+                        });
+                    }
                     setSocket(socket);
                     console.log("connected");
                 });
@@ -75,8 +95,9 @@ export default (props: {
                 if (response.stage) {
                     const stage: Stage = convertStageFromServer(response.stage, props.user.uid);
                     setStage(stage);
+                } else {
+                    console.error(response.error);
                 }
-                console.error(response.error);
             });
     }, [props.user, socket]);
 
@@ -93,30 +114,36 @@ export default (props: {
                 if (response.stage) {
                     const stage: Stage = convertStageFromServer(response.stage, props.user.uid);
                     setStage(stage);
+                } else {
+                    console.error(response.error);
                 }
-                console.error(response.error);
             });
     }, [props.user, socket]);
 
     const onParticipantAdded = useCallback((data: ParticipantAddedPayload) => {
+        if (!stage) {
+            return;
+        }
         if (data.userId === props.user.uid)
             return;
-        setStage(prevState => ({
-            ...prevState,
-            participants: {
-                ...prevState.participants,
-                [data.userId]: {
-                    ...data,
-                    videoTracks: {},
-                    audioTracks: {},
-                    webRTC: {
-                        established: false
-                    },
-                    stream: new MediaStream(),
-                    consumers: {}
+        // There may be a race condition (participant already created by webrtc, mediasoup or soundjack
+        if (!stage.participants[data.userId])
+            setStage(prevState => ({
+                ...prevState,
+                participants: {
+                    ...prevState.participants,
+                    [data.userId]: {
+                        ...data,
+                        videoTracks: {},
+                        audioTracks: {},
+                        webRTC: {
+                            established: false
+                        },
+                        stream: new MediaStream(),
+                        consumers: {}
+                    }
                 }
-            }
-        }));
+            }));
     }, [stage, props.user]);
     const onParticipantChanged = useCallback((data: ParticipantAddedPayload) => {
         if (data.userId === this.user.uid)
