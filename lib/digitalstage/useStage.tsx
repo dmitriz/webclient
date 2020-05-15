@@ -135,7 +135,7 @@ export default () => {
     const [stage, setStage] = useState<Stage>();
 
 
-    const create = useCallback(() => {
+    const create = useCallback((name: string, password: string) => {
         if (stage) {
             return;
         }
@@ -145,13 +145,13 @@ export default () => {
 
     }, [stage]);
 
-    const join = useCallback(() => {
+    const join = useCallback((stageId: string) => {
         if (stage) {
             return;
         }
 
         // TODO: Join state, then listen
-        setStageId("mystageid");
+        setStageId(stageId);
     }, []);
 
     useEffect(() => {
