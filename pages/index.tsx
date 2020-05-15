@@ -40,7 +40,7 @@ export default () => {
             <FormControl label="Stage ID">
                 <Input value={stageId} onChange={(e) => setStageId(e.currentTarget.value)}/>
             </FormControl>
-            <Button onClick={() => join('APDCnkEtjiNYAkEkQoEG')}>Join</Button>
+            <Button disabled={!stageId} onClick={() => join('APDCnkEtjiNYAkEkQoEG')}>Join</Button>
         </Container>
     )
 }
