@@ -15,21 +15,21 @@
     "url": "git+https://github.com/digital-stage/webclient.git"
   },
   "dependencies": {
-    "baseui": "^9.72.0",
+    "baseui": "^9.78.0",
     "firebase": "latest",
     "formik": "latest",
     "isomorphic-unfetch": "^3.0.0",
     "js-cookie": "latest",
     "lodash.debounce": "^4.0.8",
     "lodash.omit": "^4.5.0",
-    "mediasoup": "^3.5.9",
     "mediasoup-client": "^3.6.5",
-    "next": "^9.3.5",
+    "next": "^9.4.0",
     "next-cookies": "latest",
-    "now": "^18.0.0",
+    "now": "^19.0.1",
+    "public-ip": "^4.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "socket.io-client": "latest",
+    "rxjs": "^6.5.5",
     "standardized-audio-context": "latest",
     "styletron-engine-atomic": "^1.4.6",
     "styletron-react": "^5.2.7",
@@ -37,13 +37,12 @@
     "yup": "latest"
   },
   "devDependencies": {
-    "@types/node": "^13.13.2",
-    "@types/react": "^16.9.34",
-    "@types/socket.io-client": "^1.4.32",
+    "@types/node": "^14.0.1",
+    "@types/react": "^16.9.35",
     "@types/styletron-engine-atomic": "^1.1.0",
     "@types/styletron-react": "^5.0.2",
     "@types/styletron-standard": "^2.0.0",
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.2"
   },
   "keywords": [
     "react",
