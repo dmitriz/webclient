@@ -3,7 +3,6 @@ import StageViewer from "../components/StageViewer";
 
 export default () => {
 
-
     return (
         <div>
             <StageViewer/>
