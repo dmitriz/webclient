@@ -106,7 +106,7 @@ async function evalStage(stageId: string): Promise<Stage> {
         });
     firebase
         .firestore()
-        .collection('stage')
+        .collection('stages')
         .doc(stageId)
         .onSnapshot(stageSnaps);
     firebase
