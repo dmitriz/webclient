@@ -134,7 +134,6 @@ export default () => {
     const [stageId, setStageId] = useState<string>();
     const [stage, setStage] = useState<Stage>();
 
-
     const create = useCallback((name: string, password: string) => {
         if (stage) {
             return;
