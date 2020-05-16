@@ -23,7 +23,7 @@ const Image2 = styled("img", {
 
 export default () => {
     const {join, stage} = useStage();
-    const [stageId, setStageId] = useState<string>("");
+    const [stageId, setStageId] = useState<string>("bEcaL5dSorKyCByQtgpW");
 
     if (stage) {
         <StageViewer stage={stage}/>
