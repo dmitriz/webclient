@@ -22,8 +22,8 @@ const Image2 = styled("img", {
 });
 
 export default () => {
-    const {create, join, stage} = useStage();
-    const [stageId, setStageId] = useState<string>();
+    const {join, stage} = useStage();
+    const [stageId, setStageId] = useState<string>("");
 
     if (stage) {
         <StageViewer stage={stage}/>
@@ -40,7 +40,7 @@ export default () => {
             <FormControl label="Stage ID">
                 <Input value={stageId} onChange={(e) => setStageId(e.currentTarget.value)}/>
             </FormControl>
-            <Button disabled={!stageId} onClick={() => join('APDCnkEtjiNYAkEkQoEG')}>Join</Button>
+            <Button disabled={stageId.length === 0} onClick={() => join('APDCnkEtjiNYAkEkQoEG')}>Join</Button>
         </Container>
     )
 }
