@@ -2,6 +2,8 @@ import firebase from "firebase/app";
 import "firebase/auth";
 import "firebase/firestore";
 import {Device} from "./databaseModels";
+import MediasoupConnector from "./MediasoupConnector";
+import SoundjackConnector from "./SoundjackConnector";
 
 
 export class DeviceConnector {
@@ -36,17 +38,28 @@ export class DeviceConnector {
 
     handleDeviceChange = (device: Device) => {
         if (device.receiveAudio) {
-            //TODO: Create consumer for all mediasoup audio producers as well as all soundjack connectors
+            MediasoupConnector.startReceivingAudio();
+            SoundjackConnector.startReceivingAudio();
+        } else {
+            MediasoupConnector.stopReceivingAudio();
+            SoundjackConnector.stopReceivingAudio();
         }
         if (device.receiveVideo) {
-            //TODO: Create consumer for all mediasoup video producers
+            MediasoupConnector.startReceivingVideo();
+        } else {
+            MediasoupConnector.stopReceivingVideo();
         }
         if (device.streamAudio) {
             if (device.streamAudio === "mediasoup") {
-                //TODO: Create mediasoup audio producer
+                SoundjackConnector.stopStreamingAudio();
+                MediasoupConnector.startStreamingAudio();
             } else if (device.streamAudio === "soundjack") {
-                //TODO: Set soundjack input device and connect to all soundjack connectors if not done yet
+                MediasoupConnector.stopStreamingAudio();
+                SoundjackConnector.startStreamingAudio();
             }
+        } else {
+            MediasoupConnector.stopStreamingAudio();
+            SoundjackConnector.stopStreamingAudio();
         }
     }
 
