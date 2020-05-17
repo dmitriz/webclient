@@ -114,14 +114,15 @@ async function evalStage(stageId: string): Promise<Stage> {
         .onSnapshot(stageSnaps);
     firebase
         .firestore()
-        .collection('producer')
+        .collection('producers/mediasoup')
         .where('stageId', '==', stageId)
         .onSnapshot(producerSnaps);
     firebase
         .firestore()
-        .collection('devices')
+        .collection('connectors/soundjack')
         .where('stageId', '==', stageId)
-        .onSnapshot(deviceSnaps);
+        .onSnapshot(producerSnaps);
+
     const members = membersEvaluated
         .pipe(
             map(evaluated => evaluated.members),
@@ -194,6 +195,8 @@ export default () => {
     return {
         join,
         create,
-        stage
+        localDevice,    //TODO: Let the local device control the video and audio streaming and receiving
+        remoteDevices,  //TODO: Here the user can control his/her remote devices
+        stage           //TODO: The stage object shall only display regaring the local device settings
     }
 }
