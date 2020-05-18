@@ -195,8 +195,8 @@ export default () => {
     return {
         join,
         create,
-        localDevice,    //TODO: Let the local device control the video and audio streaming and receiving
-        remoteDevices,  //TODO: Here the user can control his/her remote devices
+        //localDevice,    //TODO: Let the local device control the video and audio streaming and receiving
+       // remoteDevices,  //TODO: Here the user can control his/her remote devices
         stage           //TODO: The stage object shall only display regaring the local device settings
     }
 }
