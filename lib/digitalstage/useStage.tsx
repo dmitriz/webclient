@@ -1,202 +1,237 @@
-import {useCallback, useEffect, useState} from "react";
-import {BehaviorSubject, Observable, of, Subject} from "rxjs";
-import {Device, MediasoupProducer, Stage as DbStage, StageMember} from "./databaseModels";
-import {distinctUntilChanged, map, scan, shareReplay, skip} from "rxjs/operators";
-import firebase from 'firebase/app';
-import 'firebase/firestore';
-import {Consumer} from "mediasoup-client/lib/Consumer";
-import {MediasoupTransport, Member, Stage} from "./clientModels";
-import {useAuth} from "../useAuth";
+import firebase from "firebase/app";
+import "firebase/database";
+import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
+import fetch from "isomorphic-unfetch";
+import {AudioContext, IAudioContext} from 'standardized-audio-context';
+import * as omit from "lodash.omit";
 import * as env from "./../../env";
+import mediasoupClient from "mediasoup-client";
+import {
+    DatabaseStage,
+    DatabaseStageMember,
+    MediasoupAudioTrack,
+    MediasoupVideoTrack,
+    MediaTrack,
+    Stage,
+    StageMember,
+    StageMemberNew
+} from "./model";
+import {useAuth} from "./../useAuth";
+import {MediasoupConsumer, MediasoupDevice, useMediasoupDevice} from "./mediasoup/useMediasoupDevice";
 
-
-const fetchConsumerForProducer = (producerId: string): Promise<Consumer> => {
-    return null;
-}
-
-async function evalStage(stageId: string): Promise<Stage> {
-    const stageSnaps: Subject<firebase.firestore.QueryDocumentSnapshot> = new Subject();
-    const producerSnaps: Subject<firebase.firestore.QuerySnapshot> = new Subject();
-    const deviceSnaps: Subject<firebase.firestore.QuerySnapshot> = new Subject();
-    const stages: Observable<DbStage> = stageSnaps.pipe(map(snap => snap.data() as DbStage));
-    const name = stages.pipe(
-        map(stage => stage.name),
-        distinctUntilChanged(),
-        shareReplay(1),
-    );
-    const ownerUid = stages.pipe(
-        map(stage => stage.ownerUid),
-        distinctUntilChanged(),
-        shareReplay(1),
-    );
-    const membersEvaluated = stageSnaps.pipe(
-        scan((acc, snap) => {
-            const stage: DbStage = snap.data() as DbStage;
-            const {consumer, members} = acc;
-            const newMembers: StageMember[] = (acc.stage ? acc.stage.members : [])
-                .filter(newMember => acc.stage
-                    .findIndex(oldMember =>
-                        newMember.uid === oldMember.uid
-                    ) < 0
-                );
-            const deletedMembers: StageMember[] = (acc.stage ? acc.stage.members : [])
-                .filter(oldMember => stage.members
-                    .findIndex(newMember =>
-                        oldMember.uid === newMember.uid
-                    ) < 0
-                );
-            for (let member of newMembers) {
-                const transports: Observable<MediasoupTransport[]> = producerSnaps
-                    .pipe(
-                        map(snap => snap.docs
-                            .map(doc => {
-                                const data = doc.data() as MediasoupProducer;
-                                if (data.uid !== member.uid) {
-                                    return null;
-                                }
-                                return {
-                                    docId: doc.id,
-                                    mediasoupProducerId: data.mediasoupProducerId,
-                                    type: "mediasoup",
-                                    consumer: fetchConsumerForProducer(doc.id),
-                                } as MediasoupTransport;
-                            })
-                            .filter(producer => producer)
-                        ),
-                        distinctUntilChanged((x, y) => x.length !== y.length),
-                    );
-                const devices: Observable<Device[]> = deviceSnaps
-                    .pipe(
-                        map(snap => snap.docs
-                            .filter(doc => doc.data().uid !== member.uid)
-                            .map(doc => doc.data() as Device)
-                        ),
-                        distinctUntilChanged((x, y) => x.length !== y.length),
-                    );
-                const uiMember: Member = {
-                    uid: member.uid,
-                    role: of('artist'),
-                    displayName: of(member.displayName),
-                    outputVolume: new BehaviorSubject(0.9),
-                    transports,
-                    devices,
-                };
-                members.push(uiMember);
-            }
-            return {
-                members,
-                consumer,
-                deletedMembers,
-                newMembers,
-                stage,
-            };
-        }, {
-            consumer: {},
-            members: [],
-            deletedMembers: [],
-            newMembers: [],
-            stage: null,
-        }),
-        skip(1),
-    );
-    membersEvaluated
-        .pipe(
-            map(evaluated => evaluated.deletedMembers)
-        )
-        .subscribe(members => {
-            //mediasoup.cleanMembers(members);
-            // alltheotherhandlers.cleanMembers(members);
-        });
-    firebase
-        .firestore()
-        .collection('stages')
-        .doc(stageId)
-        .onSnapshot(stageSnaps);
-    firebase
-        .firestore()
-        .collection('producers/mediasoup')
-        .where('stageId', '==', stageId)
-        .onSnapshot(producerSnaps);
-    firebase
-        .firestore()
-        .collection('connectors/soundjack')
-        .where('stageId', '==', stageId)
-        .onSnapshot(producerSnaps);
-
-    const members = membersEvaluated
-        .pipe(
-            map(evaluated => evaluated.members),
-        );
+const createMediaTrack = (id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext): MediaTrack => {
+    if (consumer.kind === "audio") {
+        return new MediasoupAudioTrack(id, audioContext.createMediaStreamTrackSource(consumer.track));
+    }
     return {
-        name,
-        ownerUid,
-        members,
-    };
+        id: id,
+        type: "video",
+        track: consumer.track
+    } as MediasoupVideoTrack;
 }
 
-export default () => {
+interface StageProps {
+    create(name: string, password: string);
+
+    join(stageId: string, password: string);
+
+    stage?: Stage,
+
+    memberObjects?: { [uid: string]: StageMember }
+
+    error?: string;
+
+    members: StageMemberNew[];
+
+    mediasoupDevice: MediasoupDevice
+}
+
+const StageContext = createContext<StageProps>(undefined);
+
+export const useStage = () => useContext(StageContext);
+
+export const StageProvider = (props: {
+    children: React.ReactNode
+}) => {
     const {user} = useAuth();
-    const [stageId, setStageId] = useState<string>();
+    const [error, setError] = useState<string>();
     const [stage, setStage] = useState<Stage>();
+    const [members, setMembers] = useState<StageMemberNew[]>([]);
+    const [memberObjects, setMemberObjects] = useState<{ [uid: string]: StageMember }>({});
+
+    useEffect(() => {
+        if (user) {
+            firebase.database()
+                .ref("users")
+                .child(user.uid)
+                .update({
+                    uid: user.uid
+                });
+        }
+    }, [user]);
+
+    const onMemberAdded = useCallback((snapshot: firebase.database.DataSnapshot) => {
+        const member: DatabaseStageMember = snapshot.val();
+        console.log("Member added: " + member.displayName);
+        setMemberObjects(prevState => ({
+            ...prevState,
+            [member.uid]: {tracks: {}, ...prevState[member.uid], ...member}
+        }));
+    }, []);
+
+    const onMemberRemoved = useCallback((snapshot: firebase.database.DataSnapshot) => {
+        const member: DatabaseStageMember = snapshot.val();
+        console.log("Member removed: " + member.displayName);
+        setMemberObjects(prevState => omit(prevState, member.uid));
+    }, []);
+
+    useEffect(() => {
+        if (stage) {
+            firebase.database()
+                .ref("stages/" + stage.id)
+                .child("members")
+                .on("child_added", onMemberAdded);
+            firebase.database()
+                .ref("stages/" + stage.id)
+                .child("members")
+                .on("child_removed", onMemberRemoved);
+            return () => {
+                firebase.database()
+                    .ref("stages/" + stage.id)
+                    .child("members")
+                    .off("child_added", onMemberAdded);
+                firebase.database()
+                    .ref("stages/" + stage.id)
+                    .child("members")
+                    .off("child_removed", onMemberRemoved);
+            }
+        }
+    }, [stage]);
 
     const create = useCallback((name: string, password: string) => {
-        if (!user) {
+        if (!user)
             return;
-        }
-        if (stage) {
+        if (stage)
             return;
-        }
-
-        user.getIdToken()
-            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/stages/create", {
+        user
+            .getIdToken()
+            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/create", {
+                method: "POST",
                 headers: {
-                    authentification: token
+                    authorization: token,
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     name: name,
                     password: password
                 })
             }))
-            .then(response => response.json())
-            .then((data: { id: string }) => setStageId(data.id))
-            .catch((error) => console.error(error));
+            .then((response) => {
+                console.log(response);
+                return response
+            })
+            .then((response) => response.ok && response.json())
+            .then((stage: DatabaseStage) => setStage(stage as Stage))
+            .catch((error) => {
+                console.error(error);
+                setError(error)
+            });
     }, [user, stage]);
 
     const join = useCallback((stageId: string, password: string) => {
-        if (!user) {
+        if (!user)
             return;
-        }
-        if (stage) {
+        if (stage)
             return;
-        }
-        user.getIdToken()
-            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/stages/join", {
+        user
+            .getIdToken()
+            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/join", {
+                method: "POST",
                 headers: {
-                    authentification: token
+                    "authorization": token,
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    id: name,
+                    stageId: stageId,
                     password: password
                 })
             }))
-            .then(response => response.json())
-            .then(() => setStageId(stageId))
-            .catch((error) => console.error(error));
-    }, [stage, user]);
+            .then((response) => {
+                console.log(response);
+                if( !response.ok )
+                    setError(response.statusText);
+                return response.ok && response.json();
+            })
+            .then((stage: DatabaseStage) => setStage(stage))
+            .catch((error) => {
+                console.error(error);
+                setError(error)
+            });
+    }, [user, stage]);
+
+    // MEDIASOUP specific
+    const mediasoupDevice: MediasoupDevice = useMediasoupDevice(user);
+    const [audioContext, setAudioContext] = useState<IAudioContext>();
 
     useEffect(() => {
-        if (stageId) {
-            evalStage(stageId)
-                .then((stage: Stage) => setStage(stage));
-        }
-    }, [stageId])
+        setAudioContext(new AudioContext());
+    }, [])
 
+    const syncConsumers = useCallback((newConsumers: {
+        [globalProducerId: string]: MediasoupConsumer
+    }) => {
+        Object.keys(newConsumers)
+            .forEach((globalProducerId: string) => {
+                const consumer: MediasoupConsumer = newConsumers[globalProducerId];
+                if (memberObjects[consumer.uid].tracks[globalProducerId]) {
+                    // CHANGED
+                } else {
+                    // ADDED
+                    const track: MediaTrack = createMediaTrack(globalProducerId, consumer.consumer, audioContext);
+                    setMemberObjects(prevState => ({
+                        ...prevState,
+                        [consumer.uid]: {
+                            ...prevState[consumer.uid],
+                            tracks: {
+                                ...prevState[consumer.uid].tracks,
+                                [globalProducerId]: track
+                            }
+                        }
+                    }));
+                }
+            });
+        Object.keys(memberObjects)
+            .forEach(uid => Object.keys(memberObjects[uid].tracks).forEach(
+                (trackId: string) => {
+                    if (!newConsumers[trackId]) {
+                        // REMOVED
+                        setMemberObjects(prevState => ({
+                            ...prevState,
+                            [uid]: {
+                                ...prevState[uid],
+                                tracks: omit(prevState[uid].tracks, trackId)
+                            }
+                        }));
+                    }
+                }
+            ));
+    }, [memberObjects, audioContext]);
 
-    return {
-        join,
-        create,
-        //localDevice,    //TODO: Let the local device control the video and audio streaming and receiving
-       // remoteDevices,  //TODO: Here the user can control his/her remote devices
-        stage           //TODO: The stage object shall only display regaring the local device settings
-    }
+    useEffect(() => {
+        syncConsumers(mediasoupDevice.consumers);
+    }, [mediasoupDevice.consumers]);
+
+    return (
+        <StageContext.Provider value={{
+            stage: stage,
+            create: create,
+            join: join,
+            error: error,
+            members: members,
+            memberObjects: memberObjects,
+            mediasoupDevice: mediasoupDevice
+        }}>
+            {props.children}
+        </StageContext.Provider>
+    )
 }

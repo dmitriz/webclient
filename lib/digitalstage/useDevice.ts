@@ -1,19 +1,20 @@
 import firebase from "firebase/app";
 import "firebase/database";
 import * as publicIp from "public-ip";
-import {useEffect, useState} from "react";
+import {Dispatch, SetStateAction, useEffect, useState} from "react";
+import {DatabaseDevice} from "./model";
 
-interface Device {
-    ipv4: string;
-    ipv6: string;
-
-    canAudio: boolean;
-    canVideo: boolean;
-
+export interface Device {
+    id?: string;
+    ref?: firebase.database.Reference;
     sendAudio: boolean;
+    setSendAudio: Dispatch<SetStateAction<boolean>>;
     sendVideo: boolean;
+    setSendVideo: Dispatch<SetStateAction<boolean>>;
     receiveAudio: boolean;
+    setReceiveVideo: Dispatch<SetStateAction<boolean>>;
     receiveVideo: boolean;
+    setReceiveAudio: Dispatch<SetStateAction<boolean>>;
 }
 
 export const useDevice = (user: firebase.User, options?: {
@@ -32,21 +33,22 @@ export const useDevice = (user: firebase.User, options?: {
             const init = async () => {
                 const ipv4: string = await publicIp.v4();
                 const ipv6: string = await publicIp.v6();
+                const device: DatabaseDevice = {
+                    uid: user.uid,
+                    ipv4: ipv4,
+                    ipv6: ipv6,
+                    canAudio: options ? options.canAudio : false,
+                    canVideo: options ? options.canVideo : false,
+                    sendAudio: sendAudio,
+                    sendVideo: sendVideo,
+                    receiveAudio: receiveAudio,
+                    receiveVideo: receiveVideo
+                };
+                console.log(device);
                 return firebase
                     .database()
-                    .ref()
-                    .child("devices")
-                    .push({
-                        uid: user.uid,
-                        ipv4: ipv4,
-                        ipv6: ipv6,
-                        canAudio: options ? options.canAudio : false,
-                        canVideo: options ? options.canVideo : false,
-                        sendAudio: sendAudio,
-                        sendVideo: sendVideo,
-                        receiveAudio: receiveAudio,
-                        receiveVideo: receiveVideo
-                    } as Device)
+                    .ref("devices")
+                    .push(device)
                     .then((ref: firebase.database.Reference) => {
                         ref.onDisconnect().remove();
                         return ref;
@@ -57,6 +59,10 @@ export const useDevice = (user: firebase.User, options?: {
                     .catch((error) => console.error(error));
             }
             init();
+            return () => {
+                if (ref)
+                    ref.remove();
+            }
         }
     }, [user]);
 
@@ -65,7 +71,7 @@ export const useDevice = (user: firebase.User, options?: {
             ref.on("value", (doc: firebase.database.DataSnapshot) => {
                 console.log("remote change");
                 // DEVICE HAS BEEN UPDATED REMOTELY
-                const device: Device = doc.val() as Device;
+                const device: DatabaseDevice = doc.val() as DatabaseDevice;
                 setReceiveAudio(device.receiveAudio);
                 setReceiveVideo(device.receiveVideo);
                 setSendAudio(device.sendAudio);
@@ -78,7 +84,7 @@ export const useDevice = (user: firebase.User, options?: {
     useEffect(() => {
         console.log("local change");
         if (ref) {
-            ref.set({
+            ref.update({
                 sendAudio: sendAudio,
                 sendVideo: sendVideo,
                 receiveAudio: receiveAudio,
@@ -89,6 +95,7 @@ export const useDevice = (user: firebase.User, options?: {
 
     return {
         id: ref ? ref.key : undefined,
+        ref,
         sendAudio,
         setSendAudio,
         sendVideo,

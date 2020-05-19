@@ -3,8 +3,9 @@ import App from 'next/app'
 import {Provider as StyletronProvider} from 'styletron-react'
 import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
-import {DarkModeContext} from '../lib/useDarkModeSwitch';
+import {DarkModeContext, DarkModeStageProvider} from '../lib/useDarkModeSwitch';
 import {AuthContextProvider} from "../lib/useAuth";
+import {StageProvider} from "../lib/digitalstage/useStage";
 
 interface Props {
 
@@ -23,12 +24,11 @@ export default class MyApp extends App<Props, States> {
         const {Component, pageProps} = this.props;
         return (
             <StyletronProvider value={styletron} debug={debug} debugAfterHydration>
-                <DarkModeContext.Provider value={{
-                    darkMode: this.state.darkMode,
-                    setDarkMode: (enabled: boolean) => this.setState({darkMode: enabled})
-                }}>
-                    <BaseProvider theme={this.state.darkMode ? DarkTheme : LightTheme}>
-                        <style jsx global>{`
+                <AuthContextProvider>
+                    <StageProvider>
+                        <DarkModeStageProvider>
+                            <BaseProvider theme={this.state.darkMode ? DarkTheme : LightTheme}>
+                                <style jsx global>{`
                     :root {
                         --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
                         --font-mono: Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace;
@@ -66,13 +66,13 @@ export default class MyApp extends App<Props, States> {
                         100% { transform: translateY(0); }
                     }
                     `
-                        }
-                        </style>
-                        <AuthContextProvider>
-                            <Component {...pageProps} />
-                        </AuthContextProvider>
-                    </BaseProvider>
-                </DarkModeContext.Provider>
+                                }
+                                </style>
+                                <Component {...pageProps} />
+                            </BaseProvider>
+                        </DarkModeStageProvider>
+                    </StageProvider>
+                </AuthContextProvider>
             </StyletronProvider>
         )
     }
