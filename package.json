@@ -26,6 +26,7 @@
     "next": "^9.4.1",
     "next-cookies": "latest",
     "now": "^19.0.1",
+    "ping.js": "^0.2.3",
     "public-ip": "^4.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",

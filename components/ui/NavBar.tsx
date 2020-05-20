@@ -4,6 +4,7 @@ import {Button} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const NavContainer = styled("div", {
     width: '100%'
@@ -21,6 +22,7 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
+    const {leave, stage} = useStage();
 
     return (
         <NavContainer>
@@ -50,20 +52,32 @@ export default () => {
                         </>
                     ) : (
                         <>
-                            <StyledNavigationItem>
-                                <Link href="/create">
-                                    <a>
-                                        Create stage
-                                    </a>
-                                </Link>
-                            </StyledNavigationItem>
-                            <StyledNavigationItem>
-                                <Link href="/">
-                                    <a>
-                                        Join stage
-                                    </a>
-                                </Link>
-                            </StyledNavigationItem>
+                            {stage ? (
+                                <>
+                                    <StyledNavigationItem>
+                                        <a onClick={leave}>
+                                            Leave
+                                        </a>
+                                    </StyledNavigationItem>
+                                </>
+                            ) : (
+                                <>
+                                    <StyledNavigationItem>
+                                        <Link href="/create">
+                                            <a>
+                                                Create stage
+                                            </a>
+                                        </Link>
+                                    </StyledNavigationItem>
+                                    <StyledNavigationItem>
+                                        <Link href="/">
+                                            <a>
+                                                Join stage
+                                            </a>
+                                        </Link>
+                                    </StyledNavigationItem>
+                                </>
+                            )}
                             <StyledNavigationItem>
                                 <Link href="/account">
                                     <a>

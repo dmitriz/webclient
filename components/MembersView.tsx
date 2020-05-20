@@ -1,15 +1,16 @@
-import {MediasoupAudioTrack, MediasoupVideoTrack, MediaTrack, StageMember} from "../lib/digitalstage/model";
+import {MediasoupAudioTrack, MediasoupVideoTrack, MediaTrack, StageMemberOld} from "../lib/digitalstage/model";
 import React from "react";
 import {Input} from "baseui/input";
 import VideoTrackPlayer from "./video/VideoTrackPlayer";
 
 export default (props: {
     members: {
-        [uid: string]: StageMember
+        [uid: string]: StageMemberOld
     }
 }) => {
+    console.log(props.members);
 
-    const memberPanels = Object.values(props.members).map((member: StageMember) => {
+    const memberPanels = Object.values(props.members).map((member: StageMemberOld) => {
         const trackViews = Object.values(member.tracks).map((track: MediaTrack) => {
             if (track.type === "audio") {
                 const audioTrack: MediasoupAudioTrack = track as MediasoupAudioTrack;

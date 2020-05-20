@@ -17,6 +17,7 @@ export interface MediasoupDevice extends Device {
 }
 
 export const useMediasoupDevice = (user: firebase.User) => {
+    const [error, setError] = useState<string>();
     const [userRef, setUserRef] = useState<firebase.database.Reference>();
     const [mediasoupConnection, setMediasoupConnection] = useState<MediasoupStageConnection>();
     const [consumers, setConsumers] = useState<{
@@ -28,8 +29,8 @@ export const useMediasoupDevice = (user: firebase.User) => {
     });
 
     useEffect(() => {
-        if (user) {
-            const mediasoup: MediasoupStageConnection = new MediasoupStageConnection(user);
+        if (device.id && user) {
+            const mediasoup: MediasoupStageConnection = new MediasoupStageConnection(device.id, user);
             mediasoup.connect()
                 .then(() => {
                     setMediasoupConnection(mediasoup);
@@ -41,7 +42,7 @@ export const useMediasoupDevice = (user: firebase.User) => {
                     .ref("users/" + user.uid)
             );
         }
-    }, [user]);
+    }, [device.id, user]);
 
     useEffect(() => {
         if (mediasoupConnection) {
@@ -78,11 +79,16 @@ export const useMediasoupDevice = (user: firebase.User) => {
                     video: true,
                     audio: false
                 })
-                    .then((stream: MediaStream) => stream.getVideoTracks().forEach(track => mediasoupConnection.createProducer(track).then(() => setPublishedTracks(prev => [...prev, track]))));
+                    .then((stream: MediaStream) => stream.getVideoTracks().forEach(track =>
+                        mediasoupConnection.createProducer(track)
+                            .then(() => setPublishedTracks(prev => [...prev, track]))
+                            .catch((error) => setError(error))));
             } else {
                 publishedTracks.forEach((track) => {
                     if (track.kind === "video") {
-                        mediasoupConnection.stopProducer(track).then(() => setPublishedTracks(prev => prev.filter((t) => t.id !== track.id)));
+                        mediasoupConnection.stopProducer(track)
+                            .then(() => setPublishedTracks(prev => prev.filter((t) => t.id !== track.id)))
+                            .catch((error) => setError(error));
                     }
                 });
             }
@@ -101,6 +107,7 @@ export const useMediasoupDevice = (user: firebase.User) => {
 
     return {
         ...device,
+        error,
         consumers
     }
 };

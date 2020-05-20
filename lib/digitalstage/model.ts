@@ -10,6 +10,11 @@ export interface DatabaseRouter {
     slotAvailable: number
 }
 
+export interface DatabaseMember {
+    uid: string;
+    stageId?: string;
+}
+
 export interface DatabaseStage {
     id: string;
     name: string;
@@ -20,6 +25,7 @@ export interface DatabaseStageMember {
     uid: string;
     displayName: string;
 }
+
 
 export interface DatabaseProducer {
     uid: string;
@@ -50,13 +56,19 @@ export interface Stage {
     password: string;
 }
 
+export interface StageMember {
+    uid: string;
+    displayName: string;
+    tracks: MediaTrack[];
+}
+
 export interface StageMemberNew {
     uid: string;
     displayName: string;
     tracks: MediaTrack[];
 }
 
-export interface StageMember {
+export interface StageMemberOld {
     uid: string;
     displayName: string;
     tracks: {

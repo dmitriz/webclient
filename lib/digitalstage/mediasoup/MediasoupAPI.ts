@@ -33,6 +33,7 @@ const post = (url: string, body: any, token?: string): Promise<Response> => {
 }
 
 export class MediasoupConnection extends EnhancedEventEmitter {
+    protected readonly deviceId: string;
     protected readonly user: firebase.User;
     protected readonly device: MediasoupClientDevice;
     protected serverAddress: string = undefined
@@ -48,10 +49,11 @@ export class MediasoupConnection extends EnhancedEventEmitter {
         [globalProducerId: string]: mediasoupClient.types.Consumer
     } = {};
 
-    constructor(user: firebase.User) {
+    constructor(deviceId: string, user: firebase.User) {
         super();
         this.user = user;
         this.device = new MediasoupClientDevice();
+        this.deviceId = deviceId;
     }
 
     public isConnected(): boolean {
@@ -90,7 +92,11 @@ export class MediasoupConnection extends EnhancedEventEmitter {
                 transportId: this.receiveTransport.id,
                 rtpCapabilities: this.device.rtpCapabilities    //TODO: Necessary?
             }, token))
-            .then(response => response.ok && response.json())
+            .then(response => {
+                if (response.ok)
+                    return response.json();
+                throw new Error(response.statusText);
+            })
             .then((data: {
                 id: string;
                 producerId: string;
@@ -100,7 +106,11 @@ export class MediasoupConnection extends EnhancedEventEmitter {
                 type: 'simple' | 'simulcast' | 'svc' | 'pipe'
             }) => this.receiveTransport.consume(data))
             .then((consumer: mediasoupClient.types.Consumer) => this.consumers[globalProducerId] = consumer)
-            .then(() => this.resumeConsumer(globalProducerId));
+            .then(() => this.resumeConsumer(globalProducerId))
+            .catch((error) => {
+                console.error(error);
+                return false;
+            });
     }
 
     public async pauseConsumer(globalProducerId: string): Promise<boolean> {
@@ -137,6 +147,7 @@ export class MediasoupConnection extends EnhancedEventEmitter {
     }
 
     public async createProducer(track: MediaStreamTrack): Promise<boolean> {
+        console.log("create producer");
         return this.sendTransport.produce({
             track: track,
             appData: {
@@ -182,6 +193,7 @@ export class MediasoupConnection extends EnhancedEventEmitter {
     }
 
     public async stopProducer(track: MediaStreamTrack): Promise<boolean> {
+        console.log("stop producer");
         if (this.producers[track.id] && this.producers[track.id].producer) {
             this.producers[track.id].producer.close();
             this.emit("producer-closed", track.id);
@@ -198,64 +210,61 @@ export class MediasoupConnection extends EnhancedEventEmitter {
     }
 
     protected async createWebRTCTransport(type: "send" | "receive"): Promise<mediasoupClient.types.Transport> {
-        return this.user.getIdToken()
-            .then((token: string) => {
-                console.log("Create " + type + " transport");
-                return fetch(this.serverAddress + RouterGetUrls.CreateTransport)
-                    .then((response) => response.ok && response.json())
-                    .then((transportOptions: mediasoupClient.types.TransportOptions) => {
-                        const transport: mediasoupClient.types.Transport = (type === "send" ? this.device.createSendTransport(transportOptions) : this.device.createRecvTransport(transportOptions));
-                        transport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
-                            return this.user.getIdToken()
-                                .then((token) => {
-                                    post(this.serverAddress + RouterPostUrls.ConnectTransport, {
-                                        transportId: transport.id,
-                                        dtlsParameters: dtlsParameters
-                                    }, token)
-                                        .then(response => response.ok)
-                                        .then(() => callback())
-                                        .catch((error) => errCallback(error));
-                                })
-                        });
-                        transport.on('connectionstatechange', async (state) => {
-                            console.log("mediasoup: connectionstatechange " + state);
-                            if (state === 'closed' || state === 'failed' || state === 'disconnected') {
-                                console.error("mediasoup: Disconnect by server side");
-                            }
-                        });
-                        if (type === "send") {
-                            transport.on('produce', async (producer, callback, errCallback) => {
-                                console.log('c > s: stg/ms/send-track (kind=' + producer.kind + ')');
-                                console.log(producer);
-                                return this.user.getIdToken()
-                                    .then((token) => {
-                                        return post(this.serverAddress + RouterPostUrls.CreateProducer, {
-                                            transportId: transport.id,
-                                            kind: producer.kind,
-                                            rtpParameters: producer.rtpParameters,
-                                            appData: producer.appData
-                                        }, token)
-                                            .then(response => response.ok && response.json())
-                                            .then((payload: {
-                                                id: string;
-                                                localProducerId: string;
-                                            }) => {
-                                                this.producers[producer.appData.trackId] = {
-                                                    ...this.producers[producer.appData.trackId],
-                                                    globalProducerId: payload.id
-                                                };
-                                                this.emit("producer-added", producer.appData.trackId);
-                                                return payload.localProducerId;
-                                            })
-                                            .then((localProducerId: string) => callback(localProducerId))
-                                            .catch((error) => errCallback(error));
-                                    });
+        return fetch(this.serverAddress + RouterGetUrls.CreateTransport)
+            .then((response) => response.ok && response.json())
+            .then((transportOptions: mediasoupClient.types.TransportOptions) => {
+                const transport: mediasoupClient.types.Transport = (type === "send" ? this.device.createSendTransport(transportOptions) : this.device.createRecvTransport(transportOptions));
+                transport.on('connect', async ({dtlsParameters}, callback, errCallback) => {
+                    return this.user.getIdToken()
+                        .then((token) => {
+                            post(this.serverAddress + RouterPostUrls.ConnectTransport, {
+                                transportId: transport.id,
+                                dtlsParameters: dtlsParameters
+                            }, token)
+                                .then(response => response.ok)
+                                .then(() => callback())
+                                .catch((error) => errCallback(error));
+                        })
+                });
+                transport.on('connectionstatechange', async (state) => {
+                    console.log("mediasoup: connectionstatechange " + state);
+                    if (state === 'closed' || state === 'failed' || state === 'disconnected') {
+                        console.error("mediasoup: Disconnect by server side");
+                    }
+                });
+                if (type === "send") {
+                    transport.on('produce', async (producer, callback, errCallback) => {
+                        console.log('c > s: stg/ms/send-track (kind=' + producer.kind + ')');
+                        console.log(producer);
+                        return this.user.getIdToken()
+                            .then((token) => {
+                                return post(this.serverAddress + RouterPostUrls.CreateProducer, {
+                                    transportId: transport.id,
+                                    deviceId: this.deviceId,
+                                    kind: producer.kind,
+                                    rtpParameters: producer.rtpParameters,
+                                    appData: producer.appData
+                                }, token)
+                                    .then(response => response.ok && response.json())
+                                    .then((payload: {
+                                        id: string;
+                                        localProducerId: string;
+                                    }) => {
+                                        this.producers[producer.appData.trackId] = {
+                                            ...this.producers[producer.appData.trackId],
+                                            globalProducerId: payload.id
+                                        };
+                                        this.emit("producer-added", producer.appData.trackId);
+                                        return payload.localProducerId;
+                                    })
+                                    .then((localProducerId: string) => callback(localProducerId))
+                                    .catch((error) => errCallback(error));
                             });
-                        }
-                        return transport;
-                    })
-            })
-    };
+                    });
+                }
+                return transport;
+            });
+    }
 }
 
 export class MediasoupStageConnection extends MediasoupConnection {
@@ -265,8 +274,8 @@ export class MediasoupStageConnection extends MediasoupConnection {
     private consumeAudioAutomatically: boolean = false;
     private consumeVideoAutomatically: boolean = false;
 
-    constructor(user: firebase.User) {
-        super(user);
+    constructor(deviceId: string, user: firebase.User) {
+        super(deviceId, user);
         firebase.database()
             .ref("users")
             .child(this.user.uid)
@@ -283,7 +292,6 @@ export class MediasoupStageConnection extends MediasoupConnection {
             .child("producers")
             .on("child_removed", this.handleForeignProducerRemoved);
     }
-
 
     public consumeAutomaticallyVideo(consumeAudioAutomatically: boolean) {
         if (this.consumeAudioAutomatically != consumeAudioAutomatically) {

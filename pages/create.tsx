@@ -4,7 +4,7 @@ import {Button} from "baseui/button";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
-import {useStage} from "../lib/digitalstage/useStage";
+import {useStage} from "../lib/digitalstage/useStage2";
 import Loading from "../components/ui/Loading";
 import Layout from "../components/ui/Layout";
 

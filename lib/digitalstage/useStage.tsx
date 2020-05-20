@@ -4,16 +4,16 @@ import React, {createContext, useCallback, useContext, useEffect, useState} from
 import fetch from "isomorphic-unfetch";
 import {AudioContext, IAudioContext} from 'standardized-audio-context';
 import * as omit from "lodash.omit";
-import * as env from "./../../env";
 import mediasoupClient from "mediasoup-client";
 import {
+    DatabaseMember,
     DatabaseStage,
     DatabaseStageMember,
     MediasoupAudioTrack,
     MediasoupVideoTrack,
     MediaTrack,
     Stage,
-    StageMember,
+    StageMemberOld,
     StageMemberNew
 } from "./model";
 import {useAuth} from "./../useAuth";
@@ -35,9 +35,11 @@ interface StageProps {
 
     join(stageId: string, password: string);
 
+    leave();
+
     stage?: Stage,
 
-    memberObjects?: { [uid: string]: StageMember }
+    memberObjects?: { [uid: string]: StageMemberOld }
 
     error?: string;
 
@@ -55,20 +57,44 @@ export const StageProvider = (props: {
 }) => {
     const {user} = useAuth();
     const [error, setError] = useState<string>();
+    const [stageId, setStageId] = useState<string>();
     const [stage, setStage] = useState<Stage>();
     const [members, setMembers] = useState<StageMemberNew[]>([]);
-    const [memberObjects, setMemberObjects] = useState<{ [uid: string]: StageMember }>({});
+    const [memberObjects, setMemberObjects] = useState<{ [uid: string]: StageMemberOld }>({});
 
     useEffect(() => {
         if (user) {
             firebase.database()
-                .ref("users")
-                .child(user.uid)
-                .update({
-                    uid: user.uid
+                .ref("users/" + user.uid)
+                .on("value", (snapshot) => {
+                    const member: DatabaseMember = snapshot.val();
+                    if (member.stageId) {
+                        setStageId(member.stageId);
+                    } else {
+                        setStageId(undefined);
+                    }
                 });
         }
     }, [user]);
+
+    const onStageUpdated = useCallback((snapshot) => {
+        const stage: DatabaseStage = snapshot.val();
+        setStage(stage);
+    }, []);
+
+    useEffect(() => {
+        if (stageId) {
+            // Fetch stage
+            firebase.database()
+                .ref("/stages/" + stageId)
+                .on("value", onStageUpdated);
+        } else {
+            firebase.database()
+                .ref("/stages/" + stageId)
+                .off("value", onStageUpdated);
+            setStage(undefined);
+        }
+    }, [stageId])
 
     const onMemberAdded = useCallback((snapshot: firebase.database.DataSnapshot) => {
         const member: DatabaseStageMember = snapshot.val();
@@ -86,27 +112,27 @@ export const StageProvider = (props: {
     }, []);
 
     useEffect(() => {
-        if (stage) {
+        if (stageId) {
             firebase.database()
-                .ref("stages/" + stage.id)
+                .ref("stages/" + stageId)
                 .child("members")
                 .on("child_added", onMemberAdded);
             firebase.database()
-                .ref("stages/" + stage.id)
+                .ref("stages/" + stageId)
                 .child("members")
                 .on("child_removed", onMemberRemoved);
             return () => {
                 firebase.database()
-                    .ref("stages/" + stage.id)
+                    .ref("stages/" + stageId)
                     .child("members")
                     .off("child_added", onMemberAdded);
                 firebase.database()
-                    .ref("stages/" + stage.id)
+                    .ref("stages/" + stageId)
                     .child("members")
                     .off("child_removed", onMemberRemoved);
             }
         }
-    }, [stage]);
+    }, [stageId]);
 
     const create = useCallback((name: string, password: string) => {
         if (!user)
@@ -115,7 +141,7 @@ export const StageProvider = (props: {
             return;
         user
             .getIdToken()
-            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/create", {
+            .then((token: string) => fetch("https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/createStage", {
                 method: "POST",
                 headers: {
                     authorization: token,
@@ -131,7 +157,6 @@ export const StageProvider = (props: {
                 return response
             })
             .then((response) => response.ok && response.json())
-            .then((stage: DatabaseStage) => setStage(stage as Stage))
             .catch((error) => {
                 console.error(error);
                 setError(error)
@@ -145,7 +170,7 @@ export const StageProvider = (props: {
             return;
         user
             .getIdToken()
-            .then((token: string) => fetch(env.SERVER_URL + ":" + env.SERVER_PORT + "/join", {
+            .then((token: string) => fetch("https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/joinStage", {
                 method: "POST",
                 headers: {
                     "authorization": token,
@@ -158,16 +183,26 @@ export const StageProvider = (props: {
             }))
             .then((response) => {
                 console.log(response);
-                if( !response.ok )
+                if (!response.ok)
                     setError(response.statusText);
-                return response.ok && response.json();
+                return response.ok;
             })
-            .then((stage: DatabaseStage) => setStage(stage))
             .catch((error) => {
                 console.error(error);
                 setError(error)
             });
     }, [user, stage]);
+
+    const leave = useCallback(() => {
+        if (stage && user) {
+            return firebase.database()
+                .ref("users/" + user.uid)
+                .update({
+                    stageId: null
+                });
+        }
+    }, [stage, user]);
+
 
     // MEDIASOUP specific
     const mediasoupDevice: MediasoupDevice = useMediasoupDevice(user);
@@ -225,6 +260,7 @@ export const StageProvider = (props: {
         <StageContext.Provider value={{
             stage: stage,
             create: create,
+            leave: leave,
             join: join,
             error: error,
             members: members,
