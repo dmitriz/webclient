@@ -1,6 +1,6 @@
 import {IDeviceAPI} from "../IDeviceAPI";
 import firebase from "firebase/app";
-import "firebase/auth";
+import "firebase/firestore";
 
 interface SoudjackNode {
     uid: string;        // Globally unique
@@ -14,19 +14,36 @@ interface SoudjackNode {
 export default class LocalSoundjackDevice extends IDeviceAPI {
     private unlistenRemoteSoudjacks: () => void;
     protected stageId: string = null;
-    protected readonly port: number = 50000;
+    protected readonly port: number = 1234;
     protected isAvailable: boolean;
-    protected readonly webSocket: WebSocket;
+    protected webSocket: WebSocket;
 
     constructor(user: firebase.User) {
         super(user, {
             canAudio: true,
             canVideo: false
         });
-        this.webSocket = new WebSocket("localhost:" + this.port);
-        this.webSocket.onopen = () => {
-            this.initialize();
-        };
+        this.connect();
+    }
+
+    private connect() {
+        const contactSoundjack = () => {
+            console.log("Polling soundjack...");
+            this.webSocket = new WebSocket("ws://localhost:" + this.port);
+            this.webSocket.onerror = () => {
+                console.log("Soundjack not available");
+            }
+            this.webSocket.onopen = () => {
+                this.initialize();
+            };
+        }
+        const isAvailable = () => this.isAvailable;
+        const polling = setInterval(function () {
+            if (isAvailable()) {
+                clearInterval(polling);
+            }
+            contactSoundjack();
+        }, 3000);
     }
 
     private initialize() {
@@ -66,8 +83,8 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
         firebase.firestore()
             .collection("soundjacks")
             .add({
-                ipv4: this.ipv4,
-                ipv6: this.ipv6,
+                ipv4: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
+                ipv6: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
                 port: this.port,
                 stageId: this.stageId,
                 deviceId: this.getDeviceId()

@@ -1,6 +1,7 @@
 import firebase from "firebase/app";
-import "firebase/database";
-import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
+import "firebase/firestore";
+import "firebase/auth";
+import React, {createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
 import fetch from "isomorphic-unfetch";
 import {IAudioContext} from 'standardized-audio-context';
 import mediasoupClient from "mediasoup-client";
@@ -16,8 +17,8 @@ import {
     StageMemberNew
 } from "./model";
 import {useAuth} from "./../useAuth";
-import {MediasoupDevice} from "./devices/mediasoup/MediasoupDevice";
-import LocalSoundjackDevice from "./devices/soundjack/LocalSoundjackDevice";
+import useMediasoupDevice from "./devices/mediasoup/useMediasoupDevice";
+import useSoundjackDevice from "./devices/soundjack/useSoundjackDevice";
 
 const createMediaTrack = (id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext): MediaTrack => {
     if (consumer.kind === "audio") {
@@ -43,9 +44,20 @@ interface StageProps {
 
     members: StageMemberNew[];
 
-    localMediasoupDevice: MediasoupDevice
+    sendVideo: boolean;
+    setSendVideo: Dispatch<SetStateAction<boolean>>;
+    sendAudio: boolean;
+    setSendAudio: Dispatch<SetStateAction<boolean>>;
+    receiveAudio: boolean;
+    setReceiveVideo: Dispatch<SetStateAction<boolean>>;
+    receiveVideo: boolean;
+    setReceiveAudio: Dispatch<SetStateAction<boolean>>;
+    sendSoundjack: boolean;
+    setSendSoundjack: Dispatch<SetStateAction<boolean>>;
+    receiveSoundjack: boolean;
+    setReceiveSoundjack: Dispatch<SetStateAction<boolean>>;
 
-    localSoundjackDevice: LocalSoundjackDevice
+    isSoundjackAvailable: boolean;
 }
 
 const StageContext = createContext<StageProps>(undefined);
@@ -60,8 +72,8 @@ export const StageProvider = (props: {
     const [stageId, setStageId] = useState<string>();
     const [stage, setStage] = useState<Stage>();
     const [members, setMembers] = useState<StageMember[]>([]);
-    const [localMediasoupDevice] = useState<MediasoupDevice>(new MediasoupDevice(user));
-    const [localSoundjackDevice] = useState<LocalSoundjackDevice>(new LocalSoundjackDevice(user));
+    const {localMediasoupDevice, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user);
+    const {localSoundjackDevice, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack, isAvailable} = useSoundjackDevice(user);
 
     useEffect(() => {
         if (user) {
@@ -94,10 +106,17 @@ export const StageProvider = (props: {
         } else {
             setStage(undefined);
         }
-        // And inform devices
-        localMediasoupDevice.setStageId(stageId);
-        localSoundjackDevice.setStageId(stageId);
     }, [stageId])
+
+    useEffect(() => {
+        if (localMediasoupDevice)
+            localMediasoupDevice.setStageId(stageId);
+    }, [stageId, localMediasoupDevice]);
+
+    useEffect(() => {
+        if (localSoundjackDevice)
+            localSoundjackDevice.setStageId(stageId);
+    }, [stageId, localSoundjackDevice]);
 
     const onMembersUpdated = useCallback((querySnapshot: firebase.firestore.QuerySnapshot<DatabaseStageMember>) => {
         return querySnapshot.docChanges()
@@ -149,13 +168,12 @@ export const StageProvider = (props: {
                 })
             }))
             .then((response) => {
-                console.log(response);
-                return response
+                if (!response.ok)
+                    throw new Error(response.statusText);
             })
-            .then((response) => response.ok && response.json())
             .catch((error) => {
                 console.error(error);
-                setError(error)
+                setError(error.message);
             });
     }, [user, stage]);
 
@@ -178,10 +196,8 @@ export const StageProvider = (props: {
                 })
             }))
             .then((response) => {
-                console.log(response);
                 if (!response.ok)
-                    setError(response.statusText);
-                return response.ok;
+                    throw new Error(response.statusText);
             })
             .catch((error) => {
                 console.error(error);
@@ -207,8 +223,19 @@ export const StageProvider = (props: {
             join: join,
             error: error,
             members: members,
-            localMediasoupDevice: localMediasoupDevice,
-            localSoundjackDevice: localSoundjackDevice
+            sendVideo: sendVideo,
+            setSendVideo: setSendVideo,
+            sendAudio: sendAudio,
+            setSendAudio: setSendAudio,
+            receiveAudio: receiveAudio,
+            setReceiveAudio: setReceiveAudio,
+            receiveVideo: receiveVideo,
+            setReceiveVideo: setReceiveVideo,
+            sendSoundjack: sendSoundjack,
+            setSendSoundjack: setSendSoundjack,
+            receiveSoundjack: receiveSoundjack,
+            setReceiveSoundjack: setReceiveSoundjack,
+            isSoundjackAvailable: isAvailable
         }}>
             {props.children}
         </StageContext.Provider>

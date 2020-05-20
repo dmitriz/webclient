@@ -11,35 +11,35 @@ const Panel = styled("div", {
     height: "auto"
 });
 export default () => {
-    const {localMediasoupDevice, localSoundjackDevice} = useStage();
+    const stage = useStage();
 
     return (
         <Panel>
             <Checkbox
-                checked={localMediasoupDevice.sendVideo}
+                checked={stage.sendVideo}
                 checkmarkType={STYLE_TYPE.toggle_round}
-                onChange={e => localMediasoupDevice.setSendVideo(e.currentTarget.checked)}
+                onChange={e => stage.setSendVideo(e.currentTarget.checked)}
             >
                 Video
             </Checkbox>
             <Checkbox
-                checked={localMediasoupDevice.sendAudio}
+                checked={stage.sendAudio}
                 checkmarkType={STYLE_TYPE.toggle_round}
-                onChange={e => localMediasoupDevice.setSendAudio(e.currentTarget.checked)}
+                onChange={e => stage.setSendAudio(e.currentTarget.checked)}
             >
                 Audio
             </Checkbox>
             <Checkbox
-                checked={localMediasoupDevice.receiveVideo}
+                checked={stage.receiveVideo}
                 checkmarkType={STYLE_TYPE.toggle_round}
-                onChange={e => localMediasoupDevice.setReceiveVideo(e.currentTarget.checked)}
+                onChange={e => stage.setReceiveVideo(e.currentTarget.checked)}
             >
                 Receive Videos
             </Checkbox>
             <Checkbox
-                checked={localMediasoupDevice.receiveAudio}
+                checked={stage.receiveAudio}
                 checkmarkType={STYLE_TYPE.toggle_round}
-                onChange={e => localMediasoupDevice.setReceiveAudio(e.currentTarget.checked)}
+                onChange={e => stage.setReceiveAudio(e.currentTarget.checked)}
             >
                 Receive Audio
             </Checkbox>

@@ -1,12 +1,20 @@
 import {IDeviceAPI} from "../IDeviceAPI";
 import mediasoupClient from "mediasoup-client";
-import firebase from "firebase";
+import firebase from "firebase/app";
+import "firebase/firestore";
+import "firebase/auth";
 import {DatabaseGlobalProducer, DatabaseRouter} from "./models";
 import {Device as MediasoupClientDevice} from "mediasoup-client/lib/Device";
 import unfetch from "isomorphic-unfetch";
 import {RouterPostUrls} from "../../mediasoup/events";
 import {RouterGetUrls} from "./events";
-import {getFastestRouter, getLocalAudioTracks} from "./utils";
+import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from "./utils";
+import * as omit from "lodash.omit";
+
+export interface PublishableProducer {
+    producer: mediasoupClient.types.Producer,
+    globalProducerId?: string;
+}
 
 export interface GlobalProducer extends DatabaseGlobalProducer {
     id: string;
@@ -20,12 +28,14 @@ export interface GlobalProducerConsumer {
 export class MediasoupDevice extends IDeviceAPI {
     protected readonly device: MediasoupClientDevice;
     protected stageId: string = null;
-    protected router: DatabaseRouter;
+    protected router: DatabaseRouter = undefined;
     protected sendTransport: mediasoupClient.types.Transport;
     protected receiveTransport: mediasoupClient.types.Transport;
-    private unlistenRemoteProducers: () => void;
+    protected availableGlobalProducers: {
+        [globalProducerId: string]: GlobalProducer
+    } = {};
     protected producers: {
-        [trackId: string]: mediasoupClient.types.Producer
+        [trackId: string]: PublishableProducer
     } = {};
     protected consumers: {
         [globalProducerId: string]: GlobalProducerConsumer
@@ -37,59 +47,95 @@ export class MediasoupDevice extends IDeviceAPI {
             canVideo: true
         });
         this.device = new MediasoupClientDevice();
+        this.registerDeviceListeners();
+        this.connect();
     }
 
-    public async setReceiveAudio(receiveAudio: boolean): Promise<void> {
-        if (this.receiveAudio != receiveAudio) {
-            if (receiveAudio) {
+    private registerDeviceListeners() {
+        this.on("send-audio", (sendAudio: boolean) => {
+            if (sendAudio) {
                 getLocalAudioTracks()
-                    .then()
+                    .then((tracks: MediaStreamTrack[]) => {
+                        tracks.forEach((track: MediaStreamTrack) => this.createProducer(track))
+                    });
             } else {
-
+                Object.keys(this.producers)
+                    .forEach((trackId: string) => {
+                        if (this.producers[trackId].producer.kind === "audio")
+                            return this.stopProducer(trackId);
+                    })
             }
-            return super.setReceiveAudio(receiveAudio);
-        }
+        });
+        this.on("send-video", (sendVideo: boolean) => {
+            if (sendVideo) {
+                getLocalVideoTracks()
+                    .then((tracks: MediaStreamTrack[]) => {
+                        tracks.forEach((track: MediaStreamTrack) => this.createProducer(track))
+                    });
+            } else {
+                Object.keys(this.producers)
+                    .forEach((trackId: string) => {
+                        if (this.producers[trackId].producer.kind === "video")
+                            return this.stopProducer(trackId);
+                    })
+            }
+        });
+        this.on("receive-audio", (receiveAudio: boolean) => {
+            if (receiveAudio) {
+                Object.values(this.availableGlobalProducers)
+                    .forEach((globalProducer: GlobalProducer) => {
+                        console.log("HAVE GLOBAL PRODUCER");
+                        if (globalProducer.kind === "audio")
+                            return this.createConsumer(globalProducer);
+                    });
+            } else {
+                Object.values(this.consumers)
+                    .forEach((consumer: GlobalProducerConsumer) => {
+                        if (consumer.globalProducer.kind === "audio")
+                            return this.closeConsumer(consumer.globalProducer.id)
+                    });
+            }
+        });
+        this.on("receive-video", (receiveVideo: boolean) => {
+            if (receiveVideo) {
+                Object.values(this.availableGlobalProducers)
+                    .forEach((globalProducer: GlobalProducer) => {
+                        console.log("HAVE GLOBAL PRODUCER");
+                        if (globalProducer.kind === "video")
+                            return this.createConsumer(globalProducer);
+                    });
+            } else {
+                Object.values(this.consumers)
+                    .forEach((consumer: GlobalProducerConsumer) => {
+                        if (consumer.globalProducer.kind === "video")
+                            return this.closeConsumer(consumer.globalProducer.id)
+                    });
+            }
+        });
     }
-
-    public async setReceiveVideo(receiveVideo: boolean): Promise<void> {
-        return super.setReceiveVideo(receiveVideo);
-    }
-
-    public async setSendAudio(sendAudio: boolean): Promise<void> {
-        if (this.sendAudio != sendAudio) {
-
-
-            return super.setSendAudio(sendAudio);
-        }
-    }
-
-    isReceivingAudio() {
-    }
-
-    isReceivingVideo() {
-    }
-
-    isSendingAudio() {
-    }
-
-    isSendingVideo() {
-    }
-
 
     public connect() {
         getFastestRouter()
             .then(async (router: DatabaseRouter) => {
+                this.router = router;
                 const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities();
                 await this.device.load({routerRtpCapabilities: rtpCapabilities});
                 this.sendTransport = await this.createWebRTCTransport("send");
                 this.receiveTransport = await this.createWebRTCTransport("receive");
-                this.router = router;
                 this.emit("connected", this.router);
             });
     }
 
     public disconnect() {
-
+        console.log("MEDIASOUP: disconnecting");
+        if (this.sendTransport) {
+            this.sendTransport.close();
+        }
+        if (this.receiveTransport) {
+            this.receiveTransport.close();
+        }
+        this.emit("disconnected", this.router);
+        this.router = undefined;
     }
 
     public setStageId(stageId: string) {
@@ -99,13 +145,13 @@ export class MediasoupDevice extends IDeviceAPI {
         if (this.stageId) {
             // Publish all local producers
             Object.values(this.producers)
-                .forEach((producer: mediasoupClient.types.Producer) => this.publishProducerToStage(this.stageId, producer));
-            this.unlistenRemoteProducers = firebase.firestore()
-                .collection("users/" + this.user.uid + "/producers")
-                .onSnapshot(snapshot => this.handleRemoteProducer);
+                .forEach((producer: PublishableProducer) => this.publishProducerToStage(this.stageId, producer));
+            firebase.firestore()
+                .doc("users/" + this.user.uid)
+                .collection("producers")
+                .onSnapshot(this.handleRemoteProducer);
         } else {
             // Un-publish all local producers
-            this.unlistenRemoteProducers();
             firebase.firestore()
                 .collection("producers")
                 .where("deviceId", "==", this.getDeviceId())
@@ -115,6 +161,9 @@ export class MediasoupDevice extends IDeviceAPI {
     }
 
     protected async createConsumer(globalProducer: GlobalProducer): Promise<void> {
+        if (!this.receiveTransport)
+            return;
+
         console.log("create consumer");
 
         this.fetchPostJson(RouterPostUrls.CreateConsumer, {
@@ -175,12 +224,15 @@ export class MediasoupDevice extends IDeviceAPI {
                 id: consumer.consumer.id
             }).then(() => {
                 consumer.consumer.close();
+                this.consumers = omit(this.consumers, globalProducerId);
                 this.emit("consumer-closed", consumer);
             })
         }
     }
 
     public async createProducer(track: MediaStreamTrack): Promise<void> {
+        if (!this.sendTransport)
+            return;
         console.log("create producer");
         return this.sendTransport.produce({
             track: track,
@@ -188,23 +240,31 @@ export class MediasoupDevice extends IDeviceAPI {
                 trackId: track.id
             }
         }).then((producer: mediasoupClient.types.Producer) => {
-            this.producers[track.id] = producer;
+            console.log("First");
             producer.on("pause", () => {
                 console.log("pause");
             })
             producer.on("close", () => {
                 console.log("close");
             });
+            this.producers[track.id] = {
+                producer: producer
+            };
+            console.log(producer.id);
+            this.emit("producer-added", this.producers[track.id]);
+            if (this.stageId) {
+                this.publishProducerToStage(this.stageId, this.producers[track.id]);
+            }
         });
     }
 
     public async pauseProducer(track: MediaStreamTrack): Promise<void> {
         console.log("pause producer");
-        if (this.producers[track.id] && !this.producers[track.id].paused) {
+        if (this.producers[track.id] && !this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.PauseProducer, {
-                id: this.producers[track.id].id
+                id: this.producers[track.id].producer.id
             }).then(() => {
-                this.producers[track.id].pause();
+                this.producers[track.id].producer.pause();
                 this.emit("producer-paused", track.id);
             })
         }
@@ -212,24 +272,31 @@ export class MediasoupDevice extends IDeviceAPI {
 
     public async resumeProducer(track: MediaStreamTrack): Promise<void> {
         console.log("resume producer");
-        if (this.producers[track.id] && this.producers[track.id].paused) {
+        if (this.producers[track.id] && this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.ResumeProducer, {
-                id: this.producers[track.id].id
+                id: this.producers[track.id].producer.id
             }).then(() => {
-                this.producers[track.id].resume();
+                this.producers[track.id].producer.resume();
                 this.emit("producer-resumed", track.id);
             })
         }
     }
 
-    public async stopProducer(track: MediaStreamTrack): Promise<void> {
+    public async stopProducer(trackId: string): Promise<void> {
         console.log("stop producer");
-        if (this.producers[track.id]) {
+        if (this.producers[trackId]) {
             this.fetchPostJson(RouterPostUrls.CloseProducer, {
-                id: this.producers[track.id].id
+                id: this.producers[trackId].producer.id
             }).then(() => {
-                this.producers[track.id].close();
-                this.emit("producer-resumed", track.id);
+                this.producers[trackId].producer.close();
+                // Remove public offer
+                if (this.producers[trackId].globalProducerId)
+                    firebase.firestore()
+                        .collection("producers")
+                        .doc(this.producers[trackId].globalProducerId)
+                        .delete();
+                this.producers = omit(this.producers, trackId);
+                this.emit("producer-stopped", trackId);
             })
         }
     }
@@ -238,36 +305,39 @@ export class MediasoupDevice extends IDeviceAPI {
         return querySnapshot.docChanges().forEach((change: firebase.firestore.DocumentChange<DatabaseGlobalProducer>) => {
             const globalProducer: DatabaseGlobalProducer = change.doc.data();
             if (change.type === "added") {
-                if (globalProducer.kind === "audio" && !this.receiveAudio) {
-                    return;
-                }
-                if (globalProducer.kind === "video" && !this.receiveVideo) {
-                    return;
-                }
-                return this.createConsumer({
+                this.availableGlobalProducers[change.doc.id] = {
                     ...globalProducer,
                     id: change.doc.id
-                });
-            }
-            if (change.type === "removed") {
-                return this.closeConsumer(change.doc.id);
+                }
+                if (globalProducer.kind === "audio" && this.receiveAudio ||
+                    globalProducer.kind === "video" && this.receiveVideo) {
+                    return this.createConsumer({
+                        ...globalProducer,
+                        id: change.doc.id
+                    });
+                }
+            } else if (change.type === "removed") {
+                this.availableGlobalProducers = omit(this.availableGlobalProducers, change.doc.id);
+                if (this.consumers[change.doc.id])
+                    return this.closeConsumer(change.doc.id);
             }
         })
     }
 
-    private publishProducerToStage(stageId: string, producer: mediasoupClient.types.Producer) {
+    private publishProducerToStage(stageId: string, producer: PublishableProducer) {
         return firebase.firestore()
             .collection("producers")
             .add({
                 uid: this.user.uid,
                 deviceId: this.getDeviceId(),
                 routerId: this.router.id,
-                producerId: producer.id,
+                producerId: producer.producer.id,
                 stageId: stageId,
-                kind: producer.kind
+                kind: producer.producer.kind
             } as DatabaseGlobalProducer)
             .then((ref) => {
                 console.log("Published global producer " + ref.id);
+                producer.globalProducerId = ref.id;
                 this.emit("producer-published", ref.id);
             });
     }
@@ -306,11 +376,8 @@ export class MediasoupDevice extends IDeviceAPI {
                             .then((payload: {
                                 id: string;
                             }) => {
-                                this.emit("producer-added", this.producers[producer.appData.trackId]);
-                                if (this.stageId) {
-                                    this.publishProducerToStage(this.stageId, this.producers[producer.appData.trackId]);
-                                }
-                                return callback(payload.id);   //TODO: Is this necessary?
+                                producer.id = payload.id;
+                                return callback(producer);
                             })
                             .catch((error) => errCallback(error));
                     });
@@ -319,26 +386,36 @@ export class MediasoupDevice extends IDeviceAPI {
             });
     }
 
-    private fetchGetJson = (url: string): Promise<any> => unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
-        method: "GET",
-        headers: {'Content-Type': 'application/json'},
-    })
-        .then((res) => {
-            if (!res.ok)
-                throw new Error(res.statusText);
-            return res;
+    private fetchGetJson = (url: string): Promise<any> => {
+        return new Promise<any>((resolve, reject) => {
+            return unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
+                method: "GET",
+                headers: {'Content-Type': 'application/json'},
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        return reject(response.statusText);
+                    }
+                    return response.json();
+                })
+                .then((json: any) => resolve(json));
         })
-        .then((res) => res.json());
-    private fetchPostJson = (url: string, body?: any): Promise<any> => unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
-        method: "POST",
-        headers: {'Content-Type': 'application/json'},
-        body: body ? JSON.stringify(body) : null
-    })
-        .then((res) => {
-            if (!res.ok)
-                throw new Error(res.statusText);
-            return res;
-        })
-        .then((res) => res.json());
+    }
 
+    private fetchPostJson = (url: string, body?: any): Promise<any> => {
+        return new Promise<any>((resolve, reject) => {
+            return unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: body ? JSON.stringify(body) : null
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        return reject(response.statusText);
+                    }
+                    return response.json();
+                })
+                .then((json: any) => resolve(json));
+        });
+    }
 }

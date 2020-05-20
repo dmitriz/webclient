@@ -7,8 +7,8 @@ import {EventEmitter} from 'events';
 export interface DatabaseDevice {
     uid: string;
 
-    ipv4: string;
-    ipv6: string;
+    ipv4?: string;
+    ipv6?: string;
 
     canAudio: boolean;
     canVideo: boolean;
@@ -22,16 +22,16 @@ export interface DatabaseDevice {
 
 export abstract class IDeviceAPI extends EventEmitter {
     protected readonly user: firebase.User;
-    private firestoreRef: firebase.firestore.DocumentReference = undefined;
+    private firestoreRef: firebase.database.Reference = undefined;
 
-    protected canAudio: boolean;
-    protected canVideo: boolean;
-    protected sendAudio: boolean;
-    protected sendVideo: boolean;
-    protected receiveAudio: boolean;
-    protected receiveVideo: boolean;
-    protected ipv4: string;
-    protected ipv6: string;
+    protected canAudio: boolean = false;
+    protected canVideo: boolean = false;
+    private sendAudio: boolean = false;
+    private sendVideo: boolean = false;
+    protected receiveAudio: boolean = false;
+    protected receiveVideo: boolean = false;
+    protected static ipv4: string;
+    protected static ipv6: string;
 
     protected constructor(user: firebase.User, options?: {
         canAudio?: boolean,
@@ -39,6 +39,9 @@ export abstract class IDeviceAPI extends EventEmitter {
     }) {
         super();
         this.user = user;
+        if (!this.user) {
+            throw new Error("TRACE ME");
+        }
         if (options) {
             this.canAudio = options.canAudio;
             this.canVideo = options.canVideo;
@@ -50,7 +53,7 @@ export abstract class IDeviceAPI extends EventEmitter {
 
     public getDeviceId(): string | null {
         if (this.firestoreRef)
-            return this.firestoreRef.id;
+            return this.firestoreRef.key;
         return null;
     }
 
@@ -74,39 +77,49 @@ export abstract class IDeviceAPI extends EventEmitter {
         }
     }
 
+    private async getIps() {
+        if (!IDeviceAPI.ipv4) {
+            try {
+                IDeviceAPI.ipv4 = await publicIp.v4();
+            } catch (error) {
+                console.error(error)
+            }
+        }
+        if (!IDeviceAPI.ipv6) {
+            try {
+                IDeviceAPI.ipv6 = await publicIp.v6();
+            } catch (error) {
+                console.error(error)
+            }
+        }
+    }
+
     private async registerDevice(): Promise<void> {
         //TODO: assuming, that the ip does not change - however, this can be exported inside an goOnline and goOffline method
-        try {
-            this.ipv4 = await publicIp.v4();
-            this.ipv6 = await publicIp.v6();
-            const ref: firebase.firestore.DocumentReference = await firebase.firestore()
-                .collection("devices")
-                .add({
-                    uid: this.user.uid,
-                    ipv4: this.ipv4,
-                    ipv6: this.ipv6,
-                    canAudio: this.canAudio,
-                    canVideo: this.canVideo,
-                    sendAudio: this.sendAudio,
-                    sendVideo: this.sendVideo,
-                    receiveAudio: this.receiveAudio,
-                    receiveVideo: this.receiveVideo
-                } as DatabaseDevice);
-            await firebase.database()
-                .ref("status/" + this.firestoreRef.id)
-                .set({
-                    online: true
-                });
-            const unsubscribe = await this.firestoreRef
-                .onSnapshot(this.handleDeviceUpdate)
-            await firebase.database()
-                .ref("status/" + this.firestoreRef.id)
-                .onDisconnect().remove(unsubscribe);
-            // Now we are safe to set this ref
-            this.firestoreRef = ref;
-        } catch (error) {
-            console.error(error);
-        }
+        await this.getIps();
+        const device: DatabaseDevice = {
+            uid: this.user.uid,
+            ipv4: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
+            ipv6: IDeviceAPI.ipv6 ? IDeviceAPI.ipv6 : null,
+            canAudio: this.canAudio,
+            canVideo: this.canVideo,
+            sendAudio: this.sendAudio,
+            sendVideo: this.sendVideo,
+            receiveAudio: this.receiveAudio,
+            receiveVideo: this.receiveVideo
+        };
+        return firebase
+            .database()
+            .ref("devices")
+            .push(device)
+            .then((ref: firebase.database.Reference) => {
+                ref.onDisconnect().remove();
+                return ref;
+            })
+            .then((ref: firebase.database.Reference) => {
+                this.firestoreRef = ref;
+            })
+            .catch((error) => console.error(error));
     }
 
     public isReady() {
@@ -114,6 +127,10 @@ export abstract class IDeviceAPI extends EventEmitter {
     }
 
     protected setCanAudio(canAudio: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.canAudio = canAudio;
+            return;
+        }
         return this.firestoreRef
             .update({
                 canAudio: canAudio
@@ -124,6 +141,10 @@ export abstract class IDeviceAPI extends EventEmitter {
     }
 
     protected setCanVideo(canVideo: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.canVideo = canVideo;
+            return;
+        }
         return this.firestoreRef
             .update({
                 canVideo: canVideo
@@ -134,50 +155,62 @@ export abstract class IDeviceAPI extends EventEmitter {
     }
 
     public async setSendAudio(sendAudio: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.sendAudio = sendAudio;
+            return;
+        }
         return this.firestoreRef
             .update({
                 sendAudio: sendAudio
             })
             .then(() => {
                 this.sendAudio = sendAudio;
+                this.emit("send-audio", sendAudio);
             });
     }
 
     public async setSendVideo(sendVideo: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.sendVideo = sendVideo;
+            return;
+        }
         return this.firestoreRef
             .update({
                 sendVideo: sendVideo
             })
             .then(() => {
                 this.sendVideo = sendVideo;
+                this.emit("send-video", sendVideo);
             });
     }
 
     public async setReceiveAudio(receiveAudio: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.receiveAudio = receiveAudio;
+            return;
+        }
         return this.firestoreRef
             .update({
                 receiveAudio: receiveAudio
             })
             .then(() => {
                 this.receiveAudio = receiveAudio;
+                this.emit("receive-audio", receiveAudio);
             });
     }
 
     public async setReceiveVideo(receiveVideo: boolean): Promise<void> {
+        if (!this.firestoreRef) {
+            this.receiveVideo = receiveVideo;
+            return;
+        }
         return this.firestoreRef
             .update({
                 receiveVideo: receiveVideo
             })
             .then(() => {
                 this.receiveVideo = receiveVideo;
+                this.emit("receive-video", receiveVideo);
             });
     }
-
-    public abstract isSendingAudio();
-
-    public abstract isSendingVideo();
-
-    public abstract isReceivingVideo();
-
-    public abstract isReceivingAudio();
 }
