@@ -303,7 +303,7 @@ export class MediasoupStageConnection extends MediasoupConnection {
                     .forEach((globalProducerId: string) => {
                         if (this.foreignProducers[globalProducerId].kind === "video") {
                             console.log("CONSUMING: " + globalProducerId);
-                            this.createConsumer(globalProducerId);
+                            return this.createConsumer(globalProducerId);
                         }
                     })
             } else {
@@ -311,7 +311,7 @@ export class MediasoupStageConnection extends MediasoupConnection {
                     .forEach((globalProducerId: string) => {
                         if (this.foreignProducers[globalProducerId].kind === "video") {
                             console.log("STOP CONSUMING: " + globalProducerId);
-                            this.closeConsumer(globalProducerId);
+                            return this.closeConsumer(globalProducerId);
                         }
                     })
             }
@@ -328,7 +328,7 @@ export class MediasoupStageConnection extends MediasoupConnection {
                     .forEach((globalProducerId: string) => {
                         if (this.foreignProducers[globalProducerId].kind === "audio") {
                             console.log("CONSUMING: " + globalProducerId);
-                            this.createConsumer(globalProducerId);
+                            return this.createConsumer(globalProducerId);
                         }
                     })
             } else {
@@ -336,7 +336,7 @@ export class MediasoupStageConnection extends MediasoupConnection {
                     .forEach((globalProducerId: string) => {
                         if (this.foreignProducers[globalProducerId].kind === "audio") {
                             console.log("STOP CONSUMING: " + globalProducerId);
-                            this.closeConsumer(globalProducerId);
+                            return this.closeConsumer(globalProducerId);
                         }
                     })
             }

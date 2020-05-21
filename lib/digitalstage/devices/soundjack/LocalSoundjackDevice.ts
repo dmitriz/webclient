@@ -19,8 +19,8 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
     protected webSocket: WebSocket;
 
     constructor(user: firebase.User) {
-        super(user, {
-            canAudio: true,
+        super(user, "Soundjack", {
+            canAudio: false,
             canVideo: false
         });
         this.connect();
@@ -28,14 +28,18 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
 
     private connect() {
         const contactSoundjack = () => {
-            console.log("Polling soundjack...");
             this.webSocket = new WebSocket("ws://localhost:" + this.port);
             this.webSocket.onerror = () => {
-                console.log("Soundjack not available");
+                this.isAvailable = false;
+                return this.setCanAudio(false);
             }
             this.webSocket.onopen = () => {
-                this.initialize();
+                return this.initialize();
             };
+            this.webSocket.onclose = () => {
+                this.isAvailable = false;
+                return this.setCanAudio(false);
+            }
         }
         const isAvailable = () => this.isAvailable;
         const polling = setInterval(function () {
@@ -53,6 +57,7 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
         if (this.stageId) {
             this.enableStageListeners();
         }
+        return this.setCanAudio(true);
     }
 
     private handleRemoteSoundjackNode = (querySnapshot: firebase.firestore.QuerySnapshot) => {
@@ -95,7 +100,7 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
             })
         this.unlistenRemoteSoudjacks = firebase.firestore()
             .collection("users/" + this.user.uid + "/soundjacks")
-            .onSnapshot(snapshot => this.handleRemoteSoundjackNode);
+            .onSnapshot(this.handleRemoteSoundjackNode);
     }
     private disableStageListeners = () => {
         this.unlistenRemoteSoudjacks();

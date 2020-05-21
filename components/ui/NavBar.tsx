@@ -55,7 +55,7 @@ export default () => {
                             {stage ? (
                                 <>
                                     <StyledNavigationItem>
-                                        <a onClick={leave}>
+                                        <a onClick={() => leave()}>
                                             Leave
                                         </a>
                                     </StyledNavigationItem>

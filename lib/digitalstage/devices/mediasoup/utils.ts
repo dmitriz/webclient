@@ -2,6 +2,9 @@ import firebase from "firebase/app";
 import "firebase/firestore";
 import Ping from 'ping.js';
 import {DatabaseRouter} from "./models";
+import mediasoupClient from "mediasoup-client";
+import {IAudioContext} from "standardized-audio-context";
+import {MediasoupAudioTrack, MediasoupVideoTrack, MediaTrack} from "../../model";
 
 export const getFastestRouter = (): Promise<DatabaseRouter> => {
     return new Promise<DatabaseRouter>((resolve, reject) => {
@@ -40,39 +43,6 @@ export const getFastestRouter = (): Promise<DatabaseRouter> => {
     });
 }
 
-export const getFastestRouter2 = (): Promise<DatabaseRouter> => {
-    return firebase
-        .firestore()
-        .collection("routers")
-        .get()
-        .then((querySnapshot: firebase.firestore.QuerySnapshot) => querySnapshot.docs)
-        .then(async (docs: Array<firebase.firestore.QueryDocumentSnapshot>) => {
-            const p: Ping = new Ping({
-                favicon: "/ping"
-            });
-            let fastestRouter: DatabaseRouter = null;
-            let lowestLatency = -1;
-            for (const doc of docs) {
-                const router: DatabaseRouter = {
-                    id: doc.id,
-                    ...doc.data()
-                } as DatabaseRouter;
-                const latency = await new Promise<number>((resolve, reject) => {
-                    p.ping("https://" + router.domain + ":" + router.port, (err, data) => {
-                        if (err)
-                            return reject(data);
-                        return resolve(data);
-                    });
-                })
-                console.log("Latency of router " + router.domain + ": " + latency);
-                if (lowestLatency === -1 || lowestLatency > latency) {
-                    fastestRouter = router;
-                }
-            }
-            return fastestRouter;
-        })
-};
-
 export const getLocalAudioTracks = (): Promise<MediaStreamTrack[]> => {
     return navigator.mediaDevices.getUserMedia({
         video: false,
@@ -87,4 +57,15 @@ export const getLocalVideoTracks = (): Promise<MediaStreamTrack[]> => {
         audio: false
     })
         .then((stream: MediaStream) => stream.getVideoTracks())
+}
+
+export const createMediasoupMediaTrack = (id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext): MediaTrack => {
+    if (consumer.kind === "audio") {
+        return new MediasoupAudioTrack(id, audioContext.createMediaStreamTrackSource(consumer.track));
+    }
+    return {
+        id: id,
+        type: "video",
+        track: consumer.track
+    } as MediasoupVideoTrack;
 }

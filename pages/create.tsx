@@ -10,7 +10,7 @@ import Layout from "../components/ui/Layout";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {create, stage} = useStage();
+    const {create, stage, loading: stageLoading} = useStage();
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
@@ -54,7 +54,9 @@ export default () => {
                          caption={"Optional"}>
                 <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
             </FormControl>
-            <Button onClick={() => create(stageName, password)}>Create</Button>
+            <Button isLoading={stageLoading}
+                    disabled={stageLoading}
+                    onClick={() => create(stageName, password)}>Create</Button>
         </Layout>
     );
 };

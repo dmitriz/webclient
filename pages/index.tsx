@@ -15,7 +15,7 @@ import LocalDevicePanel from "../components/LocalDevicePanel";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {join, stage, error} = useStage();
+    const {join, stage, error, loading: stageLoading} = useStage();
     const [stageId, setStageId] = useState<string>("-M7eC0Swye-Ye-V7_o0J");
     const [password, setPassword] = useState<string>('hello');
     const router = useRouter();
@@ -55,7 +55,7 @@ export default () => {
                         {error}
                     </Notification>
                 )}
-                <Button disabled={stageId.length === 0} onClick={() => join(stageId, "")}>Join</Button>
+                <Button isLoading={stageLoading} disabled={stageId.length === 0} onClick={() => join(stageId, "")}>Join</Button>
             </Container>
         </Layout>
     )

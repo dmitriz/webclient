@@ -6,8 +6,7 @@ import "firebase/auth";
 import {DatabaseGlobalProducer, DatabaseRouter} from "./models";
 import {Device as MediasoupClientDevice} from "mediasoup-client/lib/Device";
 import unfetch from "isomorphic-unfetch";
-import {RouterPostUrls} from "../../mediasoup/events";
-import {RouterGetUrls} from "./events";
+import {RouterGetUrls, RouterPostUrls} from "./events";
 import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from "./utils";
 import * as omit from "lodash.omit";
 
@@ -42,7 +41,7 @@ export class MediasoupDevice extends IDeviceAPI {
     } = {};
 
     constructor(user: firebase.User) {
-        super(user, {
+        super(user, "Browser", {
             canAudio: true,
             canVideo: true
         });
@@ -166,7 +165,7 @@ export class MediasoupDevice extends IDeviceAPI {
 
         console.log("create consumer");
 
-        this.fetchPostJson(RouterPostUrls.CreateConsumer, {
+        return this.fetchPostJson(RouterPostUrls.CreateConsumer, {
             globalProducerId: globalProducer.id,
             transportId: this.receiveTransport.id,
             rtpCapabilities: this.device.rtpCapabilities    //TODO: Necessary?

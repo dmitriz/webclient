@@ -7,6 +7,8 @@ import {EventEmitter} from 'events';
 export interface DatabaseDevice {
     uid: string;
 
+    name: string;
+
     ipv4?: string;
     ipv6?: string;
 
@@ -23,7 +25,7 @@ export interface DatabaseDevice {
 export abstract class IDeviceAPI extends EventEmitter {
     protected readonly user: firebase.User;
     private firestoreRef: firebase.database.Reference = undefined;
-
+    private readonly name: string;
     protected canAudio: boolean = false;
     protected canVideo: boolean = false;
     private sendAudio: boolean = false;
@@ -33,12 +35,13 @@ export abstract class IDeviceAPI extends EventEmitter {
     protected static ipv4: string;
     protected static ipv6: string;
 
-    protected constructor(user: firebase.User, options?: {
+    protected constructor(user: firebase.User, name: string, options?: {
         canAudio?: boolean,
         canVideo?: boolean
     }) {
         super();
         this.user = user;
+        this.name = name;
         if (!this.user) {
             throw new Error("TRACE ME");
         }
@@ -57,48 +60,51 @@ export abstract class IDeviceAPI extends EventEmitter {
         return null;
     }
 
-    private handleDeviceUpdate = (snapshot: firebase.firestore.DocumentSnapshot) => {
-        const device: DatabaseDevice = snapshot.data() as DatabaseDevice;
-        if (device.receiveVideo !== this.receiveVideo) {
-            this.receiveVideo = device.receiveVideo;
-            this.emit("receive-video", this.receiveVideo);
-        }
-        if (device.receiveAudio !== this.receiveAudio) {
-            this.receiveAudio = device.receiveAudio;
-            this.emit("receive-audio", this.receiveAudio);
-        }
-        if (device.sendVideo !== this.sendVideo) {
-            this.sendVideo = device.sendVideo;
-            this.emit("send-video", this.sendVideo);
-        }
-        if (device.sendAudio !== this.sendAudio) {
-            this.sendAudio = device.sendAudio;
-            this.emit("send-audio", this.sendAudio);
+    private handleDeviceUpdate = (snapshot: firebase.database.DataSnapshot) => {
+        const device: DatabaseDevice = snapshot.val() as DatabaseDevice;
+        if( device ) {
+            if (device.receiveVideo !== this.receiveVideo) {
+                this.receiveVideo = device.receiveVideo;
+                this.emit("receive-video", this.receiveVideo);
+            }
+            if (device.receiveAudio !== this.receiveAudio) {
+                this.receiveAudio = device.receiveAudio;
+                this.emit("receive-audio", this.receiveAudio);
+            }
+            if (device.sendVideo !== this.sendVideo) {
+                this.sendVideo = device.sendVideo;
+                this.emit("send-video", this.sendVideo);
+            }
+            if (device.sendAudio !== this.sendAudio) {
+                this.sendAudio = device.sendAudio;
+                this.emit("send-audio", this.sendAudio);
+            }
         }
     }
 
-    private async getIps() {
+    private static async getIPs() {
         if (!IDeviceAPI.ipv4) {
             try {
                 IDeviceAPI.ipv4 = await publicIp.v4();
             } catch (error) {
-                console.error(error)
+                console.error(error);
             }
         }
         if (!IDeviceAPI.ipv6) {
             try {
                 IDeviceAPI.ipv6 = await publicIp.v6();
             } catch (error) {
-                console.error(error)
+                console.error(error);
             }
         }
     }
 
     private async registerDevice(): Promise<void> {
         //TODO: assuming, that the ip does not change - however, this can be exported inside an goOnline and goOffline method
-        await this.getIps();
+        await IDeviceAPI.getIPs();
         const device: DatabaseDevice = {
             uid: this.user.uid,
+            name: this.name,
             ipv4: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
             ipv6: IDeviceAPI.ipv6 ? IDeviceAPI.ipv6 : null,
             canAudio: this.canAudio,
@@ -108,12 +114,14 @@ export abstract class IDeviceAPI extends EventEmitter {
             receiveAudio: this.receiveAudio,
             receiveVideo: this.receiveVideo
         };
+
         return firebase
             .database()
             .ref("devices")
             .push(device)
             .then((ref: firebase.database.Reference) => {
                 ref.onDisconnect().remove();
+                ref.on("value", this.handleDeviceUpdate);
                 return ref;
             })
             .then((ref: firebase.database.Reference) => {
