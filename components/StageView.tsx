@@ -1,4 +1,4 @@
-import {useStage} from "../lib/digitalstage/useStage2"
+import {useStage} from "../lib/digitalstage/useStage"
 import {StageMember} from "../lib/digitalstage/model";
 
 export default () => {

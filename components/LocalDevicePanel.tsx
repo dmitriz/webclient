@@ -1,6 +1,6 @@
 import {Checkbox, STYLE_TYPE} from "baseui/checkbox";
 import React from "react";
-import {useStage} from "../lib/digitalstage/useStage2";
+import {useStage} from "../lib/digitalstage/useStage";
 import {styled} from "baseui";
 
 const Panel = styled("div", {

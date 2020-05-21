@@ -5,7 +5,7 @@ import {Input} from "baseui/input";
 import Container from "../components/ui/Container";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/ui/Layout";
-import {useStage} from "../lib/digitalstage/useStage2";
+import {useStage} from "../lib/digitalstage/useStage";
 import Loading from "../components/ui/Loading";
 import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";

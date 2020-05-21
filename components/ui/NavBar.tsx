@@ -4,7 +4,7 @@ import {Button} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
-import {useStage} from "../../lib/digitalstage/useStage2";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const NavContainer = styled("div", {
     width: '100%'
