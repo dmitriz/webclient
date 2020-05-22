@@ -4,13 +4,14 @@ import "firebase/auth";
 import React, {createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
 import fetch from "isomorphic-unfetch";
 import {AudioContext, IAudioContext} from 'standardized-audio-context';
-import {DatabaseMember, DatabaseStage, DatabaseStageMember, Stage, StageMember, StageMemberNew} from "./model";
 import {useAuth} from "../useAuth";
 import useMediasoupDevice from "./devices/mediasoup/useMediasoupDevice";
 import useSoundjackDevice from "./devices/soundjack/useSoundjackDevice";
 import {GlobalProducerConsumer} from "./devices/mediasoup/MediasoupDevice";
 import {createMediasoupMediaTrack} from "./devices/mediasoup/utils";
 import webAudioTouchUnlock from "../../lib/webAudioTouchUnlock";
+import {Stage, StageMember} from "./client.model";
+import {DatabaseStage, DatabaseStageMember, DatabaseUser} from "./database.model";
 
 interface StageProps {
     create(name: string, password: string);
@@ -26,7 +27,7 @@ interface StageProps {
 
     error?: string;
 
-    members: StageMemberNew[];
+    members: StageMember[];
 
     sendVideo: boolean;
     setSendVideo: Dispatch<SetStateAction<boolean>>;
@@ -65,8 +66,8 @@ export const StageProvider = (props: {
             return firebase.firestore()
                 .collection("users")
                 .doc(user.uid)
-                .onSnapshot((snapshot: firebase.firestore.DocumentSnapshot<DatabaseMember>) => {
-                    const member: DatabaseMember = snapshot.data();
+                .onSnapshot((snapshot: firebase.firestore.DocumentSnapshot<DatabaseUser>) => {
+                    const member: DatabaseUser = snapshot.data();
                     if (member && member.stageId) {
                         setStageId(member.stageId);
                     } else {

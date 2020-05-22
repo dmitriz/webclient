@@ -1,79 +1,27 @@
 // DATABASE MODEL
 import {IMediaStreamTrackAudioSourceNode} from "standardized-audio-context/src/interfaces/media-stream-track-audio-source-node";
 import {IAudioContext, IGainNode} from "standardized-audio-context";
+import {DatabaseRouter, DatabaseStage, DatabaseStageMember} from "./database.model";
+import mediasoupClient from "mediasoup-client";
 
-export interface DatabaseRouter {
-    ipv4: string,
-    ipv6: string,
-    domain: string;
-    port: number,
-    slotAvailable: number
-}
-
-export interface DatabaseMember {
-    uid: string;
-    stageId?: string;
-}
-
-export interface DatabaseStage {
+/**
+ * Extended version of the database router, necessary for client interactions
+ */
+export interface MediasoupRouter extends DatabaseRouter {
     id: string;
-    name: string;
-    password: string;
 }
 
-export interface DatabaseStageMember {
-    uid: string;
-    displayName: string;
+/**
+ *  Internal stage model (for clients, react, etc.)
+ */
+export interface Stage extends DatabaseStage {
 }
 
-
-export interface DatabaseProducer {
-    uid: string;
-    stageId: string;
-    routerId: string;
-    kind: string;
-}
-
-export interface DatabaseDevice {
-    uid: string;
-
-    ipv4: string;
-    ipv6: string;
-
-    canAudio: boolean;
-    canVideo: boolean;
-
-    sendAudio: boolean;
-    sendVideo: boolean;
-    receiveAudio: boolean;
-    receiveVideo: boolean;
-}
-
-// INTERNAL MODEL
-export interface Stage {
-    id: string;
-    name: string;
-    password: string;
-}
-
-export interface StageMember {
-    uid: string;
-    displayName: string;
+/**
+ * Client-based member model holding the media tracks
+ */
+export interface StageMember extends DatabaseStageMember {
     tracks: MediaTrack[];
-}
-
-export interface StageMemberNew {
-    uid: string;
-    displayName: string;
-    tracks: MediaTrack[];
-}
-
-export interface StageMemberOld {
-    uid: string;
-    displayName: string;
-    tracks: {
-        [id: string]: MediaTrack;
-    }
 }
 
 export interface MediaTrack {
@@ -86,8 +34,10 @@ export interface MediasoupVideoTrack extends MediaTrack {
     track: MediaStreamTrack;
 }
 
+
 export interface AudioTrack extends MediaTrack {
     type: "audio"
+    track: MediaStreamTrack;
 
     volume: number;
 
@@ -100,6 +50,7 @@ export interface AudioTrack extends MediaTrack {
 
 export class MediasoupAudioTrack implements AudioTrack {
     public readonly type = "audio";
+    public readonly track: MediaStreamTrack;
     private readonly source: IMediaStreamTrackAudioSourceNode<IAudioContext>;
     private readonly gainNode: IGainNode<IAudioContext>;
     public readonly id: string;
@@ -110,12 +61,13 @@ export class MediasoupAudioTrack implements AudioTrack {
         return this.internalVolume
     }
 
-    constructor(id: string, source: IMediaStreamTrackAudioSourceNode<IAudioContext>) {
+    constructor(id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext) {
         this.id = id;
-        this.source = source;
+        this.track = consumer.track;
+        this.source = audioContext.createMediaStreamTrackSource(consumer.track);
         this.gainNode = this.source.context.createGain();
         this.source.connect(this.gainNode);
-        this.gainNode.connect(this.source.context.destination);
+        this.gainNode.connect(audioContext.destination);
     }
 
     public mute = () => {
@@ -130,6 +82,7 @@ export class MediasoupAudioTrack implements AudioTrack {
     public setVolume = (volume: number) => {
         this.internalVolume = volume;
         if (!this.muted) {
+            console.log("Set gain to " + volume);
             this.gainNode.gain.value = volume;
         }
     }

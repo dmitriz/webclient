@@ -1,17 +1,16 @@
 import {useStage} from "../lib/digitalstage/useStage"
-import {StageMember} from "../lib/digitalstage/model";
+import MemberView from "./MemberView";
+import React from "react";
 
 export default () => {
     const {members} = useStage();
 
+    console.log(members);
+
     return (
         <div>
             {members.length} Members
-            <ul>
-                {members.map((member: StageMember) => (
-                    <li>{member.displayName} with {member.tracks.length} tracks</li>
-                ))}
-            </ul>
+            {members.map((member) => <MemberView member={member}/>)}
         </div>
     )
 }

@@ -173,7 +173,7 @@ export abstract class IDeviceAPI extends EventEmitter {
             })
             .then(() => {
                 this.sendAudio = sendAudio;
-                this.emit("send-audio", sendAudio);
+                //this.emit("send-audio", sendAudio);
             });
     }
 
@@ -188,7 +188,7 @@ export abstract class IDeviceAPI extends EventEmitter {
             })
             .then(() => {
                 this.sendVideo = sendVideo;
-                this.emit("send-video", sendVideo);
+                //this.emit("send-video", sendVideo);
             });
     }
 
@@ -203,7 +203,7 @@ export abstract class IDeviceAPI extends EventEmitter {
             })
             .then(() => {
                 this.receiveAudio = receiveAudio;
-                this.emit("receive-audio", receiveAudio);
+                //this.emit("receive-audio", receiveAudio);
             });
     }
 
@@ -218,7 +218,7 @@ export abstract class IDeviceAPI extends EventEmitter {
             })
             .then(() => {
                 this.receiveVideo = receiveVideo;
-                this.emit("receive-video", receiveVideo);
+                //this.emit("receive-video", receiveVideo);
             });
     }
 }

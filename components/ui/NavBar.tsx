@@ -22,7 +22,7 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
-    const {leave, stage} = useStage();
+    const {leave, stage, sendAudio} = useStage();
 
     return (
         <NavContainer>

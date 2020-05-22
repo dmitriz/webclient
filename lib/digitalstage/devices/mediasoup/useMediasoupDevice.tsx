@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
 import {MediasoupDevice} from "./MediasoupDevice";
+import {fixWebRTC} from "../../../../util/fixWebRTC";
 
 export default (user: firebase.User) => {
     const [localMediasoupDevice, setLocalMediasoupDevice] = useState<MediasoupDevice>();
@@ -10,6 +11,7 @@ export default (user: firebase.User) => {
 
     useEffect(() => {
         if (user) {
+            fixWebRTC();
             setLocalMediasoupDevice(new MediasoupDevice(user));
         }
     }, [user])

@@ -3,12 +3,14 @@ import mediasoupClient from "mediasoup-client";
 import firebase from "firebase/app";
 import "firebase/firestore";
 import "firebase/auth";
-import {DatabaseGlobalProducer, DatabaseRouter} from "./models";
 import {Device as MediasoupClientDevice} from "mediasoup-client/lib/Device";
 import unfetch from "isomorphic-unfetch";
 import {RouterGetUrls, RouterPostUrls} from "./events";
 import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from "./utils";
 import * as omit from "lodash.omit";
+import {DatabaseGlobalProducer} from "../../database.model";
+import {MediasoupRouter} from "../../client.model";
+import {fixWebRTC} from "../../../../util/fixWebRTC";
 
 export interface PublishableProducer {
     producer: mediasoupClient.types.Producer,
@@ -27,7 +29,7 @@ export interface GlobalProducerConsumer {
 export class MediasoupDevice extends IDeviceAPI {
     protected readonly device: MediasoupClientDevice;
     protected stageId: string = null;
-    protected router: DatabaseRouter = undefined;
+    protected router: MediasoupRouter = undefined;
     protected sendTransport: mediasoupClient.types.Transport;
     protected receiveTransport: mediasoupClient.types.Transport;
     protected availableGlobalProducers: {
@@ -52,6 +54,7 @@ export class MediasoupDevice extends IDeviceAPI {
 
     private registerDeviceListeners() {
         this.on("send-audio", (sendAudio: boolean) => {
+            console.log("SEND_AUDIO");
             if (sendAudio) {
                 getLocalAudioTracks()
                     .then((tracks: MediaStreamTrack[]) => {
@@ -66,6 +69,7 @@ export class MediasoupDevice extends IDeviceAPI {
             }
         });
         this.on("send-video", (sendVideo: boolean) => {
+            console.log("SEND_VIDEO");
             if (sendVideo) {
                 getLocalVideoTracks()
                     .then((tracks: MediaStreamTrack[]) => {
@@ -115,7 +119,7 @@ export class MediasoupDevice extends IDeviceAPI {
 
     public connect() {
         getFastestRouter()
-            .then(async (router: DatabaseRouter) => {
+            .then(async (router: MediasoupRouter) => {
                 this.router = router;
                 const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities();
                 await this.device.load({routerRtpCapabilities: rtpCapabilities});
@@ -162,7 +166,6 @@ export class MediasoupDevice extends IDeviceAPI {
     protected async createConsumer(globalProducer: GlobalProducer): Promise<void> {
         if (!this.receiveTransport)
             return;
-
         console.log("create consumer");
 
         return this.fetchPostJson(RouterPostUrls.CreateConsumer, {
@@ -170,14 +173,19 @@ export class MediasoupDevice extends IDeviceAPI {
             transportId: this.receiveTransport.id,
             rtpCapabilities: this.device.rtpCapabilities    //TODO: Necessary?
         })
-            .then((data: {
+            .then(async (data: {
                 id: string;
                 producerId: string;
                 kind: "audio" | "video";
                 rtpParameters: mediasoupClient.types.RtpParameters,
-                producerPaused: boolean,
+                paused: boolean,
                 type: 'simple' | 'simulcast' | 'svc' | 'pipe'
-            }) => this.receiveTransport.consume(data))
+            }) => {
+                const consumer = await this.receiveTransport.consume(data);
+                if (data.paused)
+                    consumer.pause();
+                return consumer;
+            })
             .then((consumer: mediasoupClient.types.Consumer) => {
                 this.consumers[globalProducer.id] = {
                     globalProducer: globalProducer,
@@ -186,14 +194,17 @@ export class MediasoupDevice extends IDeviceAPI {
                 this.emit("consumer-created", this.consumers[globalProducer.id]);
                 return consumer.paused;
             })
-            .then((paused: boolean) => paused && this.resumeConsumer(globalProducer.id));
+            .then((paused: boolean) => {
+                console.log("Paused: " + paused);
+                return this.resumeConsumer(globalProducer.id)
+            });
     }
 
     public async pauseConsumer(globalProducerId: string): Promise<void> {
         console.log("pause consumer");
         const consumer: GlobalProducerConsumer = this.consumers[globalProducerId];
         if (consumer && !consumer.consumer.paused) {
-            this.fetchPostJson(RouterPostUrls.PauseConsumer, {
+            return this.fetchPostJson(RouterPostUrls.PauseConsumer, {
                 id: consumer.consumer.id
             }).then(() => {
                 consumer.consumer.pause();
@@ -206,9 +217,10 @@ export class MediasoupDevice extends IDeviceAPI {
         console.log("resume consumer");
         const consumer: GlobalProducerConsumer = this.consumers[globalProducerId];
         if (consumer && consumer.consumer.paused) {
-            this.fetchPostJson(RouterPostUrls.ResumeConsumer, {
+            return this.fetchPostJson(RouterPostUrls.ResumeConsumer, {
                 id: consumer.consumer.id
             }).then(() => {
+                console.log("really resume consumer");
                 consumer.consumer.resume();
                 this.emit("consumer-resumed", consumer);
             })
@@ -219,7 +231,7 @@ export class MediasoupDevice extends IDeviceAPI {
         console.log("close consumer");
         const consumer: GlobalProducerConsumer = this.consumers[globalProducerId];
         if (consumer) {
-            this.fetchPostJson(RouterPostUrls.CloseConsumer, {
+            return this.fetchPostJson(RouterPostUrls.CloseConsumer, {
                 id: consumer.consumer.id
             }).then(() => {
                 consumer.consumer.close();
@@ -386,6 +398,7 @@ export class MediasoupDevice extends IDeviceAPI {
     }
 
     private fetchGetJson = (url: string): Promise<any> => {
+        console.log("fetchGetJson(" + url + ")");
         return new Promise<any>((resolve, reject) => {
             return unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
                 method: "GET",
@@ -402,6 +415,7 @@ export class MediasoupDevice extends IDeviceAPI {
     }
 
     private fetchPostJson = (url: string, body?: any): Promise<any> => {
+        console.log("fetchPostJson(" + url + ")");
         return new Promise<any>((resolve, reject) => {
             return unfetch("https://" + this.router.domain + ":" + this.router.port + url, {
                 method: "POST",

@@ -1,41 +1,41 @@
 import firebase from "firebase/app";
 import "firebase/firestore";
-import Ping from 'ping.js';
-import {DatabaseRouter} from "./models";
 import mediasoupClient from "mediasoup-client";
 import {IAudioContext} from "standardized-audio-context";
-import {MediasoupAudioTrack, MediasoupVideoTrack, MediaTrack} from "../../model";
+import {MediasoupAudioTrack, MediasoupRouter, MediasoupVideoTrack, MediaTrack} from "../../client.model";
+import {DatabaseRouter} from "../../database.model";
+import {fixWebRTC} from "../../../../util/fixWebRTC";
 
-export const getFastestRouter = (): Promise<DatabaseRouter> => {
-    return new Promise<DatabaseRouter>((resolve, reject) => {
+export const getFastestRouter = (): Promise<MediasoupRouter> => {
+    return new Promise<MediasoupRouter>((resolve, reject) => {
         return firebase
             .database()
             .ref("routers")
             .once("value")
             .then(async (snapshot: firebase.database.DataSnapshot) => {
-                let fastestRouter: DatabaseRouter = null;
+                let fastestRouter: MediasoupRouter = null;
                 let lowestLatency = -1;
-                const p: Ping = new Ping({
-                    favicon: "/ping"
-                });
                 console.log(snapshot.val());
                 const routers: {
                     [id: string]: DatabaseRouter
                 } = snapshot.val();
-                for (const router of Object.values(routers)) {
-                    const latency = await new Promise<number>((resolve, reject) => {
-                        p.ping("https://" + router.domain + ":" + router.port, (err, data) => {
-                            if (err)
-                                return reject(data);
-                            return resolve(data);
+                for (const routerId of Object.keys(routers)) {
+                    const router: DatabaseRouter = routers[routerId];
+                    const latency: number = await ping("https://" + router.domain + ":" + router.port + "/ping")
+                        .catch((err) => {
+                            console.error('Could not ping router' + router.domain, err);
+                            return 99999
                         });
-                    });
                     console.log("Latency of router " + router.domain + ": " + latency);
                     if (lowestLatency === -1 || lowestLatency > latency) {
-                        fastestRouter = router;
+                        fastestRouter = {
+                            ...router,
+                            id: routerId
+                        };
                     }
                 }
                 if (fastestRouter) {
+                    console.log("USING " + fastestRouter.domain);
                     return resolve(fastestRouter);
                 }
                 return reject("No routers available");
@@ -61,11 +61,42 @@ export const getLocalVideoTracks = (): Promise<MediaStreamTrack[]> => {
 
 export const createMediasoupMediaTrack = (id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext): MediaTrack => {
     if (consumer.kind === "audio") {
-        return new MediasoupAudioTrack(id, audioContext.createMediaStreamTrackSource(consumer.track));
+        return new MediasoupAudioTrack(id, consumer, audioContext);
     }
     return {
         id: id,
         type: "video",
         track: consumer.track
     } as MediasoupVideoTrack;
+}
+
+
+function request_image(url) {
+    return new Promise(function (resolve, reject) {
+        const img = new Image();
+        img.onload = function () {
+            resolve(img);
+        };
+        img.onerror = function () {
+            reject(url);
+        };
+        img.src = url + '?random-no-cache=' + Math.floor((1 + Math.random()) * 0x10000).toString(16);
+    });
+}
+
+function ping(url: string, multiplier?: number): Promise<number> {
+    return new Promise<number>(function (resolve, reject) {
+        const start: number = (new Date()).getTime();
+        const response = function () {
+            let delta: number = ((new Date()).getTime() - start);
+            delta *= (multiplier || 1);
+            resolve(delta);
+        };
+        request_image(url).then(response).catch(() => reject(Error('Error')));
+
+        // Set a timeout for max-pings, 300ms.
+        setTimeout(function () {
+            reject(Error('Timeout'));
+        }, 300);
+    });
 }
