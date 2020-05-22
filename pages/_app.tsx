@@ -61,9 +61,6 @@ export default class MyApp extends App<Props, States> {
                         letter-spacing: -.029375rem;
                         font-weight: 600;
                     }
-                    a, a:hover {
-                        color: rgb(242,157,82);
-                    }
                     @keyframes bounce {
                         0%   { transform: translateY(0); }
                         50%  { transform: translateY(-20px); }

@@ -5,8 +5,12 @@ import {styled} from "baseui";
 
 const Panel = styled("div", {
     position: "absolute",
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 9999,
-    bottom: 50,
+    bottom: "50px",
     width: "100%",
     height: "auto"
 });

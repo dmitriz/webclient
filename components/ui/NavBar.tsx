@@ -5,6 +5,7 @@ import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
 import {useStage} from "../../lib/digitalstage/useStage";
+import {StyledLink} from "baseui/link";
 
 const NavContainer = styled("div", {
     width: '100%'
@@ -55,34 +56,34 @@ export default () => {
                             {stage ? (
                                 <>
                                     <StyledNavigationItem>
-                                        <a onClick={() => leave()}>
+                                        <StyledLink onClick={() => leave()}>
                                             Leave
-                                        </a>
+                                        </StyledLink>
                                     </StyledNavigationItem>
                                 </>
                             ) : (
                                 <>
                                     <StyledNavigationItem>
                                         <Link href="/create">
-                                            <a>
+                                            <StyledLink>
                                                 Create stage
-                                            </a>
+                                            </StyledLink>
                                         </Link>
                                     </StyledNavigationItem>
                                     <StyledNavigationItem>
                                         <Link href="/">
-                                            <a>
+                                            <StyledLink>
                                                 Join stage
-                                            </a>
+                                            </StyledLink>
                                         </Link>
                                     </StyledNavigationItem>
                                 </>
                             )}
                             <StyledNavigationItem>
                                 <Link href="/account">
-                                    <a>
+                                    <StyledLink>
                                         Account
-                                    </a>
+                                    </StyledLink>
                                 </Link>
                             </StyledNavigationItem>
                             <StyledNavigationItem>

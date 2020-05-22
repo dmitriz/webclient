@@ -5,5 +5,6 @@ export default styled("div", {
     maxWidth: '400px',
     marginLeft: 'auto',
     marginRight: 'auto',
+    marginTop: '10vh',
     boxSizing: 'border-box'
 });

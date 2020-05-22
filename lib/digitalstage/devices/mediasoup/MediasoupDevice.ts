@@ -10,7 +10,6 @@ import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from "./util
 import * as omit from "lodash.omit";
 import {DatabaseGlobalProducer} from "../../database.model";
 import {MediasoupRouter} from "../../client.model";
-import {fixWebRTC} from "../../../../util/fixWebRTC";
 
 export interface PublishableProducer {
     producer: mediasoupClient.types.Producer,
@@ -118,7 +117,7 @@ export class MediasoupDevice extends IDeviceAPI {
     }
 
     public connect() {
-        getFastestRouter()
+        return getFastestRouter()
             .then(async (router: MediasoupRouter) => {
                 this.router = router;
                 const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities();
@@ -126,7 +125,12 @@ export class MediasoupDevice extends IDeviceAPI {
                 this.sendTransport = await this.createWebRTCTransport("send");
                 this.receiveTransport = await this.createWebRTCTransport("receive");
                 this.emit("connected", this.router);
-            });
+            })
+            .catch((error) => {
+                console.error(error);
+                alert("Video & Audio not available right now ... sorry :(");
+                this.disconnect();
+            })
     }
 
     public disconnect() {

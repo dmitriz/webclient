@@ -2,7 +2,6 @@ import React, {useState} from "react";
 import {Button} from "baseui/button";
 import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
-import Container from "../components/ui/Container";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/ui/Layout";
 import {useStage} from "../lib/digitalstage/useStage";
@@ -10,7 +9,7 @@ import Loading from "../components/ui/Loading";
 import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/StageView";
-import LocalDevicePanel from "../components/LocalDevicePanel";
+import CenteredCard from "../components/ui/CenteredCard";
 
 
 export default () => {
@@ -31,19 +30,13 @@ export default () => {
 
     if (stage) {
         return (
-            <Layout>
-                {stage.name && (
-                    <h1>{stage.name}</h1>
-                )}
                 <StageView/>
-                <LocalDevicePanel/>
-            </Layout>
         );
     }
 
     return (
         <Layout>
-            <Container>
+            <CenteredCard>
                 <FormControl label="Stage ID">
                     <Input value={stageId} onChange={(e) => setStageId(e.currentTarget.value)}/>
                 </FormControl>
@@ -55,8 +48,9 @@ export default () => {
                         {error}
                     </Notification>
                 )}
-                <Button isLoading={stageLoading} disabled={stageId.length === 0} onClick={() => join(stageId, "")}>Join</Button>
-            </Container>
+                <Button isLoading={stageLoading} disabled={stageId.length === 0}
+                        onClick={() => join(stageId, "")}>Join</Button>
+            </CenteredCard>
         </Layout>
     )
 }

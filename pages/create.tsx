@@ -7,6 +7,7 @@ import {useAuth} from "../lib/useAuth";
 import {useStage} from "../lib/digitalstage/useStage";
 import Loading from "../components/ui/Loading";
 import Layout from "../components/ui/Layout";
+import CenteredCard from "../components/ui/CenteredCard";
 
 export default () => {
     const {user, loading} = useAuth();
@@ -27,36 +28,40 @@ export default () => {
     if (stage) {
         return (
             <Layout>
-                <h1>Stage</h1>
-                <p>
-                    Share this id:
-                </p>
-                <p>
-                    <li>
-                        ID: {stage.id}
-                    </li>
-                    {stage.password && (
-                        <li>Password: {stage.password}</li>
-                    )}
-                </p>
-                <Button onClick={() => router.push("/")}>Ok, let's start</Button>
+                <CenteredCard>
+                    <h1>Stage</h1>
+                    <p>
+                        Share this id:
+                    </p>
+                    <p>
+                        <li>
+                            ID: {stage.id}
+                        </li>
+                        {stage.password && (
+                            <li>Password: {stage.password}</li>
+                        )}
+                    </p>
+                    <Button onClick={() => router.push("/")}>Ok, let's start</Button>
+                </CenteredCard>
             </Layout>
         )
     }
 
     return (
         <Layout>
-            <h1>Create stage</h1>
-            <FormControl label={"Stage name"}>
-                <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
-            </FormControl>
-            <FormControl label={"Passwort"}
-                         caption={"Optional"}>
-                <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
-            </FormControl>
-            <Button isLoading={stageLoading}
-                    disabled={stageLoading}
-                    onClick={() => create(stageName, password)}>Create</Button>
+            <CenteredCard>
+                <h1>Create stage</h1>
+                <FormControl label={"Stage name"}>
+                    <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
+                </FormControl>
+                <FormControl label={"Passwort"}
+                             caption={"Optional"}>
+                    <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
+                </FormControl>
+                <Button isLoading={stageLoading}
+                        disabled={stageLoading}
+                        onClick={() => create(stageName, password)}>Create</Button>
+            </CenteredCard>
         </Layout>
     );
 };

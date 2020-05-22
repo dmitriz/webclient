@@ -4,7 +4,6 @@ import mediasoupClient from "mediasoup-client";
 import {IAudioContext} from "standardized-audio-context";
 import {MediasoupAudioTrack, MediasoupRouter, MediasoupVideoTrack, MediaTrack} from "../../client.model";
 import {DatabaseRouter} from "../../database.model";
-import {fixWebRTC} from "../../../../util/fixWebRTC";
 
 export const getFastestRouter = (): Promise<MediasoupRouter> => {
     return new Promise<MediasoupRouter>((resolve, reject) => {
@@ -13,6 +12,9 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
             .ref("routers")
             .once("value")
             .then(async (snapshot: firebase.database.DataSnapshot) => {
+                if( !snapshot.exists() ) {
+                    return reject("No routers available");
+                }
                 let fastestRouter: MediasoupRouter = null;
                 let lowestLatency = -1;
                 console.log(snapshot.val());
