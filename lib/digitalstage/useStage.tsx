@@ -191,17 +191,21 @@ export const StageProvider = (props: {
         if (user) {
             console.log("Leave");
             setLoading(true);
-            return firebase.firestore()
-                .collection("users")
-                .doc(user.uid)
-                .update({
-                    stageId: null
-                })
-                .then(() => {
-                    setStage(undefined);
-                    setMembers([]);
-                    setStageId(undefined);
-                })
+            return user
+                .getIdToken()
+                .then((token: string) => fetch("https://digital-stages.de/api/stages/leave", {
+                    method: "POST",
+                    headers: {
+                        "authorization": token,
+                        'Content-Type': 'application/json'
+                    }
+                }))
+                .catch((error) => {
+                    console.error(error);
+                    setError(error.message);
+                }).finally(() => {
+                    setLoading(false);
+                });
         }
     }, [user]);
 
