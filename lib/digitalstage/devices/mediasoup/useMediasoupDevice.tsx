@@ -1,8 +1,9 @@
 import {useCallback, useEffect, useState} from "react";
 import {MediasoupDevice} from "./MediasoupDevice";
 import {fixWebRTC} from "../../../../util/fixWebRTC";
+import {Stage} from "../../client.model";
 
-export default (user: firebase.User) => {
+export default (user: firebase.User, stage: Stage) => {
     const [localMediasoupDevice, setLocalMediasoupDevice] = useState<MediasoupDevice>();
     const [sendAudio, setSendAudioInternal] = useState<boolean>();
     const [sendVideo, setSendVideoInternal] = useState<boolean>();
@@ -10,11 +11,11 @@ export default (user: firebase.User) => {
     const [receiveVideo, setReceiveVideoInternal] = useState<boolean>();
 
     useEffect(() => {
-        if (user) {
+        if (user && stage) {
             fixWebRTC();
             setLocalMediasoupDevice(new MediasoupDevice(user));
         }
-    }, [user])
+    }, [user, stage])
 
     useEffect(() => {
         if (localMediasoupDevice) {

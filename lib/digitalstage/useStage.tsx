@@ -140,26 +140,22 @@ export const StageProvider = (props: {
         setLoading(true);
         return user
             .getIdToken()
-            .then((token: string) => fetch("https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/createStage", {
-                method: "POST",
-                headers: {
-                    authorization: token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: name,
-                    password: password
+            .then((token: string) => fetch("https://digital-stages.de/api/stages/create", {
+                    method: "POST",
+                    headers: {
+                        authorization: token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        password: password
+                    })
                 })
-            }))
-            .then((response) => {
-                if (!response.ok) {
-                    setError(response.statusText);
-                    setLoading(false);
-                }
-            })
+            )
             .catch((error) => {
                 console.error(error);
                 setError(error.message);
+            }).finally(() => {
                 setLoading(false);
             });
     }, [user, stage]);
@@ -172,7 +168,7 @@ export const StageProvider = (props: {
         setLoading(true);
         return user
             .getIdToken()
-            .then((token: string) => fetch("https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/joinStage", {
+            .then((token: string) => fetch("https://digital-stages.de/api/stages/join", {
                 method: "POST",
                 headers: {
                     "authorization": token,
@@ -183,16 +179,10 @@ export const StageProvider = (props: {
                     password: password
                 })
             }))
-            .then((response) => {
-                if (!response.ok) {
-                    setError(response.statusText);
-                    setLoading(false);
-                }
-            })
             .catch((error) => {
-                console.log("hey");
                 console.error(error);
                 setError(error.message);
+            }).finally(() => {
                 setLoading(false);
             });
     }, [user, stage]);
@@ -228,7 +218,7 @@ export const StageProvider = (props: {
     /***
      * Mediasoup specific
      */
-    const {localMediasoupDevice, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user);
+    const {localMediasoupDevice, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user, stage);
 
     useEffect(() => {
         const audioContext: IAudioContext = new AudioContext();
