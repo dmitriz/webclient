@@ -8,8 +8,7 @@ interface CanvasElement extends HTMLCanvasElement {
 const Canvas = styled("canvas", {
     width: '100%',
     height: 'auto',
-    stroke: 'red',
-    fill: 'yellow'
+    stroke: 'red'
 });
 const HiddenContainer = styled("div", {
     display: 'none'
@@ -144,14 +143,14 @@ export default class CanvasPlayer extends React.Component<Props, States> {
     private drawAnimationFrames = () => {
         const context = this.canvasRef.current.getContext("2d");
         context.fillStyle = 'black';
-        context.strokeStyle = 'red';
+        //context.strokeStyle = 'red';
         context.fillRect(0, 0, this.props.width, this.props.height);
         this.state.animationFrames.forEach(
             (animationFrame: AnimationFrame) => {
                 context.strokeRect(animationFrame.x, animationFrame.y, animationFrame.width, animationFrame.height);
                 context.fillRect(animationFrame.x, animationFrame.y, animationFrame.width, animationFrame.height);
                 context.drawImage(animationFrame.src, animationFrame.x, animationFrame.y, animationFrame.width, animationFrame.height);
-                context.strokeText(animationFrame.id, animationFrame.x + 30, animationFrame.y + 30);
+                //context.strokeText(animationFrame.id, animationFrame.x + 30, animationFrame.y + 30);
             }
         );
         this.animationFrameId = window.requestAnimationFrame(this.drawAnimationFrames);

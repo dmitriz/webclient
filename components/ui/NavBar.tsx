@@ -1,11 +1,10 @@
 import {ALIGN, HeaderNavigation, StyledNavigationItem, StyledNavigationList} from "baseui/header-navigation";
 import React from "react";
-import {Button} from "baseui/button";
+import {Button, KIND} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
 import {useStage} from "../../lib/digitalstage/useStage";
-import {StyledLink} from "baseui/link";
 
 const NavContainer = styled("div", {
     width: '100%'
@@ -23,7 +22,7 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
-    const {leave, stage, sendAudio} = useStage();
+    const {leave, stage} = useStage();
 
     return (
         <NavContainer>
@@ -33,6 +32,7 @@ export default () => {
                         <CenterVertical>
                             <Banner src={"/logo.png"}/>
                             Digital Stage
+                            {stage && " - " + stage.name}
                         </CenterVertical>
                     </StyledNavigationItem>
                 </StyledNavigationList>
@@ -56,36 +56,29 @@ export default () => {
                             {stage ? (
                                 <>
                                     <StyledNavigationItem>
-                                        <StyledLink onClick={() => leave()}>
+                                        <Button kind={KIND.minimal} onClick={() => leave()}>
                                             Leave
-                                        </StyledLink>
+                                        </Button>
                                     </StyledNavigationItem>
                                 </>
                             ) : (
                                 <>
                                     <StyledNavigationItem>
                                         <Link href="/create">
-                                            <StyledLink>
+                                            <Button kind={KIND.minimal}>
                                                 Create stage
-                                            </StyledLink>
+                                            </Button>
                                         </Link>
                                     </StyledNavigationItem>
                                     <StyledNavigationItem>
                                         <Link href="/">
-                                            <StyledLink>
+                                            <Button kind={KIND.minimal}>
                                                 Join stage
-                                            </StyledLink>
+                                            </Button>
                                         </Link>
                                     </StyledNavigationItem>
                                 </>
                             )}
-                            <StyledNavigationItem>
-                                <Link href="/account">
-                                    <StyledLink>
-                                        Account
-                                    </StyledLink>
-                                </Link>
-                            </StyledNavigationItem>
                             <StyledNavigationItem>
                                 <Link href="/logout">
                                     <Button isLoading={loading}>Logout</Button>

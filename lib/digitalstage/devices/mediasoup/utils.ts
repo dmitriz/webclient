@@ -12,7 +12,7 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
             .ref("routers")
             .once("value")
             .then(async (snapshot: firebase.database.DataSnapshot) => {
-                if( !snapshot.exists() ) {
+                if (!snapshot.exists()) {
                     return reject("No routers available");
                 }
                 let fastestRouter: MediasoupRouter = null;
@@ -48,7 +48,18 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
 export const getLocalAudioTracks = (): Promise<MediaStreamTrack[]> => {
     return navigator.mediaDevices.getUserMedia({
         video: false,
-        audio: {}
+        audio: true
+        /*
+            audio: {
+            autoGainControl: false,
+            channelCount: 1,
+            echoCancellation: false,
+            latency: 0,
+            noiseSuppression: false,
+            sampleRate: 48000,
+            sampleSize: 16,
+        }
+        */
     })
         .then((stream: MediaStream) => stream.getAudioTracks())
 }

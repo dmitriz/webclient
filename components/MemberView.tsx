@@ -9,17 +9,19 @@ const MemberPanel = styled("div", {
     height: '100%',
     maxHeight: '100%',
     overflow: 'hidden',
-    border: "1px solid red",
     position: 'relative',
+    boxSizing: "border-box"
 });
 
 const MemberTitle = styled("div", {
     width: '100%',
     position: "absolute",
-    top: 0,
+    top: "8px",
     right: 0,
-    left: 0,
-    zIndex: 200
+    left: "8px",
+    zIndex: 200,
+    boxSizing: "border-box",
+    textShadow: "0 0 4px #000"
 });
 
 const MemberVideo = styled(CanvasPlayer, {
@@ -30,12 +32,16 @@ const MemberVideo = styled(CanvasPlayer, {
     right: 0,
     left: 0,
     bottom: 0,
-    zIndex: 100
+    zIndex: 100,
+    boxSizing: "border-box"
 });
 
-const MemberAudioSlider = styled(Slider, {
+const SliderWrapper = styled("div", {
     position: "absolute",
-    right: 0,
+    left: "0",
+    bottom: "0",
+    width: "100%",
+    zIndex: 9999,
 })
 
 const HiddenAudioPlayer = styled("audio", {
@@ -80,7 +86,9 @@ export default (props: {
             <MemberVideo width={width} height={height} videoTracks={videoTracks}/>
             <HiddenAudioPlayer ref={audioRef}/>
             {audioTracks.length > 0 && (
-                <MemberAudioSlider min={0} max={1} step={0.1} value={[volume]} onChange={(e) => setVolume(e.value[0])}/>
+                <SliderWrapper>
+                    <Slider min={0} max={1} step={0.1} value={[volume]} onChange={(e) => setVolume(e.value[0])}/>
+                </SliderWrapper>
             )}
         </MemberPanel>
     )
