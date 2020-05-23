@@ -4,7 +4,7 @@ import LocalDevicePanel from "./LocalDevicePanel";
 import {styled} from "baseui";
 import {Display2} from "baseui/typography";
 import NavBar from "./ui/NavBar";
-import MembersGrid from "./new/MembersGrid";
+import MemberView from "./MemberView";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -39,10 +39,9 @@ const Member = styled("div", {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    width: "100%",
-    maxWidth: 400,
-    height: "100%",
-    maxHeight: 300,
+    width: "50%",
+    flexBase: "50%",
+    height: "50%",
     overflow: 'hidden'
 });
 
@@ -60,7 +59,13 @@ export default () => {
                 )}
                 {members.length} Members
             </Header>
-            <MembersGrid members={members}/>
+            <Members>
+                {members.map((member) => (
+                    <Member>
+                        <MemberView member={member}/>
+                    </Member>
+                ))}
+            </Members>
             <LocalDevicePanel/>
         </Wrapper>
     )
