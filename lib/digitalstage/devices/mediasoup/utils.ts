@@ -48,9 +48,7 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
 export const getLocalAudioTracks = (): Promise<MediaStreamTrack[]> => {
     return navigator.mediaDevices.getUserMedia({
         video: false,
-        audio: true
-        /*
-            audio: {
+        audio: {
             autoGainControl: false,
             channelCount: 1,
             echoCancellation: false,
@@ -59,7 +57,6 @@ export const getLocalAudioTracks = (): Promise<MediaStreamTrack[]> => {
             sampleRate: 48000,
             sampleSize: 16,
         }
-        */
     })
         .then((stream: MediaStream) => stream.getAudioTracks())
 }

@@ -44,9 +44,7 @@ const SliderWrapper = styled("div", {
     zIndex: 9999,
 })
 
-const HiddenAudioPlayer = styled("audio", {
-    display: "none"
-})
+const HiddenAudioPlayer = styled("audio", {})
 
 export default (props: {
     member: StageMember
@@ -84,7 +82,7 @@ export default (props: {
         <MemberPanel ref={panelRef}>
             <MemberTitle>{props.member.displayName}</MemberTitle>
             <MemberVideo width={width} height={height} videoTracks={videoTracks}/>
-            <HiddenAudioPlayer ref={audioRef}/>
+            <HiddenAudioPlayer ref={audioRef} playsInline={true}/>
             {audioTracks.length > 0 && (
                 <SliderWrapper>
                     <Slider min={0} max={1} step={0.1} value={[volume]} onChange={(e) => setVolume(e.value[0])}/>
