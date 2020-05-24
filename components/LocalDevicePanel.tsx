@@ -32,38 +32,47 @@ export default () => {
 
     return (
         <Panel>
-            <Button
-                onClick={() => stage.setSendVideo(!stage.sendVideo)}
-                size={SIZE.large}
-                shape={SHAPE.round}
-                $active={stage.sendVideo}
-            >
-                <img src={stage.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
-            </Button>
-            <Button
-                onClick={() => stage.setSendAudio(!stage.sendAudio)}
-                size={SIZE.large}
-                shape={SHAPE.round}
-                $active={stage.sendAudio}
-            >
-                <img src={stage.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
-            </Button>
-            <Button
-                onClick={() => stage.setReceiveVideo(!stage.receiveVideo)}
-                size={SIZE.large}
-                shape={SHAPE.round}
-                $active={stage.receiveVideo}
-            >
-                <img src={stage.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
-            </Button>
-            <Button
-                onClick={() => stage.setReceiveAudio(!stage.receiveAudio)}
-                size={SIZE.large}
-                shape={SHAPE.round}
-                $active={stage.receiveAudio}
-            >
-                <img src={stage.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
-            </Button>
+            {stage.connected ? (
+                <>
+                    <Button
+                        onClick={() => stage.setSendVideo(!stage.sendVideo)}
+                        size={SIZE.large}
+                        shape={SHAPE.round}
+                        $active={stage.sendVideo}
+                    >
+                        <img src={stage.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
+                    </Button>
+                    <Button
+                        onClick={() => stage.setSendAudio(!stage.sendAudio)}
+                        size={SIZE.large}
+                        shape={SHAPE.round}
+                        $active={stage.sendAudio}
+                    >
+                        <img src={stage.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
+                    </Button>
+                    <Button
+                        onClick={() => stage.setReceiveVideo(!stage.receiveVideo)}
+                        size={SIZE.large}
+                        shape={SHAPE.round}
+                        $active={stage.receiveVideo}
+                    >
+                        <img src={stage.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
+                    </Button>
+                    <Button
+                        onClick={() => stage.setReceiveAudio(!stage.receiveAudio)}
+                        size={SIZE.large}
+                        shape={SHAPE.round}
+                        $active={stage.receiveAudio}
+                    >
+                        <img src={stage.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
+                    </Button>
+                </>
+            ) : (
+                <Button isLoading={stage.loading}
+                    onClick={() => stage.setConnected(true)} $active={stage.loading}>
+                    Connect
+                </Button>
+            )}
         </Panel>
     )
 };

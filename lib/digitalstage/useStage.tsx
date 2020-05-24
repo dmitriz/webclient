@@ -3,13 +3,12 @@ import "firebase/firestore";
 import "firebase/auth";
 import React, {createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
 import fetch from "isomorphic-unfetch";
-import {AudioContext, IAudioContext} from 'standardized-audio-context';
+import {AudioContext} from 'standardized-audio-context';
 import {useAuth} from "../useAuth";
 import useMediasoupDevice from "./devices/mediasoup/useMediasoupDevice";
 import useSoundjackDevice from "./devices/soundjack/useSoundjackDevice";
 import {GlobalProducerConsumer} from "./devices/mediasoup/MediasoupDevice";
-import {createMediasoupMediaTrack} from "./devices/mediasoup/utils";
-import webAudioTouchUnlock from "../../lib/webAudioTouchUnlock";
+import {createMediasoupMediaTrack, getAudioContext} from "./devices/mediasoup/utils";
 import {Stage, StageMember} from "./client.model";
 import {DatabaseStage, DatabaseStageMember, DatabaseUser} from "./database.model";
 
@@ -28,6 +27,10 @@ interface StageProps {
     error?: string;
 
     members: StageMember[];
+
+    connected: boolean;
+
+    setConnected(connected: boolean): void;
 
     sendVideo: boolean;
     setSendVideo: Dispatch<SetStateAction<boolean>>;
@@ -57,7 +60,7 @@ export const StageProvider = (props: {
     const [stageId, setStageId] = useState<string>();
     const [stage, setStage] = useState<Stage>(undefined);
     const [members, setMembers] = useState<StageMember[]>([]);
-    const [audioContext, setAudioContext] = useState<IAudioContext>();
+    const [audioContext, setAudioContext] = useState<AudioContext>();
     const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
@@ -102,20 +105,17 @@ export const StageProvider = (props: {
             .forEach((change: firebase.firestore.DocumentChange<DatabaseStageMember>) => {
                 const member: DatabaseStageMember = change.doc.data();
                 if (change.type === "added") {
-                    console.log("Member added");
                     setMembers(prevState => [...prevState, {
                         uid: member.uid,
                         displayName: member.displayName,
                         tracks: []
                     } as StageMember]);
                 } else if (change.type === "modified") {
-                    console.log("Member modified");
                     setMembers(prevState => prevState.map((m: StageMember) => m.uid === member.uid ? {
                         ...m,
                         displayName: member.displayName
                     } as StageMember : m));
                 } else if (change.type === "removed") {
-                    console.log("Member removed");
                     setMembers(prevState => prevState.filter((m: StageMember) => m.uid !== member.uid));
                 }
             })
@@ -189,7 +189,7 @@ export const StageProvider = (props: {
 
     const leave = useCallback(() => {
         if (user) {
-            console.log("Leave");
+            console.log("leave");
             setLoading(true);
             return user
                 .getIdToken()
@@ -213,7 +213,7 @@ export const StageProvider = (props: {
      * Soundjack specific
      *
      */
-    const {localSoundjackDevice, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack, isAvailable} = useSoundjackDevice(user);
+    const {localSoundjackDevice, connected: soundjackConnected, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack, isAvailable} = useSoundjackDevice(user, stage);
     useEffect(() => {
         if (localSoundjackDevice)
             localSoundjackDevice.setStageId(stageId);
@@ -222,57 +222,26 @@ export const StageProvider = (props: {
     /***
      * Mediasoup specific
      */
-    const {localMediasoupDevice, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user, stage);
-
-    useEffect(() => {
-        const audioContext: IAudioContext = new AudioContext();
-        webAudioTouchUnlock(audioContext)
-            .then((unlocked: boolean) => {
-                if (unlocked) {
-                    // AudioContext was unlocked from an explicit user action, sound should start playing now
-                } else {
-                    // There was no need for unlocking, devices other than iOS
-                }
-            }, (reason: any) => {
-                console.error(reason);
-            });
-        setAudioContext(audioContext);
-    }, []);
+    const {localMediasoupDevice, connected: mediasoupConnected, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user, stage);
 
     useEffect(() => {
         if (localMediasoupDevice)
             localMediasoupDevice.setStageId(stageId);
     }, [stageId, localMediasoupDevice]);
 
-    useEffect(() => {
-        console.log("MEMBERS HAS BEEN UPDATED!");
-        console.log(members);
-    }, [members])
+    const addConsumer = useCallback((members: StageMember[], consumer: GlobalProducerConsumer) => {
+        return members.map((m: StageMember) => m.uid === consumer.globalProducer.uid ? {
+            ...m,
+            tracks: [createMediasoupMediaTrack(consumer.globalProducer.id, consumer.consumer, audioContext), ...m.tracks]
+        } as StageMember : m)
+    }, [audioContext]);
 
     const onConsumerAdded = useCallback((consumer: GlobalProducerConsumer) => {
-        console.log("onConsumerAdded");
-        setMembers(prevState => {
-            return prevState.map((m: StageMember) => m.uid === consumer.globalProducer.uid ? {
-                ...m,
-                tracks: [createMediasoupMediaTrack(consumer.globalProducer.id, consumer.consumer, audioContext), ...m.tracks]
-            } as StageMember : m)
-        });
-        /*
-        const clonedMembers = members.slice();
-                const member = clonedMembers.find((member: StageMember) => member.uid === consumer.globalProducer.uid);
-                console.log(clonedMembers);
-                if (member) {
-                    if (!member.tracks.find((t) => t.id !== consumer.globalProducer.id)) {
-                        member.tracks.push(createMediasoupMediaTrack(consumer.globalProducer.id, consumer.consumer, audioContext));
-                        setMembers(clonedMembers);
-                    }
-                } else {
-                    console.error("SYNC ERROR?");
-                }*/
+        setMembers(prevState => addConsumer(prevState, consumer));
     }, [members, audioContext]);
 
     const onConsumerRemoved = useCallback((consumer: GlobalProducerConsumer) => {
-        console.log("CONSUMER CLOSED");
+        console.log("onConsumerRemoved");
         setMembers(prevState => prevState.map((member: StageMember) => {
             if (member.uid !== consumer.globalProducer.uid)
                 return member;
@@ -283,12 +252,39 @@ export const StageProvider = (props: {
         }))
     }, [members]);
 
+    const addHandlers = useCallback(() => {
+        if (!audioContext)
+            return;
+        console.log("JETZT ABA!");// <-- NEVER CALLED?!?
+        localMediasoupDevice.on("consumer-created", onConsumerAdded);
+        localMediasoupDevice.on("consumer-closed", onConsumerRemoved)
+    }, [localMediasoupDevice, audioContext]);
+
     useEffect(() => {
-        if (localMediasoupDevice && members) {
-            localMediasoupDevice.on("consumer-created", onConsumerAdded);
-            localMediasoupDevice.on("consumer-closed", onConsumerRemoved)
+        if (localMediasoupDevice && audioContext) {
+            addHandlers();
         }
-    }, [localMediasoupDevice]);
+    }, [localMediasoupDevice, audioContext]);
+
+    /***
+     * For all devices
+     */
+    const setConnected = useCallback(async () => {
+        if (!localMediasoupDevice || !localSoundjackDevice) {
+            setError("Device not ready");
+            return;
+        }
+        setLoading(true);
+
+        return getAudioContext()
+            .then((ctx) => {
+                setAudioContext(ctx);
+            })
+            .then(() => localMediasoupDevice.connect())
+            .then(() => localSoundjackDevice.connect())
+            .catch((error) => setError(error.message))
+            .finally(() => setLoading(false));
+    }, [localMediasoupDevice, localSoundjackDevice]);
 
     return (
         <StageContext.Provider value={{
@@ -299,6 +295,8 @@ export const StageProvider = (props: {
             loading: loading,
             error: error,
             members: members,
+            connected: mediasoupConnected && soundjackConnected,
+            setConnected: setConnected,
             sendVideo: sendVideo,
             setSendVideo: setSendVideo,
             sendAudio: sendAudio,

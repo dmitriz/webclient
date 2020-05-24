@@ -1,5 +1,5 @@
 import {MediasoupAudioTrack, MediasoupVideoTrack, StageMember} from "../lib/digitalstage/client.model";
-import {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {styled} from "baseui";
 import CanvasPlayer from "./CanvasPlayer";
 import {Slider} from "baseui/slider";

@@ -40,6 +40,7 @@ export class MediasoupDevice extends IDeviceAPI {
     protected consumers: {
         [globalProducerId: string]: GlobalProducerConsumer
     } = {};
+    protected connected: boolean = false;
 
     constructor(user: firebase.User) {
         super(user, "Browser", {
@@ -48,7 +49,6 @@ export class MediasoupDevice extends IDeviceAPI {
         });
         this.device = new MediasoupClientDevice();
         this.registerDeviceListeners();
-        this.connect();
     }
 
     private registerDeviceListeners() {
@@ -116,24 +116,34 @@ export class MediasoupDevice extends IDeviceAPI {
         });
     }
 
-    public connect() {
-        return getFastestRouter()
-            .then(async (router: MediasoupRouter) => {
-                this.router = router;
-                const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities();
-                await this.device.load({routerRtpCapabilities: rtpCapabilities});
-                this.sendTransport = await this.createWebRTCTransport("send");
-                this.receiveTransport = await this.createWebRTCTransport("receive");
-                this.emit("connected", this.router);
-            })
-            .catch((error) => {
-                console.error(error);
-                alert("Video & Audio not available right now ... sorry :(");
-                this.disconnect();
-            })
+    public connect(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.connected)
+                return resolve();
+            return getFastestRouter()
+                .then(async (router: MediasoupRouter) => {
+                    this.router = router;
+                    const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities();
+                    if (!this.device.loaded)
+                        await this.device.load({routerRtpCapabilities: rtpCapabilities});
+                    this.sendTransport = await this.createWebRTCTransport("send");
+                    this.receiveTransport = await this.createWebRTCTransport("receive");
+                    this.connected = true;
+                    this.emit("connected", true);
+                    resolve();
+                })
+                .catch((error) => {
+                    console.error(error);
+                    alert("Video & Audio not available right now ... sorry :(");
+                    this.disconnect();
+                    reject();
+                })
+        });
     }
 
     public disconnect() {
+        if (!this.connected)
+            return;
         console.log("MEDIASOUP: disconnecting");
         if (this.sendTransport) {
             this.sendTransport.close();
@@ -141,8 +151,9 @@ export class MediasoupDevice extends IDeviceAPI {
         if (this.receiveTransport) {
             this.receiveTransport.close();
         }
-        this.emit("disconnected", this.router);
+        this.emit("connected", false);
         this.router = undefined;
+        this.connected = false;
     }
 
     public setStageId(stageId: string) {

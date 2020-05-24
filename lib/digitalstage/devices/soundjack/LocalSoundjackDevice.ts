@@ -23,10 +23,9 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
             canAudio: false,
             canVideo: false
         });
-        this.connect();
     }
 
-    private connect() {
+    public connect() {
         const contactSoundjack = () => {
             this.webSocket = new WebSocket("ws://localhost:" + this.port);
             this.webSocket.onerror = () => {
@@ -48,6 +47,12 @@ export default class LocalSoundjackDevice extends IDeviceAPI {
             }
             contactSoundjack();
         }, 3000);
+        // Trying means connected
+        this.emit("connected", true);
+    }
+
+    public disconnect() {
+        this.emit("connected", false);
     }
 
     private initialize() {

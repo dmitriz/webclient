@@ -1,6 +1,5 @@
 // DATABASE MODEL
-import {IMediaStreamTrackAudioSourceNode} from "standardized-audio-context/src/interfaces/media-stream-track-audio-source-node";
-import {IAudioContext, IGainNode} from "standardized-audio-context";
+import {IAudioContext, IGainNode, IMediaStreamTrackAudioSourceNode} from "standardized-audio-context";
 import {DatabaseRouter, DatabaseStage, DatabaseStageMember} from "./database.model";
 import mediasoupClient from "mediasoup-client";
 

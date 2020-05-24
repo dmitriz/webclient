@@ -55,7 +55,7 @@ export default () => {
             <NavBar/>
             <Members>
                 {members.map((member) => (
-                    <Member>
+                    <Member key={member.uid}>
                         <MemberInner>
                             <MemberView member={member}/>
                         </MemberInner>
