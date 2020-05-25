@@ -27,6 +27,7 @@
     "next-cookies": "latest",
     "now": "^19.0.1",
     "ping.js": "^0.2.3",
+    "promise": "^8.1.0",
     "public-ip": "^4.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -34,6 +35,7 @@
     "standardized-audio-context": "latest",
     "styletron-engine-atomic": "^1.4.6",
     "styletron-react": "^5.2.7",
+    "timesync": "^1.0.5",
     "web-pingjs": "^1.0.1",
     "webrtc-adapter": "latest",
     "yup": "latest"

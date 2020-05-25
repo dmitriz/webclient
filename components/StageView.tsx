@@ -4,6 +4,7 @@ import LocalDevicePanel from "./LocalDevicePanel";
 import {styled} from "baseui";
 import NavBar from "./ui/NavBar";
 import MemberView from "./MemberView";
+import Click from "./click/Click";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -20,7 +21,6 @@ const Members = styled("div", {
     display: 'flex',
     flexWrap: "wrap"
 });
-
 
 const Member = styled("div", {
     position: 'relative',
@@ -45,7 +45,13 @@ const MemberInner = styled("div", {
     left: 0,
     bottom: 0,
     boxSizing: "border-box"
-})
+});
+
+const ClickPanel = styled("div", {
+    position: "relative",
+    width: "100%",
+    flexGrow: 0
+});
 
 export default () => {
     const {members} = useStage();
@@ -53,6 +59,9 @@ export default () => {
     return (
         <Wrapper>
             <NavBar/>
+            <ClickPanel>
+                <Click/>
+            </ClickPanel>
             <Members>
                 {members.map((member) => (
                     <Member key={member.uid}>

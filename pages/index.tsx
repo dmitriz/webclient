@@ -30,7 +30,7 @@ export default () => {
 
     if (stage) {
         return (
-                <StageView/>
+            <StageView/>
         );
     }
 
