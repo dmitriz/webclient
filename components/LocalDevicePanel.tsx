@@ -3,6 +3,11 @@ import {useStage} from "../lib/digitalstage/useStage";
 import {styled} from "baseui";
 import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
 
+const SoundjackLogo = styled("img", {
+    width: "24px",
+    height: "24px"
+});
+
 const Panel = styled("div", {
     position: "absolute",
     display: 'flex',
@@ -26,6 +31,13 @@ const Button = styled(BaseButton, (props: {
         boxShadow: props.$active ? "0px 0px 20px 10px rgba(40,142,250,1)" : "0px 0px 10px 10px red"
     }
 }));
+
+const SoundjackButton = styled(Button, {
+    backgroundImage: "url('/soundjack.png')",
+    backgroundSize: "cover",
+    width: "56px",
+    height: "56px"
+});
 
 export default () => {
     const stage = useStage();
@@ -66,10 +78,19 @@ export default () => {
                     >
                         <img src={stage.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
                     </Button>
+                    {stage.isSoundjackAvailable && (
+                        <SoundjackButton
+                            onClick={() => stage.setSendSoundjack(!stage.sendSoundjack)}
+                            size={SIZE.large}
+                            shape={SHAPE.round}
+                            $active={stage.sendSoundjack}
+                        >
+                        </SoundjackButton>
+                    )}
                 </>
             ) : (
                 <Button isLoading={stage.loading}
-                    onClick={() => stage.setConnected(true)} $active={stage.loading}>
+                        onClick={() => stage.setConnected(true)} $active={stage.loading}>
                     Connect
                 </Button>
             )}

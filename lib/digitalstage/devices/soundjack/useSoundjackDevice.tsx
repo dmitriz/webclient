@@ -8,7 +8,6 @@ export default (user: firebase.User, stage: Stage) => {
     const [localSoundjackDevice, setLocalSoundjackDevice] = useState<LocalSoundjackDevice>();
     const [sendAudio, setSendAudioInternal] = useState<boolean>();
     const [receiveAudio, setReceiveAudioInternal] = useState<boolean>();
-    const [isAvailable, setAvailable] = useState<boolean>();
 
     useEffect(() => {
         if (user && stage) {
@@ -21,11 +20,15 @@ export default (user: firebase.User, stage: Stage) => {
         if (localSoundjackDevice) {
             localSoundjackDevice.on("send-audio", sendAudio => setSendAudioInternal(sendAudio));
             localSoundjackDevice.on("receive-audio", receiveAudio => setReceiveAudioInternal(receiveAudio));
-            localSoundjackDevice.on("is-available", isAvailable => setAvailable(isAvailable));
         }
     }, [localSoundjackDevice]);
 
     const setSendAudio = useCallback((enable: boolean) => {
+        if( enable ) {
+            const audio = new Audio('easter.mp3');
+            audio.play();
+        }
+
         return localSoundjackDevice.setSendAudio(enable)
     }, [localSoundjackDevice]);
 
@@ -49,7 +52,6 @@ export default (user: firebase.User, stage: Stage) => {
         setSendAudio,
         receiveAudio,
         setReceiveAudio,
-        localSoundjackDevice,
-        isAvailable
+        localSoundjackDevice
     }
 }

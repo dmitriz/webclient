@@ -213,7 +213,7 @@ export const StageProvider = (props: {
      * Soundjack specific
      *
      */
-    const {localSoundjackDevice, connected: soundjackConnected, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack, isAvailable} = useSoundjackDevice(user, stage);
+    const {localSoundjackDevice, connected: soundjackConnected, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack} = useSoundjackDevice(user, stage);
     useEffect(() => {
         if (localSoundjackDevice)
             localSoundjackDevice.setStageId(stageId);
@@ -295,7 +295,7 @@ export const StageProvider = (props: {
             loading: loading,
             error: error,
             members: members,
-            connected: mediasoupConnected && soundjackConnected,
+            connected: mediasoupConnected,
             setConnected: setConnected,
             sendVideo: sendVideo,
             setSendVideo: setSendVideo,
@@ -309,7 +309,7 @@ export const StageProvider = (props: {
             setSendSoundjack: setSendSoundjack,
             receiveSoundjack: receiveSoundjack,
             setReceiveSoundjack: setReceiveSoundjack,
-            isSoundjackAvailable: isAvailable
+            isSoundjackAvailable: soundjackConnected
         }}>
             {props.children}
         </StageContext.Provider>

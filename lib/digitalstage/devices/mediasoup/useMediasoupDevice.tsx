@@ -19,13 +19,13 @@ export default (user: firebase.User, stage: Stage) => {
             setLocalMediasoupDevice(mediasoupDevice);
         }
     }, [user, stage]);
-
+/*
     useEffect(() => {
         if (localMediasoupDevice && stage) {
             fixWebRTC();
             localMediasoupDevice.connect();
         }
-    }, [localMediasoupDevice, stage])
+    }, [localMediasoupDevice, stage])*/
 
     useEffect(() => {
         if (localMediasoupDevice) {
