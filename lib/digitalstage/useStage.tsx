@@ -8,8 +8,8 @@ import useMediasoupDevice from "./devices/mediasoup/useMediasoupDevice";
 import {GlobalProducerConsumer} from "./devices/mediasoup/MediasoupDevice";
 import {createMediasoupMediaTrack} from "./devices/mediasoup/utils";
 import {Stage, StageMember} from "./client.model";
-import {DatabaseStage, DatabaseStageMember, DatabaseUser} from "./database.model";
 import {useAudioContext} from "../useAudioContext";
+import { types } from "digitalstage-client-base";
 
 interface StageProps {
     create(name: string, password: string);
@@ -62,8 +62,8 @@ export const StageProvider = (props: {
             return firebase.firestore()
                 .collection("users")
                 .doc(user.uid)
-                .onSnapshot((snapshot: firebase.firestore.DocumentSnapshot<DatabaseUser>) => {
-                    const member: DatabaseUser = snapshot.data();
+                .onSnapshot((snapshot: firebase.firestore.DocumentSnapshot<types.DatabaseUser>) => {
+                    const member: types.DatabaseUser = snapshot.data();
                     if (member && member.stageId) {
                         setStageId(member.stageId);
                     } else {
@@ -74,8 +74,8 @@ export const StageProvider = (props: {
         }
     }, [user]);
 
-    const onStageUpdated = useCallback((snapshot: firebase.firestore.DocumentSnapshot<DatabaseStage>) => {
-        const stage: DatabaseStage = snapshot.data();
+    const onStageUpdated = useCallback((snapshot: firebase.firestore.DocumentSnapshot<types.DatabaseStage>) => {
+        const stage: types.DatabaseStage = snapshot.data();
         setStage(stage);
         setLoading(false);
     }, []);
@@ -93,10 +93,10 @@ export const StageProvider = (props: {
         }
     }, [stageId]);
 
-    const onMembersUpdated = useCallback((querySnapshot: firebase.firestore.QuerySnapshot<DatabaseStageMember>) => {
+    const onMembersUpdated = useCallback((querySnapshot: firebase.firestore.QuerySnapshot<types.DatabaseStageMember>) => {
         return querySnapshot.docChanges()
-            .forEach((change: firebase.firestore.DocumentChange<DatabaseStageMember>) => {
-                const member: DatabaseStageMember = change.doc.data();
+            .forEach((change: firebase.firestore.DocumentChange<types.DatabaseStageMember>) => {
+                const member: types.DatabaseStageMember = change.doc.data();
                 if (change.type === "added") {
                     setMembers(prevState => [...prevState, {
                         uid: member.uid,

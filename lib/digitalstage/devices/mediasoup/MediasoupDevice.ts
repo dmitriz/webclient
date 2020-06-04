@@ -8,15 +8,15 @@ import unfetch from "isomorphic-unfetch";
 import {RouterGetUrls, RouterPostUrls} from "./events";
 import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from "./utils";
 import * as omit from "lodash.omit";
-import {DatabaseGlobalProducer} from "../../database.model";
 import {MediasoupRouter} from "../../client.model";
+import {types} from "digitalstage-client-base";
 
 export interface PublishableProducer {
     producer: mediasoupClient.types.Producer,
     globalProducerId?: string;
 }
 
-export interface GlobalProducer extends DatabaseGlobalProducer {
+export interface GlobalProducer extends types.DatabaseGlobalProducer {
     id: string;
 }
 
@@ -328,8 +328,8 @@ export class MediasoupDevice extends IDeviceAPI {
     }
 
     private handleRemoteProducer = (querySnapshot: firebase.firestore.QuerySnapshot) => {
-        return querySnapshot.docChanges().forEach((change: firebase.firestore.DocumentChange<DatabaseGlobalProducer>) => {
-            const globalProducer: DatabaseGlobalProducer = change.doc.data();
+        return querySnapshot.docChanges().forEach((change: firebase.firestore.DocumentChange<types.DatabaseGlobalProducer>) => {
+            const globalProducer: types.DatabaseGlobalProducer = change.doc.data();
             if (change.type === "added") {
                 this.availableGlobalProducers[change.doc.id] = {
                     ...globalProducer,
@@ -360,7 +360,7 @@ export class MediasoupDevice extends IDeviceAPI {
                 producerId: producer.producer.id,
                 stageId: stageId,
                 kind: producer.producer.kind
-            } as DatabaseGlobalProducer)
+            } as types.DatabaseGlobalProducer)
             .then((ref) => {
                 console.log("Published global producer " + ref.id);
                 producer.globalProducerId = ref.id;

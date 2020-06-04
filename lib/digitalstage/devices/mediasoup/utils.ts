@@ -1,10 +1,9 @@
 import firebase from "firebase/app";
 import "firebase/firestore";
 import mediasoupClient from "mediasoup-client";
-import {AudioContext, IAudioContext} from "standardized-audio-context";
+import {IAudioContext} from "standardized-audio-context";
 import {MediasoupAudioTrack, MediasoupRouter, MediasoupVideoTrack, MediaTrack} from "../../client.model";
-import {DatabaseRouter} from "../../database.model";
-import webAudioTouchUnlock from "../../../../util/webAudioTouchUnlock";
+import {types} from "digitalstage-client-base";
 
 export const getFastestRouter = (): Promise<MediasoupRouter> => {
     return new Promise<MediasoupRouter>((resolve, reject) => {
@@ -20,10 +19,10 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                 let lowestLatency = -1;
                 console.log(snapshot.val());
                 const routers: {
-                    [id: string]: DatabaseRouter
+                    [id: string]: types.DatabaseRouter
                 } = snapshot.val();
                 for (const routerId of Object.keys(routers)) {
-                    const router: DatabaseRouter = routers[routerId];
+                    const router: types.DatabaseRouter = routers[routerId];
                     const latency: number = await ping("https://" + router.domain + ":" + router.port + "/ping")
                         .catch((err) => {
                             console.error('Could not ping router' + router.domain, err);

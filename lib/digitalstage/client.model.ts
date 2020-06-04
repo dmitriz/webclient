@@ -1,25 +1,25 @@
 // DATABASE MODEL
 import {IAudioContext, IGainNode, IMediaStreamTrackAudioSourceNode} from "standardized-audio-context";
-import {DatabaseRouter, DatabaseStage, DatabaseStageMember} from "./database.model";
 import mediasoupClient from "mediasoup-client";
+import {types} from "digitalstage-client-base";
 
 /**
  * Extended version of the database router, necessary for client interactions
  */
-export interface MediasoupRouter extends DatabaseRouter {
+export interface MediasoupRouter extends types.DatabaseRouter {
     id: string;
 }
 
 /**
  *  Internal stage model (for clients, react, etc.)
  */
-export interface Stage extends DatabaseStage {
+export interface Stage extends types.DatabaseStage {
 }
 
 /**
  * Client-based member model holding the media tracks
  */
-export interface StageMember extends DatabaseStageMember {
+export interface StageMember extends types.DatabaseStageMember {
     tracks: MediaTrack[];
 }
 
