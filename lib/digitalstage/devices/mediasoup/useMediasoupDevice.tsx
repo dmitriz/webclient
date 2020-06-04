@@ -1,6 +1,5 @@
 import {useCallback, useEffect, useState} from "react";
 import {MediasoupDevice} from "./MediasoupDevice";
-import {fixWebRTC} from "../../../../util/fixWebRTC";
 import {Stage} from "../../client.model";
 import firebase from "firebase/app";
 

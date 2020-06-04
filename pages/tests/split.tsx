@@ -1,7 +1,6 @@
 import {styled} from "baseui";
 import React, {useCallback, useEffect, useState} from "react";
 import {Button} from "baseui/button";
-import {StageMember} from "../../lib/digitalstage/client.model";
 
 const MOBILE: string = "@media screen and (max-width: 880px)";
 

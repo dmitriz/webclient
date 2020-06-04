@@ -15,7 +15,7 @@
     "url": "git+https://github.com/digital-stage/webclient.git"
   },
   "dependencies": {
-    "baseui": "^9.78.0",
+    "baseui": "^9.80.0",
     "firebase": "latest",
     "formik": "latest",
     "isomorphic-unfetch": "^3.0.0",
@@ -23,7 +23,7 @@
     "lodash.debounce": "^4.0.8",
     "lodash.omit": "^4.5.0",
     "mediasoup-client": "^3.6.5",
-    "next": "^9.4.2",
+    "next": "^9.4.4",
     "next-cookies": "latest",
     "now": "^19.0.1",
     "ping.js": "^0.2.3",
@@ -38,6 +38,7 @@
     "timesync": "^1.0.5",
     "web-pingjs": "^1.0.1",
     "webrtc-adapter": "latest",
+    "ws": "^7.3.0",
     "yup": "latest"
   },
   "devDependencies": {

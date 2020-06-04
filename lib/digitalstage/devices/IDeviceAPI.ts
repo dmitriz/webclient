@@ -101,12 +101,12 @@ export abstract class IDeviceAPI extends EventEmitter {
 
     private async registerDevice(): Promise<void> {
         //TODO: assuming, that the ip does not change - however, this can be exported inside an goOnline and goOffline method
-        await IDeviceAPI.getIPs();
+        //await IDeviceAPI.getIPs();
         const device: DatabaseDevice = {
             uid: this.user.uid,
             name: this.name,
-            ipv4: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
-            ipv6: IDeviceAPI.ipv6 ? IDeviceAPI.ipv6 : null,
+            //ipv4: IDeviceAPI.ipv4 ? IDeviceAPI.ipv4 : null,
+            //ipv6: IDeviceAPI.ipv6 ? IDeviceAPI.ipv6 : null,
             canAudio: this.canAudio,
             canVideo: this.canVideo,
             sendAudio: this.sendAudio,

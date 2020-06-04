@@ -46,25 +46,6 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
     });
 }
 
-export const getAudioContext = (): Promise<AudioContext> => {
-    return new Promise<AudioContext>((resolve, reject) => {
-        // @ts-ignore
-        const audioCtx: AudioContext = new AudioContext();
-        webAudioTouchUnlock(audioCtx)
-            .then((unlocked: boolean) => {
-                if (unlocked) {
-                    // AudioContext was unlocked from an explicit user action, sound should start playing now
-                } else {
-                    // There was no need for unlocking, devices other than iOS
-                }
-            });
-        if (!audioCtx)
-            reject("Audio not ready");
-        return resolve(audioCtx);
-    });
-
-}
-
 export const getLocalAudioTracks = (): Promise<MediaStreamTrack[]> => {
     return navigator.mediaDevices.getUserMedia({
         video: false,

@@ -3,14 +3,13 @@ import "firebase/firestore";
 import "firebase/auth";
 import React, {createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
 import fetch from "isomorphic-unfetch";
-import {AudioContext} from 'standardized-audio-context';
 import {useAuth} from "../useAuth";
 import useMediasoupDevice from "./devices/mediasoup/useMediasoupDevice";
-import useSoundjackDevice from "./devices/soundjack/useSoundjackDevice";
 import {GlobalProducerConsumer} from "./devices/mediasoup/MediasoupDevice";
-import {createMediasoupMediaTrack, getAudioContext} from "./devices/mediasoup/utils";
+import {createMediasoupMediaTrack} from "./devices/mediasoup/utils";
 import {Stage, StageMember} from "./client.model";
 import {DatabaseStage, DatabaseStageMember, DatabaseUser} from "./database.model";
+import {useAudioContext} from "../useAudioContext";
 
 interface StageProps {
     create(name: string, password: string);
@@ -40,12 +39,6 @@ interface StageProps {
     setReceiveVideo: Dispatch<SetStateAction<boolean>>;
     receiveVideo: boolean;
     setReceiveAudio: Dispatch<SetStateAction<boolean>>;
-    sendSoundjack: boolean;
-    setSendSoundjack: Dispatch<SetStateAction<boolean>>;
-    receiveSoundjack: boolean;
-    setReceiveSoundjack: Dispatch<SetStateAction<boolean>>;
-
-    isSoundjackAvailable: boolean;
 }
 
 const StageContext = createContext<StageProps>(undefined);
@@ -60,8 +53,8 @@ export const StageProvider = (props: {
     const [stageId, setStageId] = useState<string>();
     const [stage, setStage] = useState<Stage>(undefined);
     const [members, setMembers] = useState<StageMember[]>([]);
-    const [audioContext, setAudioContext] = useState<AudioContext>();
     const [loading, setLoading] = useState<boolean>(false);
+    const {audioContext, createAudioContext} = useAudioContext();
 
     useEffect(() => {
         if (user) {
@@ -210,16 +203,6 @@ export const StageProvider = (props: {
     }, [user]);
 
     /***
-     * Soundjack specific
-     *
-     */
-    const {localSoundjackDevice, connected: soundjackConnected, sendAudio: sendSoundjack, setSendAudio: setSendSoundjack, receiveAudio: receiveSoundjack, setReceiveAudio: setReceiveSoundjack} = useSoundjackDevice(user, stage);
-    useEffect(() => {
-        if (localSoundjackDevice)
-            localSoundjackDevice.setStageId(stageId);
-    }, [stageId, localSoundjackDevice]);
-
-    /***
      * Mediasoup specific
      */
     const {localMediasoupDevice, connected: mediasoupConnected, sendAudio, setSendAudio, sendVideo, setSendVideo, receiveAudio, setReceiveVideo, receiveVideo, setReceiveAudio} = useMediasoupDevice(user, stage);
@@ -255,7 +238,7 @@ export const StageProvider = (props: {
     const addHandlers = useCallback(() => {
         if (!audioContext)
             return;
-        console.log("JETZT ABA!");// <-- NEVER CALLED?!?
+        console.log("Mediasoup consumer handlers registered and audio context valid");
         localMediasoupDevice.on("consumer-created", onConsumerAdded);
         localMediasoupDevice.on("consumer-closed", onConsumerRemoved)
     }, [localMediasoupDevice, audioContext]);
@@ -270,21 +253,18 @@ export const StageProvider = (props: {
      * For all devices
      */
     const setConnected = useCallback(async () => {
-        if (!localMediasoupDevice || !localSoundjackDevice) {
+        if (!localMediasoupDevice) {
             setError("Device not ready");
             return;
         }
         setLoading(true);
 
-        return getAudioContext()
-            .then((ctx) => {
-                setAudioContext(ctx);
-            })
+        return createAudioContext()
             .then(() => localMediasoupDevice.connect())
-            .then(() => localSoundjackDevice.connect())
+            //.then(() => localSoundjackDevice.connect())
             .catch((error) => setError(error.message))
             .finally(() => setLoading(false));
-    }, [localMediasoupDevice, localSoundjackDevice]);
+    }, [localMediasoupDevice]);
 
     return (
         <StageContext.Provider value={{
@@ -304,12 +284,7 @@ export const StageProvider = (props: {
             receiveAudio: receiveAudio,
             setReceiveAudio: setReceiveAudio,
             receiveVideo: receiveVideo,
-            setReceiveVideo: setReceiveVideo,
-            sendSoundjack: sendSoundjack,
-            setSendSoundjack: setSendSoundjack,
-            receiveSoundjack: receiveSoundjack,
-            setReceiveSoundjack: setReceiveSoundjack,
-            isSoundjackAvailable: soundjackConnected
+            setReceiveVideo: setReceiveVideo
         }}>
             {props.children}
         </StageContext.Provider>

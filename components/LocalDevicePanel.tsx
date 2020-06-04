@@ -9,7 +9,7 @@ const SoundjackLogo = styled("img", {
 });
 
 const Panel = styled("div", {
-    position: "absolute",
+    position: "fixed",
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
@@ -20,15 +20,28 @@ const Panel = styled("div", {
     height: "auto"
 });
 
+const buttonSize = SIZE.large;
+const buttonShape = SHAPE.default;
+
 const Button = styled(BaseButton, (props: {
     $active: boolean
 }) => ({
-    marginLeft: "24px",
-    marginRight: "24px",
-    boxShadow: props.$active ? "0px 0px 20px 10px rgba(40,142,250,1)" : undefined,
-    transform: "box-shadow .3s",
-    ":hover": {
-        boxShadow: props.$active ? "0px 0px 20px 10px rgba(40,142,250,1)" : "0px 0px 10px 10px red"
+    position: "relative",
+
+    ":hover:before": {
+        boxShadow: props.$active ? "0px 0px 60px 5px rgba(255,0,0,.8)" : "0px 0px 60px 5px rgba(40,142,250,.8)"
+    },
+    ":before": {
+        content: "''",
+        display: "block",
+        position: "absolute",
+        width: "100%",
+        height: "100%",
+        zIndex: -1,
+        transitionTimingFunction: "cubic-bezier(0, 0, 1, 1)",
+        transitionDuration: "200ms",
+        transitionProperty: "box-shadow",
+        boxShadow: props.$active ? "0px 0px 60px 5px rgba(40,142,250,.8)" : undefined
     }
 }));
 
@@ -39,6 +52,7 @@ const SoundjackButton = styled(Button, {
     height: "56px"
 });
 
+
 export default () => {
     const stage = useStage();
 
@@ -48,45 +62,36 @@ export default () => {
                 <>
                     <Button
                         onClick={() => stage.setSendVideo(!stage.sendVideo)}
-                        size={SIZE.large}
-                        shape={SHAPE.round}
+                        size={buttonSize}
+                        shape={buttonShape}
                         $active={stage.sendVideo}
                     >
                         <img src={stage.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
                     </Button>
                     <Button
                         onClick={() => stage.setSendAudio(!stage.sendAudio)}
-                        size={SIZE.large}
-                        shape={SHAPE.round}
+                        size={buttonSize}
+                        shape={buttonShape}
                         $active={stage.sendAudio}
                     >
                         <img src={stage.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
                     </Button>
                     <Button
                         onClick={() => stage.setReceiveVideo(!stage.receiveVideo)}
-                        size={SIZE.large}
-                        shape={SHAPE.round}
+                        size={buttonSize}
+                        shape={buttonShape}
                         $active={stage.receiveVideo}
                     >
                         <img src={stage.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
                     </Button>
                     <Button
                         onClick={() => stage.setReceiveAudio(!stage.receiveAudio)}
-                        size={SIZE.large}
-                        shape={SHAPE.round}
+                        size={buttonSize}
+                        shape={buttonShape}
                         $active={stage.receiveAudio}
                     >
                         <img src={stage.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
                     </Button>
-                    {stage.isSoundjackAvailable && (
-                        <SoundjackButton
-                            onClick={() => stage.setSendSoundjack(!stage.sendSoundjack)}
-                            size={SIZE.large}
-                            shape={SHAPE.round}
-                            $active={stage.sendSoundjack}
-                        >
-                        </SoundjackButton>
-                    )}
                 </>
             ) : (
                 <Button isLoading={stage.loading}

@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from "react";
 import {AudioContext, IAudioBufferSourceNode, IAudioContext} from "standardized-audio-context";
 import webAudioTouchUnlock from "../webAudioTouchUnlock";
+import {useAudioContext} from "../useAudioContext";
 
 // Some global settings
 const freq = 600;
@@ -53,24 +54,16 @@ export default (props: {
     offset?: number,
     target?: AudioNode,
 }) => {
-    const [context, setContext] = useState<IAudioContext>();
+    const {audioContext, createAudioContext} = useAudioContext();
     const [playing, setPlaying] = useState<boolean>(false);
     const [buffer, setBuffer] = useState<IAudioBufferSourceNode<IAudioContext>>();
     const [enabled, setEnabled] = useState<boolean>(false);
 
-    const enableClick = () => {
-        // @ts-ignore
-        const audioCtx: IAudioContext = new AudioContext();
-        webAudioTouchUnlock(audioCtx)
-            .then((unlocked: boolean) => {
-                if (unlocked) {
-                    // AudioContext was unlocked from an explicit user action, sound should start playing now
-                } else {
-                    // There was no need for unlocking, devices other than iOS
-                }
-            }, (reason: any) => {
-                console.error(reason);
-            });
+    const enableClick = useCallback(async() => {
+        let audioCtx = audioContext;
+        if( !audioCtx ) {
+            audioCtx = await createAudioContext();
+        }
         const source: IAudioBufferSourceNode<IAudioContext> = audioCtx.createBufferSource();
         source.connect(audioCtx.destination);
         source.loop = true;
@@ -78,19 +71,20 @@ export default (props: {
             beats: 4,
             measure: 4
         });
-        setContext(audioCtx);
         setBuffer(source);
         setEnabled(true);
-    };
+    },[]);
 
     const startInternal = useCallback(() => {
-        const nextStartTime = context.currentTime + calculateNextStartTime(props.startTime, props.offset, props.bpm, props.timeSignature);
-        buffer.start(nextStartTime);
-    }, [props.startTime, props.bpm, props.timeSignature, props.offset]);
+        if( audioContext ) {
+            const nextStartTime = audioContext.currentTime + calculateNextStartTime(props.startTime, props.offset, props.bpm, props.timeSignature);
+            buffer.start(nextStartTime);
+        }
+    }, [props.startTime, props.bpm, props.timeSignature, props.offset, audioContext]);
 
     useEffect(() => {
         if (playing) {
-            if (context) {
+            if (audioContext) {
                 startInternal();
             }
         } else {
@@ -99,15 +93,14 @@ export default (props: {
                 buffer.stop();
             }
             // And recreate buffer
-            if (context) {
-                const source: IAudioBufferSourceNode<IAudioContext> = context.createBufferSource();
-                source.connect(context.destination);
+            if (audioContext) {
+                const source: IAudioBufferSourceNode<IAudioContext> = audioContext.createBufferSource();
+                source.connect(audioContext.destination);
                 source.loop = true;
-                source.buffer = generateClick(context, 120, {
+                source.buffer = generateClick(audioContext, 120, {
                     beats: 4,
                     measure: 4
                 });
-                setContext(context);
                 setBuffer(source);
             }
         }

@@ -6,6 +6,7 @@ import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {DarkModeContext, DarkModeStageProvider} from '../lib/useDarkModeSwitch';
 import {AuthContextProvider} from "../lib/useAuth";
 import {StageProvider} from "../lib/digitalstage/useStage";
+import {AudioContextProvider} from "../lib/useAudioContext";
 
 interface Props {
 
@@ -25,12 +26,13 @@ export default class MyApp extends App<Props, States> {
         return (
             <StyletronProvider value={styletron} debug={debug} debugAfterHydration>
                 <AuthContextProvider>
-                    <StageProvider>
-                        <DarkModeStageProvider>
-                            <DarkModeContext.Consumer>
-                                {({darkMode}) => (
-                                    <BaseProvider theme={darkMode ? DarkTheme : LightTheme}>
-                                        <style jsx global>{`
+                    <AudioContextProvider>
+                        <StageProvider>
+                            <DarkModeStageProvider>
+                                <DarkModeContext.Consumer>
+                                    {({darkMode}) => (
+                                        <BaseProvider theme={darkMode ? DarkTheme : LightTheme}>
+                                            <style jsx global>{`
                     :root {
                         --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
                         --font-mono: Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace;
@@ -67,14 +69,15 @@ export default class MyApp extends App<Props, States> {
                         100% { transform: translateY(0); }
                     }
                     `
-                                        }
-                                        </style>
-                                        <Component {...pageProps} />
-                                    </BaseProvider>
-                                )}
-                            </DarkModeContext.Consumer>
-                        </DarkModeStageProvider>
-                    </StageProvider>
+                                            }
+                                            </style>
+                                            <Component {...pageProps} />
+                                        </BaseProvider>
+                                    )}
+                                </DarkModeContext.Consumer>
+                            </DarkModeStageProvider>
+                        </StageProvider>
+                    </AudioContextProvider>
                 </AuthContextProvider>
             </StyletronProvider>
         )

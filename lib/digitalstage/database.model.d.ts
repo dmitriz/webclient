@@ -32,13 +32,48 @@ export interface DatabaseStage {
 export interface DatabaseStageMember {
     uid: string;
     displayName: string;
+
+    volume: number; // Mastervolume for member between 0 and 1
+}
+
+/**
+ * Audio Provider provided to member
+ *
+ * Location in firestore:
+ * /stages/{stageId}/members/{uid}/audioproducers/{globalProducerId}
+ *
+ * Read access to member only
+ */
+export interface DatabaseStageMemberAudioProducer {
+    globalProducerId: string;
+    volume: number; // Trackvolume between 0 and 1
+}
+
+/**
+ * Video Provider provided to member
+ *
+ * Location in firestore:
+ * /stages/{stageId}/members/{uid}/videoproducers/{globalProducerId}
+ *
+ * Read access to member only
+ */
+export interface DatabaseStageMemberVideoProducer {
+    globalProducerId: string;
+}
+
+export interface DatabaseStageMemberAudioProducer {
+
+}
+
+export interface DatabaseStageMemberSoundjack {
+    globalSoundjackId: string;
 }
 
 /**
  * Router
  *
  * Location in realtime database:
- * /routers/{uuid}
+ * /routers/{routerId}
  *
  * Read access to all
  */
@@ -50,21 +85,50 @@ export interface DatabaseRouter {
     slotAvailable: number
 }
 
-/**
- * Global producer
- *
- * Location in firestore:
- * /routers/{uuid}
- *
- * Read access to all authenticated clients
- */
-export interface DatabaseGlobalProducer {
+interface DatabaseGlobalProducer {
     uid: string;        // Globally unique
     stageId: string;    // Globally unique
     routerId: string;   // Globally unique
     producerId: string; // Only unique inside routerId
     deviceId: string;   // Globally unique
-    kind: string;
+}
+
+/**
+ * Global audio producer
+ *
+ * Location in firestore:
+ * /audioproducers/{globalProducerId}
+ *
+ * Read access to all authenticated clients
+ */
+export interface DatabaseGlobalAudioProducer extends DatabaseGlobalProducer {
+}
+
+/**
+ * Global audio producer
+ *
+ * Location in firestore:
+ * /videoproducers/{globalProducerId}
+ *
+ * Read access to all authenticated clients
+ */
+export interface DatabaseGlobalVideoProducer extends DatabaseGlobalProducer {
+}
+
+/**
+ * Global soundjack
+ *
+ * Location in firestore:
+ * /soundjacks/{globalSoundjackId}
+ *
+ * Read access to all authenticated clients
+ */
+export interface DatabaseGlobalSoundjack {
+    uid: string;
+    deviceId: string;   // Globally unique
+    stageId: string;
+    ipv4: string;
+    ipv6: string;
 }
 
 /**
@@ -78,9 +142,6 @@ export interface DatabaseGlobalProducer {
 export interface DatabaseDevice {
     uid: string;
 
-    ipv4: string;
-    ipv6: string;
-
     canAudio: boolean;
     canVideo: boolean;
 
@@ -88,4 +149,6 @@ export interface DatabaseDevice {
     sendVideo: boolean;
     receiveAudio: boolean;
     receiveVideo: boolean;
+
+    volume: number; // Output master volume for device between 0 and 1 (if implemented)
 }
