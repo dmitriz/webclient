@@ -16,6 +16,9 @@ export const AudioContextProvider = (props: {
     const [context, setContext] = useState<IAudioContext>(undefined);
 
     const createAudioContext = useCallback(async () => {
+        if( context ) {
+            return context;
+        }
         const audioContext: IAudioContext = new RealAudioContext();
         return webAudioTouchUnlock(audioContext)
             .then((unlocked: boolean) => {
