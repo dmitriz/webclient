@@ -16,7 +16,7 @@ const Panel = styled("div", {
     justifyContent: 'center',
     zIndex: 1000,
     bottom: "50px",
-    width: "100%",
+    left: "50px",
     height: "auto"
 });
 
