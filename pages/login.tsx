@@ -1,7 +1,7 @@
-import LoginForm from "../components/LoginForm";
+import LoginForm from "../components/user/LoginForm";
 import Link from "next/link";
-import Layout from "../components/ui/Layout";
-import CenteredCard from "../components/ui/CenteredCard";
+import Layout from "../components/theme/Layout";
+import CenteredCard from "../components/theme/CenteredCard";
 
 export default () => {
 

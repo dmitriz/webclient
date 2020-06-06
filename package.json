@@ -15,6 +15,7 @@
     "url": "git+https://github.com/digital-stage/webclient.git"
   },
   "dependencies": {
+    "@sentry/browser": "^5.16.1",
     "baseui": "^9.82.0",
     "digitalstage-client-base": "0.0.22",
     "digitalstage-mediasoup-web": "0.0.13",
@@ -24,6 +25,7 @@
     "js-cookie": "latest",
     "lodash.debounce": "^4.0.8",
     "lodash.omit": "^4.5.0",
+    "loglevel": "^1.6.8",
     "mediasoup-client": "^3.6.9",
     "next": "^9.4.4",
     "next-cookies": "latest",

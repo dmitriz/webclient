@@ -6,10 +6,11 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
     public readonly type = "audio";
     public readonly track: MediaStreamTrack;
     private readonly source: IMediaStreamTrackAudioSourceNode<IAudioContext>;
-    private readonly gainNode: IGainNode<IAudioContext>;
+    public readonly gainNode: IGainNode<IAudioContext>;
+    public readonly mediaStream: MediaStream;
     public readonly id: string;
     private muted: boolean;
-    private internalVolume: number;
+    private internalVolume: number = 0;
 
     get volume(): number {
         return this.internalVolume
@@ -19,9 +20,13 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
         this.id = id;
         this.track = consumer.track;
         this.source = audioContext.createMediaStreamTrackSource(consumer.track);
+
+        //TODO: This is so ugly, but necessary, see https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+        this.mediaStream = new MediaStream([consumer.track]);
         this.gainNode = this.source.context.createGain();
         this.source.connect(this.gainNode);
         this.gainNode.connect(audioContext.destination);
+        this.internalVolume = this.gainNode.gain.value;
     }
 
     public mute = () => {
@@ -36,7 +41,6 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
     public setVolume = (volume: number) => {
         this.internalVolume = volume;
         if (!this.muted) {
-            console.log("Set gain to " + volume);
             this.gainNode.gain.value = volume;
         }
     }

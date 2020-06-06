@@ -5,9 +5,9 @@ import React, {useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
 import {useStage} from "../lib/digitalstage/useStage";
-import Loading from "../components/ui/Loading";
-import Layout from "../components/ui/Layout";
-import CenteredCard from "../components/ui/CenteredCard";
+import Loading from "../components/theme/Loading";
+import Layout from "../components/theme/Layout";
+import CenteredCard from "../components/theme/CenteredCard";
 
 export default () => {
     const {user, loading} = useAuth();

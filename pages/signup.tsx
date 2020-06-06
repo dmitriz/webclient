@@ -1,6 +1,6 @@
-import SignUpForm from "../components/SignUpForm";
-import Layout from "../components/ui/Layout";
-import CenteredCard from "../components/ui/CenteredCard";
+import SignUpForm from "../components/user/SignUpForm";
+import Layout from "../components/theme/Layout";
+import CenteredCard from "../components/theme/CenteredCard";
 
 export default () => {
 

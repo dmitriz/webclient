@@ -1,10 +1,10 @@
-import {useStage} from "../lib/digitalstage/useStage"
+import {useStage} from "../../lib/digitalstage/useStage"
 import React from "react";
 import LocalDevicePanel from "./LocalDevicePanel";
 import {styled} from "baseui";
-import NavBar from "./ui/NavBar";
+import NavBar from "../theme/NavBar";
 import MemberView from "./MemberView";
-import Click from "./click/Click";
+import Click from "../click/Click";
 
 const Wrapper = styled("div", {
     position: "relative",

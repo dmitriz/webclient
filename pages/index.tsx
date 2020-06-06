@@ -3,14 +3,13 @@ import {Button} from "baseui/button";
 import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
 import {useAuth} from "../lib/useAuth";
-import Layout from "../components/ui/Layout";
+import Layout from "../components/theme/Layout";
 import {useStage} from "../lib/digitalstage/useStage";
-import Loading from "../components/ui/Loading";
+import Loading from "../components/theme/Loading";
 import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";
-import StageView from "../components/StageView";
-import CenteredCard from "../components/ui/CenteredCard";
-
+import StageView from "../components/stage/StageView";
+import CenteredCard from "../components/theme/CenteredCard";
 
 export default () => {
     const {user, loading} = useAuth();

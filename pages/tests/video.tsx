@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import VideoTrackPlayer from "../../components/video/VideoTrackPlayer";
+import VideoTrackPlayer from "../../components/stage/video/VideoTrackPlayer";
 
 export default () => {
     const [tracks, setTracks] = useState<MediaStreamTrack[]>([]);

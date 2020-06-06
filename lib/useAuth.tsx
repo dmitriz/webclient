@@ -24,7 +24,6 @@ export const useAuthDep = (): AuthProps => {
     });
 
     function onChange(user: firebase.User | null) {
-        console.log("Have a new onAuthStateChanged");
         setState({loading: false, user});
 
         if (user) {

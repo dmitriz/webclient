@@ -3,7 +3,6 @@ import mediasoupClient from 'mediasoup-client'
 import * as firebase from 'firebase/app'
 import 'firebase/firestore'
 import unfetch from 'isomorphic-unfetch'
-const omit = require('lodash.omit');
 import 'firebase/auth'
 import {Device as MediasoupClientDevice} from 'mediasoup-client/lib/Device'
 import {MediasoupRouter} from './types'
@@ -11,6 +10,10 @@ import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from './util
 import {RouterGetUrls, RouterPostUrls} from './queries'
 import {Producer} from './types/Producer'
 import {Consumer} from './types/Consumer'
+import {debug, warn, handleError} from "./../../Debugger";
+
+const omit = require('lodash.omit');
+
 
 export interface GlobalProducer extends types.DatabaseGlobalProducer {
     id: string
@@ -36,7 +39,7 @@ export class MediasoupDevice extends AbstractDevice {
     protected connected: boolean = false
 
     constructor(firebaseApp: firebase.app.App, user: firebase.User) {
-        super(firebaseApp, user, 'Browser', {
+        super(firebaseApp, user, 'Mediasoup', {
             canVideo: true,
             canAudio: true
         })
@@ -45,8 +48,8 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     private registerDeviceListeners() {
+        debug("registerDeviceListeners()", this);
         this.on('send-audio', (sendAudio: boolean) => {
-            console.log('SEND_AUDIO')
             if (sendAudio) {
                 getLocalAudioTracks().then((tracks: MediaStreamTrack[]) => {
                     tracks.forEach((track: MediaStreamTrack) =>
@@ -61,7 +64,6 @@ export class MediasoupDevice extends AbstractDevice {
             }
         })
         this.on('send-video', (sendVideo: boolean) => {
-            console.log('SEND_VIDEO')
             if (sendVideo) {
                 getLocalVideoTracks().then((tracks: MediaStreamTrack[]) => {
                     tracks.forEach((track: MediaStreamTrack) =>
@@ -79,7 +81,6 @@ export class MediasoupDevice extends AbstractDevice {
             if (receiveAudio) {
                 Object.values(this.availableGlobalProducers).forEach(
                     (globalProducer: GlobalProducer) => {
-                        console.log('HAVE GLOBAL PRODUCER')
                         if (globalProducer.kind === 'audio')
                             this.createConsumer(globalProducer)
                     }
@@ -95,7 +96,6 @@ export class MediasoupDevice extends AbstractDevice {
             if (receiveVideo) {
                 Object.values(this.availableGlobalProducers).forEach(
                     (globalProducer: GlobalProducer) => {
-                        console.log('HAVE GLOBAL PRODUCER')
                         if (globalProducer.kind === 'video')
                             this.createConsumer(globalProducer)
                     }
@@ -134,6 +134,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public connect(): Promise<void> {
+        debug("connect()", this);
         return new Promise<void>((resolve, reject) => {
             if (this.connected) return resolve()
             return getFastestRouter(this.firebaseApp)
@@ -149,17 +150,17 @@ export class MediasoupDevice extends AbstractDevice {
                     resolve()
                 })
                 .catch((error) => {
-                    console.error(error)
+                    handleError(error);
                     alert('Video & Audio not available right now ... sorry :(')
                     this.disconnect()
-                    reject(new Error('No router available'))
+                    //reject(new Error('No router available'))
                 })
         })
     }
 
     public disconnect() {
+        debug("disconnect()", this);
         if (!this.connected) return
-        console.log('MEDIASOUP: disconnecting')
         if (this.sendTransport) {
             this.sendTransport.close()
         }
@@ -174,8 +175,11 @@ export class MediasoupDevice extends AbstractDevice {
     protected async createConsumer(
         globalProducer: GlobalProducer
     ): Promise<void> {
-        if (!this.receiveTransport) return
-        console.log('create consumer for ' + globalProducer.id);
+        debug("createConsumer(" + globalProducer.id + ")", this);
+        if (!this.receiveTransport) {
+            warn("createConsumer: no receive transport available", this);
+            return;
+        }
 
         return this.fetchPostJson(RouterPostUrls.CreateConsumer, {
             globalProducerId: globalProducer.id,
@@ -208,13 +212,13 @@ export class MediasoupDevice extends AbstractDevice {
                 return consumer.paused
             })
             .then((paused: boolean) => {
-                console.log('Paused: ' + paused)
-                return this.resumeConsumer(globalProducer.id)
+                if (paused)
+                    return this.resumeConsumer(globalProducer.id)
             })
     }
 
     public async pauseConsumer(globalProducerId: string): Promise<void> {
-        console.log('pause consumer')
+        debug('pauseConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer && !consumer.consumer.paused) {
             return this.fetchPostJson(RouterPostUrls.PauseConsumer, {
@@ -228,13 +232,12 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async resumeConsumer(globalProducerId: string): Promise<void> {
-        console.log('resume consumer')
+        debug('resumeConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer && consumer.consumer.paused) {
             return this.fetchPostJson(RouterPostUrls.ResumeConsumer, {
                 id: consumer.consumer.id
             }).then(() => {
-                console.log('really resume consumer')
                 consumer.consumer.resume()
                 this.emit('consumer-resumed', consumer)
                 this.emit('consumer-changed', consumer)
@@ -243,7 +246,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async closeConsumer(globalProducerId: string): Promise<void> {
-        console.log('close consumer')
+        debug('closeConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer) {
             return this.fetchPostJson(RouterPostUrls.CloseConsumer, {
@@ -257,8 +260,11 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async createProducer(track: MediaStreamTrack): Promise<void> {
-        if (!this.sendTransport) return
-        console.log('create producer')
+        debug('createProducer(' + track.id + ')', this);
+        if (!this.sendTransport) {
+            warn('createProducer: no send transport available', this);
+            return;
+        }
         return this.sendTransport
             .produce({
                 track: track,
@@ -267,17 +273,15 @@ export class MediasoupDevice extends AbstractDevice {
                 }
             })
             .then((producer: mediasoupClient.types.Producer) => {
-                console.log('First')
                 producer.on('pause', () => {
-                    console.log('pause')
+                    debug('createProducer(' + track.id + '): pause', this);
                 })
                 producer.on('close', () => {
-                    console.log('close')
+                    debug('createProducer(' + track.id + '): close', this);
                 })
                 this.producers[track.id] = {
                     producer: producer
                 }
-                console.log(producer.id)
                 this.emit('producer-added', this.producers[track.id])
                 const stageId: string | undefined = this.getStageId()
                 if (stageId) {
@@ -287,7 +291,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async pauseProducer(track: MediaStreamTrack): Promise<void> {
-        console.log('pause producer')
+        debug('pauseProducer(' + track.id + ')', this);
         if (this.producers[track.id] && !this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.PauseProducer, {
                 id: this.producers[track.id].producer.id
@@ -300,7 +304,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async resumeProducer(track: MediaStreamTrack): Promise<void> {
-        console.log('resume producer')
+        debug('resumeProducer(' + track.id + ')', this);
         if (this.producers[track.id] && this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.ResumeProducer, {
                 id: this.producers[track.id].producer.id
@@ -313,7 +317,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     public async stopProducer(trackId: string): Promise<void> {
-        console.log('stop producer')
+        debug('stopProducer(' + trackId + ')', this);
         if (this.producers[trackId]) {
             this.fetchPostJson(RouterPostUrls.CloseProducer, {
                 id: this.producers[trackId].producer.id
@@ -335,6 +339,7 @@ export class MediasoupDevice extends AbstractDevice {
     private handleRemoteProducer = (
         querySnapshot: firebase.firestore.QuerySnapshot
     ) => {
+        debug('handleRemoteProducer(...)', this);
         return querySnapshot
             .docChanges()
             .forEach((change: firebase.firestore.DocumentChange) => {
@@ -365,6 +370,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     private publishProducerToStage(stageId: string, producer: Producer) {
+        debug('publishProducerToStage(' + stageId + ', ' + producer.producer.id + ')', this);
         return this.firebaseApp
             .firestore()
             .collection('producers')
@@ -377,19 +383,21 @@ export class MediasoupDevice extends AbstractDevice {
                 kind: producer.producer.kind
             } as types.DatabaseGlobalProducer)
             .then((ref: firebase.firestore.DocumentReference) => {
-                console.log('Published global producer ' + ref.id)
                 producer.globalProducerId = ref.id
+                debug("publishProducerToStage(...): global producer ID: " + ref.id, this);
                 this.emit('producer-published', ref.id)
             })
     }
 
     private async getRtpCapabilities(): Promise<mediasoupClient.types.RtpCapabilities> {
+        debug('getRtpCapabilities()', this);
         return this.fetchGetJson(RouterGetUrls.GetRTPCapabilities)
     }
 
     private async createWebRTCTransport(
         type: 'send' | 'receive'
     ): Promise<mediasoupClient.types.Transport> {
+        debug('createWebRTCTransport(' + type + ')', this);
         return this.fetchGetJson(RouterGetUrls.CreateTransport).then(
             (transportOptions: mediasoupClient.types.TransportOptions) => {
                 const transport: mediasoupClient.types.Transport =
@@ -408,13 +416,12 @@ export class MediasoupDevice extends AbstractDevice {
                     }
                 )
                 transport.on('connectionstatechange', async (state) => {
-                    console.log('mediasoup: connectionstatechange ' + state)
                     if (
                         state === 'closed' ||
                         state === 'failed' ||
                         state === 'disconnected'
                     ) {
-                        console.error('mediasoup: Disconnect by server side')
+                        warn('createWebRTCTransport(' + type + '): Disconnect by server side', this);
                     }
                 })
                 if (type === 'send') {
@@ -438,7 +445,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     private fetchGetJson = (url: string): Promise<any> => {
-        console.log('fetchGetJson(' + url + ')')
+        debug('fetchGetJson(' + url + ')', this);
         return new Promise<any>((resolve, reject) => {
             if (!this.router) {
                 return reject(new Error('Router not available'))
@@ -462,7 +469,7 @@ export class MediasoupDevice extends AbstractDevice {
     }
 
     private fetchPostJson = (url: string, body?: any): Promise<any> => {
-        console.log('fetchPostJson(' + url + ')')
+        debug('fetchPostJson(' + url + ')', this);
         return new Promise<any>((resolve, reject) => {
             if (!this.router) {
                 return reject(new Error('Router not available'))

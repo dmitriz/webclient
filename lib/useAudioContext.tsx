@@ -16,10 +16,12 @@ export const AudioContextProvider = (props: {
     const [context, setContext] = useState<IAudioContext>(undefined);
 
     const createAudioContext = useCallback(async () => {
-        if( context ) {
+        if (context) {
             return context;
         }
         const audioContext: IAudioContext = new RealAudioContext();
+
+        console.log("Base latency with sample rate " + audioContext.sampleRate + ": " + Math.round(1000 * audioContext.baseLatency) + "ms");
         return webAudioTouchUnlock(audioContext)
             .then((unlocked: boolean) => {
                 if (unlocked) {

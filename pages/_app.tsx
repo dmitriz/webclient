@@ -8,6 +8,11 @@ import {AuthContextProvider} from "../lib/useAuth";
 import {StageProvider} from "../lib/digitalstage/useStage";
 import {AudioContextProvider} from "../lib/useAudioContext";
 
+import * as Sentry from '@sentry/browser';
+
+if (process.env.NODE_ENV === "production")
+    Sentry.init({dsn: "https://4c5911aca6334d9aafdc6c7b106a7b1e@o403353.ingest.sentry.io/5265870"});
+
 interface Props {
 
 }

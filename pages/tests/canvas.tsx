@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from "react";
-import CanvasPlayer from "../../components/CanvasPlayer";
+import CanvasPlayer from "../../components/stage/video/CanvasPlayer";
 import {Button} from "baseui/button";
 
 export default () => {

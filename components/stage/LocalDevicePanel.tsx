@@ -1,7 +1,7 @@
 import React from "react";
-import {useStage} from "../lib/digitalstage/useStage";
-import {styled} from "baseui";
-import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
+import {useStage} from "../../lib/digitalstage/useStage";
+import {styled, withStyle} from "baseui";
+import {SHAPE, SIZE, Button as BaseButton} from "baseui/button";
 
 const SoundjackLogo = styled("img", {
     width: "24px",
@@ -45,7 +45,7 @@ const Button = styled(BaseButton, (props: {
     }
 }));
 
-const SoundjackButton = styled(Button, {
+const SoundjackButton = styled(BaseButton, {
     backgroundImage: "url('/soundjack.png')",
     backgroundSize: "cover",
     width: "56px",
@@ -94,7 +94,7 @@ export default () => {
                     </Button>
                 </>
             ) : (
-                <Button isLoading={stage.loading}
+                <Button isLoading={!stage || stage.loading}
                         onClick={() => stage.setConnected(true)} $active={stage.loading}>
                     Connect
                 </Button>

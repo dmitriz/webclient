@@ -88,7 +88,6 @@ export default (props: {
                 startInternal();
             }
         } else {
-            console.log("Stop");
             if (buffer && buffer.buffer != null) {
                 buffer.stop();
             }
