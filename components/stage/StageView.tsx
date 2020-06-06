@@ -5,6 +5,9 @@ import {styled} from "baseui";
 import NavBar from "../theme/NavBar";
 import MemberView from "./MemberView";
 import Click from "../click/Click";
+import {FlexGrid, FlexGridItem} from "baseui/flex-grid";
+import {BlockProps} from "baseui/block";
+import {AspectRatioBox, AspectRatioBoxBody} from "baseui/aspect-ratio-box";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -53,6 +56,9 @@ const ClickPanel = styled("div", {
     flexGrow: 0
 });
 
+const itemProps: BlockProps = {
+};
+
 export default () => {
     const {members} = useStage();
 
@@ -62,15 +68,23 @@ export default () => {
             <ClickPanel>
                 <Click/>
             </ClickPanel>
-            <Members>
+            <FlexGrid
+                flexGridColumnCount={[1, 2, 2, 4]}
+                flexGridColumnGap="scale800"
+                flexGridRowGap="scale800"
+            >
                 {members.map((member) => (
-                    <Member key={member.uid}>
-                        <MemberInner>
-                            <MemberView member={member}/>
-                        </MemberInner>
-                    </Member>
+                    <FlexGridItem key={member.uid} {...itemProps}>
+                        <AspectRatioBox aspectRatio={16 / 9}>
+                            <AspectRatioBoxBody display="flex"
+                                                alignItems="center"
+                                                justifyContent="center">
+                                <MemberView member={member} />
+                            </AspectRatioBoxBody>
+                        </AspectRatioBox>
+                    </FlexGridItem>
                 ))}
-            </Members>
+            </FlexGrid>
             <LocalDevicePanel/>
         </Wrapper>
     )

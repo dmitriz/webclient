@@ -4,7 +4,6 @@ import CanvasPlayer from "./video/CanvasPlayer";
 import {StageMember} from "../../lib/digitalstage/useStage";
 import {MediasoupVideoTrack} from "../../lib/digitalstage/types/MediasoupVideoTrack";
 import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
-import useHover from "../../lib/useHover";
 
 const MemberPanel = styled("div", {
     width: '100%',

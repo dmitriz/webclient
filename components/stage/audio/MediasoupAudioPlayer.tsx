@@ -1,9 +1,9 @@
 import {MediasoupAudioTrack} from "../../../lib/digitalstage/types/MediasoupAudioTrack";
 import {styled} from "baseui";
 import React, {MutableRefObject, useEffect, useRef, useState} from "react";
-import {Slider} from "baseui/slider";
 import {StageMember} from "../../../lib/digitalstage/useStage";
 import useHover from "../../../lib/useHover";
+import VolumeSlider from "../../theme/VolumeSlider";
 
 const HiddenAudioPlayer = styled("audio", {})
 
@@ -20,14 +20,16 @@ const SliderOverlay = styled("div", {
 });
 
 const SliderWrapper = styled("div", {
-    paddingLeft: "5vw",
-    paddingRight: "5vw",
+    marginTop: "5px"
 });
 
 const SliderPopout = styled("div", (props: {
     $hovered: boolean
 }) => ({
-    maxHeight: props.$hovered ? 3000 : 0
+    opacity: props.$hovered ? 1 : 0,
+    transitionTimingFunction: "cubic-bezier(0, 0, 1, 1)",
+    transitionDuration: "200ms",
+    transitionProperty: "opacity"
 }));
 
 const MediasoupAudioSlider = (props: {
@@ -41,49 +43,17 @@ const MediasoupAudioSlider = (props: {
         audioRef.current.srcObject = props.audioTrack.mediaStream;
     }, [audioRef]);
 
-
     useEffect(() => {
-        const realVolume = (props.globalVolume * volume) / 100;
+        const realVolume = (props.globalVolume / 100) * (volume / 100);
+        console.log(realVolume);
         props.audioTrack.gainNode.gain.setValueAtTime(realVolume, props.audioTrack.gainNode.context.currentTime);
     }, [volume, props.globalVolume]);
 
     return (
         <SliderWrapper>
             <HiddenAudioPlayer ref={audioRef}/>
-            <Slider min={0} max={100} step={10} value={[volume]}
-                    onChange={(e) => setVolume(e.value[0])}
-                    overrides={{
-                        InnerThumb: ({$value, $thumbIndex}) => (
-                            <React.Fragment>{$value[$thumbIndex]}</React.Fragment>
-                        ),
-                        ThumbValue: () => null,
-                        Thumb: {
-                            style: () => ({
-                                height: '28px',
-                                width: '28px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderTopLeftRadius: '28px',
-                                borderTopRightRadius: '28px',
-                                borderBottomRightRadius: '28px',
-                                borderBottomLeftRadius: '28px',
-                                borderLeftStyle: 'solid',
-                                borderRightStyle: 'solid',
-                                borderTopStyle: 'solid',
-                                borderBottomStyle: 'solid',
-                                borderLeftWidth: '3px',
-                                borderTopWidth: '3px',
-                                borderRightWidth: '3px',
-                                borderBottomWidth: '3px',
-                                borderLeftColor: `#ccc`,
-                                borderTopColor: `#ccc`,
-                                borderRightColor: `#ccc`,
-                                borderBottomColor: `#ccc`,
-                                backgroundColor: '#fff',
-                            }),
-                        },
-                    }}/>
+            <VolumeSlider min={0} max={100} step={10} value={volume}
+                          onChange={(value) => setVolume(value)}/>
         </SliderWrapper>
     );
 }
@@ -116,40 +86,8 @@ export default (props: {
                 </SliderPopout>
                 {props.member.audio.audioTracks.length > 0 && (
                     <SliderWrapper>
-                        <Slider min={0} max={100} step={5} value={[globalVolume]}
-                                overrides={{
-                                    InnerThumb: ({$value, $thumbIndex}) => (
-                                        <React.Fragment>{$value[$thumbIndex]}</React.Fragment>
-                                    ),
-                                    ThumbValue: () => null,
-                                    Thumb: {
-                                        style: () => ({
-                                            height: '36px',
-                                            width: '36px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            borderTopLeftRadius: '36px',
-                                            borderTopRightRadius: '36px',
-                                            borderBottomRightRadius: '36px',
-                                            borderBottomLeftRadius: '36px',
-                                            borderLeftStyle: 'solid',
-                                            borderRightStyle: 'solid',
-                                            borderTopStyle: 'solid',
-                                            borderBottomStyle: 'solid',
-                                            borderLeftWidth: '3px',
-                                            borderTopWidth: '3px',
-                                            borderRightWidth: '3px',
-                                            borderBottomWidth: '3px',
-                                            borderLeftColor: `#ccc`,
-                                            borderTopColor: `#ccc`,
-                                            borderRightColor: `#ccc`,
-                                            borderBottomColor: `#ccc`,
-                                            backgroundColor: '#fff',
-                                        }),
-                                    },
-                                }}
-                                onChange={(e) => setGlobalVolume(e.value[0])}/>
+                        <VolumeSlider min={0} max={100} step={5} value={globalVolume}
+                                      onChange={(value) => setGlobalVolume(value)}/>
                     </SliderWrapper>
                 )}
             </SliderOverlay>
