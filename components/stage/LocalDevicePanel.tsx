@@ -14,7 +14,7 @@ const Panel = styled("div", {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
+    zIndex: 1000,
     bottom: "50px",
     width: "100%",
     height: "auto"
