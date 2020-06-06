@@ -31,8 +31,7 @@ export default () => {
                     <StyledNavigationItem>
                         <CenterVertical>
                             <Banner src={"/logo.png"}/>
-                            Digital Stage
-                            {stage && " - " + stage.name}
+                            {stage ? stage.name : "Digital Stage"}
                         </CenterVertical>
                     </StyledNavigationItem>
                 </StyledNavigationList>
@@ -77,13 +76,13 @@ export default () => {
                                             </Button>
                                         </Link>
                                     </StyledNavigationItem>
+                                    <StyledNavigationItem>
+                                        <Link href="/logout">
+                                            <Button isLoading={loading}>Logout</Button>
+                                        </Link>
+                                    </StyledNavigationItem>
                                 </>
                             )}
-                            <StyledNavigationItem>
-                                <Link href="/logout">
-                                    <Button isLoading={loading}>Logout</Button>
-                                </Link>
-                            </StyledNavigationItem>
                         </>
                     )}
                 </StyledNavigationList>

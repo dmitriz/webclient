@@ -93,6 +93,9 @@ export default class CanvasPlayer extends React.Component<Props, States> {
                     videoElement = document.createElement("video");
                     videoElement.id = "video-" + id;
                     videoElement.style.display = "none";
+                    videoElement.setAttribute("muted", "true");
+                    videoElement.setAttribute("playsinline", "true");
+                    videoElement.setAttribute("autoplay", "true");
                     videoElement.srcObject = new MediaStream([videoTracks[i]]);
                     videoElement.play();
                     this.videoContainerRef.current.append(videoElement);
@@ -141,6 +144,7 @@ export default class CanvasPlayer extends React.Component<Props, States> {
     }
 
     private drawAnimationFrames = () => {
+        this.canvasRef.current.width = this.canvasRef.current.width + 0;
         const context = this.canvasRef.current.getContext("2d");
         context.fillStyle = 'black';
         //context.strokeStyle = 'red';
