@@ -1,4 +1,4 @@
-import {AbstractDevice, types} from 'digitalstage-client-base'
+import {types} from 'digitalstage-client-base'
 import mediasoupClient from 'mediasoup-client'
 import * as firebase from 'firebase/app'
 import 'firebase/firestore'
@@ -10,20 +10,39 @@ import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from './util
 import {RouterGetUrls, RouterPostUrls} from './queries'
 import {Producer} from './types/Producer'
 import {Consumer} from './types/Consumer'
-import {debug, warn, handleError} from "./../../Debugger";
+import {debug, handleError, warn} from "./../../Debugger";
+import LocalDevice from "../device/LocalDevice";
+import {DeviceEventType} from "../device/AbstractDevice";
+import {DatabaseUser} from "digitalstage-client-base/lib/types/DatabaseUser";
 
 const omit = require('lodash.omit');
 
+export type MediasoupEventType =
+    | DeviceEventType
+    | "connected"
+    | "consumer-added"
+    | "consumer-changed"
+    | "consumer-paused"
+    | "consumer-resumed"
+    | "consumer-removed"
+    | "producer-added"
+    | "producer-changed"
+    | "producer-paused"
+    | "producer-resumed"
+    | "producer-removed"
+    | "producer-published";
 
 export interface GlobalProducer extends types.DatabaseGlobalProducer {
     id: string
 }
 
-export class MediasoupDevice extends AbstractDevice {
+export class MediasoupDevice extends LocalDevice {
     protected readonly device: MediasoupClientDevice
+    protected connected: boolean = false
     protected router?: MediasoupRouter = undefined
     protected sendTransport?: mediasoupClient.types.Transport
     protected receiveTransport?: mediasoupClient.types.Transport
+    protected stageId: string;
     protected availableGlobalProducers: {
         [globalProducerId: string]: GlobalProducer
     } = {}
@@ -34,12 +53,12 @@ export class MediasoupDevice extends AbstractDevice {
 
     protected consumers: {
         [globalProducerId: string]: Consumer
-    } = {}
+    } = {};
 
-    protected connected: boolean = false
 
-    constructor(firebaseApp: firebase.app.App, user: firebase.User) {
-        super(firebaseApp, user, 'Mediasoup', {
+    constructor(user: firebase.User) {
+        super(user, 'Browser', {
+            caption: "",
             canVideo: true,
             canAudio: true
         })
@@ -49,7 +68,7 @@ export class MediasoupDevice extends AbstractDevice {
 
     private registerDeviceListeners() {
         debug("registerDeviceListeners()", this);
-        this.on('send-audio', (sendAudio: boolean) => {
+        this.on('sendAudio', (sendAudio: boolean) => {
             if (sendAudio) {
                 getLocalAudioTracks().then((tracks: MediaStreamTrack[]) => {
                     tracks.forEach((track: MediaStreamTrack) =>
@@ -63,7 +82,7 @@ export class MediasoupDevice extends AbstractDevice {
                 })
             }
         })
-        this.on('send-video', (sendVideo: boolean) => {
+        this.on('sendVideo', (sendVideo: boolean) => {
             if (sendVideo) {
                 getLocalVideoTracks().then((tracks: MediaStreamTrack[]) => {
                     tracks.forEach((track: MediaStreamTrack) =>
@@ -77,7 +96,7 @@ export class MediasoupDevice extends AbstractDevice {
                 })
             }
         })
-        this.on('receive-audio', (receiveAudio: boolean) => {
+        this.on('receiveAudio', (receiveAudio: boolean) => {
             if (receiveAudio) {
                 Object.values(this.availableGlobalProducers).forEach(
                     (globalProducer: GlobalProducer) => {
@@ -92,7 +111,7 @@ export class MediasoupDevice extends AbstractDevice {
                 })
             }
         })
-        this.on('receive-video', (receiveVideo: boolean) => {
+        this.on('receiveVideo', (receiveVideo: boolean) => {
             if (receiveVideo) {
                 Object.values(this.availableGlobalProducers).forEach(
                     (globalProducer: GlobalProducer) => {
@@ -107,37 +126,59 @@ export class MediasoupDevice extends AbstractDevice {
                 })
             }
         })
-        this.on(
-            'stage-ref',
-            async (stageRef: firebase.firestore.DocumentReference) => {
-                if (stageRef) {
-                    // Publish all local producers
-                    Object.values(this.producers).forEach((producer: Producer) =>
-                        this.publishProducerToStage(stageRef.id, producer)
-                    )
-                    this.userRef
-                        .collection('producers')
-                        .onSnapshot(this.handleRemoteProducer)
-                } else {
-                    // Un-publish all local producers
-                    firebase
-                        .firestore()
-                        .collection('producers')
-                        .where('deviceId', '==', this.getDeviceId())
-                        .get()
-                        .then((snapshots: firebase.firestore.QuerySnapshot) =>
-                            snapshots.forEach((snapshot) => snapshot.ref.delete())
+        const userRef: firebase.firestore.DocumentReference = firebase.firestore().collection("users").doc(this.user.uid);
+        userRef
+            .onSnapshot(snapshot => {
+                const databaseUser: DatabaseUser = snapshot.data() as DatabaseUser;
+                if (this.stageId !== databaseUser.stageId) {
+                    this.stageId = databaseUser.stageId;
+                    //TODO: We expect, that the stageId only change between something and undefined - not beween different stages
+                    if (this.stageId) {
+                        // Publish all local producers
+                        Object.values(this.producers).forEach((producer: Producer) =>
+                            this.publishProducerToStage(databaseUser.stageId, producer)
                         )
+                        console.log("FINDS ME");
+                        //TODO: THIS IS NOT WORKING!!!
+                        firebase.firestore().collection("users").doc(this.user.uid)
+                            .collection('producers')
+                            .onSnapshot(this.handleRemoteProducer)
+                    } else {
+                        // Un-publish all local producers
+                        firebase
+                            .firestore()
+                            .collection('producers')
+                            .where('deviceId', '==', this.id)
+                            .get()
+                            .then((snapshots: firebase.firestore.QuerySnapshot) =>
+                                snapshots.forEach((snapshot) => snapshot.ref.delete())
+                            )
+                    }
                 }
-            }
-        )
+            });
+    }
+
+    public on(event: MediasoupEventType, listener: (arg: any) => void): this {
+        return super.on(event, listener);
+    }
+
+    public once(event: MediasoupEventType, listener: (arg: any) => void): this {
+        return super.once(event, listener);
+    }
+
+    public emit(event: MediasoupEventType, arg: any): boolean {
+        return super.emit(event, arg);
+    }
+
+    public off(event: MediasoupEventType, listener: (arg: any) => void): this {
+        return super.off(event, listener);
     }
 
     public connect(): Promise<void> {
         debug("connect()", this);
         return new Promise<void>((resolve, reject) => {
             if (this.connected) return resolve()
-            return getFastestRouter(this.firebaseApp)
+            return getFastestRouter()
                 .then(async (router: MediasoupRouter) => {
                     this.router = router
                     const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities()
@@ -215,6 +256,9 @@ export class MediasoupDevice extends AbstractDevice {
                 if (paused)
                     return this.resumeConsumer(globalProducer.id)
             })
+            .catch((error) => {
+                handleError(error);
+            })
     }
 
     public async pauseConsumer(globalProducerId: string): Promise<void> {
@@ -223,11 +267,15 @@ export class MediasoupDevice extends AbstractDevice {
         if (consumer && !consumer.consumer.paused) {
             return this.fetchPostJson(RouterPostUrls.PauseConsumer, {
                 id: consumer.consumer.id
-            }).then(() => {
-                consumer.consumer.pause()
-                this.emit('consumer-paused', consumer)
-                this.emit('consumer-changed', consumer)
             })
+                .then(() => {
+                    consumer.consumer.pause()
+                    this.emit('consumer-paused', consumer)
+                    this.emit('consumer-changed', consumer)
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -237,11 +285,15 @@ export class MediasoupDevice extends AbstractDevice {
         if (consumer && consumer.consumer.paused) {
             return this.fetchPostJson(RouterPostUrls.ResumeConsumer, {
                 id: consumer.consumer.id
-            }).then(() => {
-                consumer.consumer.resume()
-                this.emit('consumer-resumed', consumer)
-                this.emit('consumer-changed', consumer)
             })
+                .then(() => {
+                    consumer.consumer.resume()
+                    this.emit('consumer-resumed', consumer)
+                    this.emit('consumer-changed', consumer)
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -251,11 +303,15 @@ export class MediasoupDevice extends AbstractDevice {
         if (consumer) {
             return this.fetchPostJson(RouterPostUrls.CloseConsumer, {
                 id: consumer.consumer.id
-            }).then(() => {
-                consumer.consumer.close()
-                this.consumers = omit(this.consumers, globalProducerId)
-                this.emit('consumer-removed', consumer)
             })
+                .then(() => {
+                    consumer.consumer.close()
+                    this.consumers = omit(this.consumers, globalProducerId)
+                    this.emit('consumer-removed', consumer)
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -283,10 +339,12 @@ export class MediasoupDevice extends AbstractDevice {
                     producer: producer
                 }
                 this.emit('producer-added', this.producers[track.id])
-                const stageId: string | undefined = this.getStageId()
-                if (stageId) {
-                    this.publishProducerToStage(stageId, this.producers[track.id])
+                if (this.stageId) {
+                    this.publishProducerToStage(this.stageId, this.producers[track.id])
                 }
+            })
+            .catch((error) => {
+                handleError(error);
             })
     }
 
@@ -295,11 +353,15 @@ export class MediasoupDevice extends AbstractDevice {
         if (this.producers[track.id] && !this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.PauseProducer, {
                 id: this.producers[track.id].producer.id
-            }).then(() => {
-                this.producers[track.id].producer.pause()
-                this.emit('producer-paused', track.id)
-                this.emit('producer-changed', this.producers[track.id])
             })
+                .then(() => {
+                    this.producers[track.id].producer.pause()
+                    this.emit('producer-paused', track.id)
+                    this.emit('producer-changed', this.producers[track.id])
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -308,11 +370,15 @@ export class MediasoupDevice extends AbstractDevice {
         if (this.producers[track.id] && this.producers[track.id].producer.paused) {
             this.fetchPostJson(RouterPostUrls.ResumeProducer, {
                 id: this.producers[track.id].producer.id
-            }).then(() => {
-                this.producers[track.id].producer.resume()
-                this.emit('producer-resumed', this.producers[track.id])
-                this.emit('producer-changed', this.producers[track.id])
             })
+                .then(() => {
+                    this.producers[track.id].producer.resume()
+                    this.emit('producer-resumed', this.producers[track.id])
+                    this.emit('producer-changed', this.producers[track.id])
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -321,18 +387,22 @@ export class MediasoupDevice extends AbstractDevice {
         if (this.producers[trackId]) {
             this.fetchPostJson(RouterPostUrls.CloseProducer, {
                 id: this.producers[trackId].producer.id
-            }).then(() => {
-                this.producers[trackId].producer.close()
-                // Remove public offer
-                if (this.producers[trackId].globalProducerId)
-                    firebase
-                        .firestore()
-                        .collection('producers')
-                        .doc(this.producers[trackId].globalProducerId)
-                        .delete()
-                this.producers = omit(this.producers, trackId)
-                this.emit('producer-removed', trackId)
             })
+                .then(() => {
+                    this.producers[trackId].producer.close()
+                    // Remove public offer
+                    if (this.producers[trackId].globalProducerId)
+                        firebase
+                            .firestore()
+                            .collection('producers')
+                            .doc(this.producers[trackId].globalProducerId)
+                            .delete()
+                    this.producers = omit(this.producers, trackId)
+                    this.emit('producer-removed', trackId)
+                })
+                .catch((error) => {
+                    handleError(error);
+                })
         }
     }
 
@@ -371,12 +441,12 @@ export class MediasoupDevice extends AbstractDevice {
 
     private publishProducerToStage(stageId: string, producer: Producer) {
         debug('publishProducerToStage(' + stageId + ', ' + producer.producer.id + ')', this);
-        return this.firebaseApp
+        return firebase
             .firestore()
             .collection('producers')
             .add({
                 uid: this.user.uid,
-                deviceId: this.getDeviceId(),
+                deviceId: this.id,
                 routerId: this.router ? this.router.id : 0,
                 producerId: producer.producer.id,
                 stageId: stageId,
@@ -464,7 +534,7 @@ export class MediasoupDevice extends AbstractDevice {
                     return response.json()
                 })
                 .then((json: any) => resolve(json))
-                .catch((error) => reject(error));
+                .catch((error) => reject(new Error(error)));
         })
     }
 
@@ -489,7 +559,7 @@ export class MediasoupDevice extends AbstractDevice {
                     return response.json()
                 })
                 .then((json: any) => resolve(json))
-                .catch((error) => reject(error));
+                .catch((error) => reject(new Error(error)));
         })
     }
 }

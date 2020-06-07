@@ -2,6 +2,7 @@ import {MediasoupDevice} from './MediasoupDevice'
 import {useCallback, useEffect, useState} from 'react'
 import * as firebase from 'firebase/app'
 import {Consumer, Producer} from "./types";
+import {handleError} from "../../Debugger";
 
 export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User) => {
     const [connected, setConnected] = useState<boolean>(false)
@@ -15,30 +16,32 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
 
     useEffect(() => {
         if (user) {
-            const mediasoupDevice: MediasoupDevice = new MediasoupDevice(firebaseApp, user)
-            mediasoupDevice.on('connected', (isConnected) =>
-                setConnected(isConnected)
-            )
+            const mediasoupDevice: MediasoupDevice = new MediasoupDevice(user)
             setDevice(mediasoupDevice)
         }
     }, [user])
 
     useEffect(() => {
         if (device) {
-            device.on('send-audio', (sendAudio) =>
+            device.on('connected', (isConnected) =>
+                setConnected(isConnected)
+            )
+            device.on('sendAudio', (sendAudio) =>
                 setSendAudioInternal(sendAudio)
             )
-            device.on('send-video', (sendAudio) =>
+            device.on('sendVideo', (sendAudio) =>
                 setSendVideoInternal(sendAudio)
             )
-            device.on('receive-audio', (receiveAudio) =>
+            device.on('receiveAudio', (receiveAudio) =>
                 setReceiveAudioInternal(receiveAudio)
             )
-            device.on('receive-video', (receiveVideo) =>
+            device.on('receiveVideo', (receiveVideo) =>
                 setReceiveVideoInternal(receiveVideo)
             )
-            device.on('consumer-added', (consumer: Consumer) =>
-                setConsumers(prevState => [...prevState, consumer])
+            device.on('consumer-added', (consumer: Consumer) => {
+                    console.log("consumer-added: " + consumer.globalProducer.id);
+                    setConsumers(prevState => [...prevState, consumer])
+                }
             )
             device.on('consumer-changed', (consumer: Consumer) =>
                 setConsumers(prevState => prevState.map((c: Consumer) => c.consumer.id === consumer.consumer.id ? consumer : c))
@@ -56,6 +59,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
                 setProducers(prevState => prevState.filter((p: Producer) => p.globalProducerId !== producer.globalProducerId))
             )
             device.connect()
+                .catch((error) => handleError(error))
         }
     }, [device])
 
@@ -63,6 +67,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
         (enable: boolean) => {
             if (device && connected) {
                 device.setSendAudio(enable)
+                    .catch((error) => handleError(error))
             }
         },
         [connected, device]
@@ -71,6 +76,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
         (enable: boolean) => {
             if (device && connected) {
                 device.setSendVideo(enable)
+                    .catch((error) => handleError(error))
             }
         },
         [connected, device]
@@ -78,7 +84,9 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
     const setReceiveAudio = useCallback(
         (enable: boolean) => {
             if (device && connected) {
-                device.setReceiveAudio(enable)
+                device
+                    .setReceiveAudio(enable)
+                    .catch((error) => handleError(error))
             }
         },
         [connected, device]
@@ -87,6 +95,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
         (enable: boolean) => {
             if (device && connected) {
                 device.setReceiveVideo(enable)
+                    .catch((error) => handleError(error))
             }
         },
         [connected, device]
@@ -95,6 +104,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
     const connect = useCallback(() => {
         if (device) {
             device.connect()
+                .catch((error) => handleError(error))
         }
     }, [device])
 

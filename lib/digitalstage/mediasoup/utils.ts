@@ -4,10 +4,10 @@ import 'firebase/firestore'
 import { types } from 'digitalstage-client-base'
 import { MediasoupRouter } from './types'
 
-export const getFastestRouter = (firebaseApp: firebase.app.App): Promise<MediasoupRouter> => {
+export const getFastestRouter = (): Promise<MediasoupRouter> => {
   return new Promise<MediasoupRouter>((resolve, reject) => {
     let fastestRouter: MediasoupRouter
-    return firebaseApp
+    return firebase
       .database()
       .ref('routers')
       .once('value')

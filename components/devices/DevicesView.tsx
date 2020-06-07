@@ -1,9 +1,10 @@
-import Device from "../../lib/digitalstage/device/Device";
+
 import useDevices from "../../lib/digitalstage/useDevices";
 import {StyledBodyCell, StyledHeadCell, StyledTable} from 'baseui/table-grid';
 import React from "react";
 import {Checkbox, STYLE_TYPE} from "baseui/checkbox";
 import {useStyletron} from "baseui";
+import AbstractDevice from "../../lib/digitalstage/device/AbstractDevice";
 
 export default () => {
     const devices = useDevices();
@@ -23,7 +24,7 @@ export default () => {
                 <StyledHeadCell $sticky={false}>Send audio</StyledHeadCell>
                 <StyledHeadCell $sticky={false}>Receive video</StyledHeadCell>
                 <StyledHeadCell $sticky={false}>Receive audio</StyledHeadCell>
-                {devices.map((device: Device) => (
+                {devices.map((device: AbstractDevice) => (
                     <>
                         <StyledBodyCell>{device.name}</StyledBodyCell>
                         <StyledBodyCell>{device.caption}</StyledBodyCell>

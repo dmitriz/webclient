@@ -8,7 +8,7 @@ export const debug = function (msg, object?: object) {
         else
             console.log(msg);
     } else {
-        Sentry.captureMessage(object ? "[" + object.constructor.name + "]" : "" + msg, Severity.Debug);
+        //Sentry.captureMessage(object ? "[" + object.constructor.name + "]" + msg : "" + msg, Severity.Debug);
     }
 }
 
@@ -19,7 +19,7 @@ export const warn = function (msg, object?: object) {
         else
             console.warn(msg);
     } else {
-        Sentry.captureMessage(object ? "[" + object.constructor.name + "]" : "" + msg, Severity.Warning);
+        Sentry.captureMessage(object ? "[" + object.constructor.name + "]" + msg : "" + msg, Severity.Warning);
     }
 }
 

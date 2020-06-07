@@ -7,10 +7,6 @@ import fetch from "isomorphic-unfetch";
 import {useAuth} from "../useAuth";
 import {types} from "digitalstage-client-base";
 import * as mediasoupLib from "./mediasoup";
-import {
-    IAudioContext,
-    IGainNode
-} from "standardized-audio-context";
 import {MediasoupAudioTrack} from "./types/MediasoupAudioTrack";
 import {MediasoupVideoTrack} from "./types/MediasoupVideoTrack";
 import {useAudioContext} from "../useAudioContext";

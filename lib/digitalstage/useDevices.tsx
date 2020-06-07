@@ -2,15 +2,16 @@ import {useEffect, useState} from "react";
 import firebase from "firebase/app";
 import "firebase/database";
 import {useAuth} from "../useAuth";
-import Device from "./device/Device";
+import ReadonlyDevice from "./device/ReadonlyDevice";
 
 export default function useDevices() {
     const {user} = useAuth();
-    const [devices, setDevices] = useState<Device[]>([]);
+    const [devices, setDevices] = useState<ReadonlyDevice[]>([]);
 
     const handleDeviceAdded = (snapshot: firebase.database.DataSnapshot) => {
-        const device: Device = new Device(user, snapshot.ref);
-        setDevices(prevState => [...prevState, device])
+        const device: ReadonlyDevice = new ReadonlyDevice(user, snapshot.ref);
+        device.on("change", (device: ReadonlyDevice) => setDevices(prevState => prevState.map((d: ReadonlyDevice) => d.id === device.id ? device : d)));
+        setDevices(prevState => [...prevState, device]);
     }
 
     useEffect(() => {

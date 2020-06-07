@@ -16,162 +16,154 @@ interface DatabaseDeviceWithId extends DatabaseDevice {
     id: string;
 }
 
-export default class Device extends EventEmitter {
-    private readonly deviceRef: firebase.database.Reference;
-    private latestSnapshot: DatabaseDeviceWithId;
+export default abstract class AbstractDevice extends EventEmitter {
+    protected readonly user: firebase.User;
+    protected readonly deviceRef: firebase.database.Reference;
+    protected latestSnapshot?: DatabaseDeviceWithId;
 
-    constructor(user: firebase.User, reference: firebase.database.Reference, initialData?: {
-        name: string,
-        canVideo?: boolean;
-        canAudio?: boolean;
-    }) {
+    protected constructor(user: firebase.User, reference: firebase.database.Reference) {
         super();
+        this.user = user;
         this.deviceRef = reference;
-        this.latestSnapshot = {
-            id: this.deviceRef.key,
-            uid: user.uid,
-            name: initialData ? initialData.name : "",
-            caption: "",
-            canAudio: initialData ? initialData.canAudio : false,   //TODO: Check, if undefined is saved instead of boolean
-            canVideo: initialData ? initialData.canVideo : false,
-            sendAudio: false,
-            sendVideo: false,
-            receiveAudio: false,
-            receiveVideo: false
-        };
-        this.deviceRef
-            .on("value", this.handleValueChange, null, this)
     }
 
-    public on(event: DeviceEventType, listener: (...args: any[]) => void): this {
+    protected registerValueChangeListener() {
+        return this.deviceRef
+            .on("value", this.handleValueChange, null, this);
+    }
+
+    public on(event: DeviceEventType | string, listener: (arg: any) => void): this {
         return super.on(event, listener);
     }
 
-    public once(event: DeviceEventType, listener: (...args: any[]) => void): this {
+    public once(event: DeviceEventType | string, listener: (arg: any) => void): this {
         return super.once(event, listener);
     }
 
-    public emit(event: DeviceEventType, ...args: any[]): boolean {
-        return super.emit(event, args);
+    public emit(event: DeviceEventType | string, arg: any): boolean {
+        return super.emit(event, arg);
     }
 
-    public off(event: DeviceEventType, listener: (...args: any[]) => void): this {
+    public off(event: DeviceEventType | string, listener: (...args: any[]) => void): this {
         return super.off(event, listener);
     }
 
+    public get id() {
+        return this.deviceRef.key;
+    }
+
     public get name() {
-        return this.latestSnapshot.name;
+        return this.latestSnapshot && this.latestSnapshot.name;
     }
 
     public get caption() {
-        return this.latestSnapshot.caption;
+        return this.latestSnapshot && this.latestSnapshot.caption;
     }
 
     public get canVideo() {
-        return this.latestSnapshot.canVideo;
+        return this.latestSnapshot && this.latestSnapshot.canVideo;
     }
 
     public get canAudio() {
-        return this.latestSnapshot.canAudio;
+        return this.latestSnapshot && this.latestSnapshot.canAudio;
     }
 
     public get sendAudio() {
-        return this.latestSnapshot.sendAudio;
+        return this.latestSnapshot && this.latestSnapshot.sendAudio;
     }
 
     public get sendVideo() {
-        return this.latestSnapshot.sendVideo;
+        return this.latestSnapshot && this.latestSnapshot.sendVideo;
     }
 
     public get receiveAudio() {
-        return this.latestSnapshot.receiveAudio;
+        return this.latestSnapshot && this.latestSnapshot.receiveAudio;
     }
 
     public get receiveVideo() {
-        return this.latestSnapshot.receiveVideo;
+        return this.latestSnapshot && this.latestSnapshot.receiveVideo;
     }
 
     public setCaption(caption: string): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.caption !== caption) {
+            if (!this.latestSnapshot || this.latestSnapshot.caption !== caption) {
                 return this.deviceRef.update({
                     caption: caption
                 })
+                    .then(() => resolve(true))
                     .catch((error) => {
-                        handleError(error);
                         reject(false);
                     })
             }
-            reject(true);
+            resolve(false);
         })
     }
 
     public setCanAudio(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.canAudio !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.canAudio !== enable) {
                 return this.deviceRef.update({
                     canAudio: enable
                 })
+                    .then(() => resolve(true))
                     .catch((error) => {
-                        handleError(error);
-                        reject(false);
+                        reject(error);
                     })
             }
-            reject(true);
+            resolve(false);
         })
     }
 
     public setCanVideo(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.canVideo !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.canVideo !== enable) {
                 return this.deviceRef
                     .update({
                         canVideo: enable
                     })
+                    .then(() => resolve(true))
                     .catch((error) => {
-                        handleError(error);
-                        reject(false);
+                        reject(error);
                     })
             }
-            reject(true);
+            resolve(false);
         })
     }
 
     public setReceiveAudio(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.receiveAudio !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.receiveAudio !== enable) {
                 return this.deviceRef
                     .update({
                         receiveAudio: enable
                     })
+                    .then(() => resolve(true))
                     .catch((error) => {
-                        handleError(error);
                         reject(false);
                     })
             }
-            reject(true);
+            resolve(false);
         })
     }
 
     public setReceiveVideo(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.receiveVideo !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.receiveVideo !== enable) {
                 return this.deviceRef
                     .update({
                         receiveVideo: enable
                     })
                     .catch((error) => {
-                        handleError(error);
                         reject(false);
                     })
             }
-            reject(true);
+            resolve(false);
         })
     }
 
     public setSendAudio(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.sendAudio !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.sendAudio !== enable) {
                 return this.deviceRef
                     .update({
                         sendAudio: enable
@@ -185,9 +177,10 @@ export default class Device extends EventEmitter {
         })
     }
 
+
     public setSendVideo(enable: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            if (this.latestSnapshot.sendVideo !== enable) {
+            if (!this.latestSnapshot || this.latestSnapshot.sendVideo !== enable) {
                 return this.deviceRef
                     .update({
                         sendVideo: enable
@@ -202,35 +195,33 @@ export default class Device extends EventEmitter {
     }
 
     private handleValueChange = (snapshot: firebase.database.DataSnapshot) => {
-        if( !snapshot.exists() ) {
-            return this.deviceRef.set(this.latestSnapshot as DatabaseDevice);
-        }
-
         const beforeSnapshot: DatabaseDeviceWithId = this.latestSnapshot;
         this.latestSnapshot = {
             id: this.deviceRef.key,
             ...snapshot.val()
         };
 
-        if (this.latestSnapshot !== beforeSnapshot) {
+        if (!beforeSnapshot) {
+            this.emit("change", this);
+        } else /* if (this.latestSnapshot != beforeSnapshot) */ {
             this.emit("change", this);
             if (beforeSnapshot.canVideo !== this.latestSnapshot.canVideo) {
-                this.emit("canVideo", this);
+                this.emit("canVideo", this.latestSnapshot.canVideo);
             }
             if (beforeSnapshot.canAudio !== this.latestSnapshot.canAudio) {
-                this.emit("canAudio", this);
+                this.emit("canAudio", this.latestSnapshot.canAudio);
             }
             if (beforeSnapshot.sendVideo !== this.latestSnapshot.sendVideo) {
-                this.emit("sendVideo", this);
+                this.emit("sendVideo", this.latestSnapshot.sendVideo);
             }
             if (beforeSnapshot.sendAudio !== this.latestSnapshot.sendAudio) {
-                this.emit("sendAudio", this);
+                this.emit("sendAudio", this.latestSnapshot.sendAudio);
             }
             if (beforeSnapshot.receiveVideo !== this.latestSnapshot.receiveVideo) {
-                this.emit("receiveVideo", this);
+                this.emit("receiveVideo", this.latestSnapshot.receiveVideo);
             }
             if (beforeSnapshot.receiveAudio !== this.latestSnapshot.receiveAudio) {
-                this.emit("receiveAudio", this);
+                this.emit("receiveAudio", this.latestSnapshot.receiveAudio);
             }
         }
     }
