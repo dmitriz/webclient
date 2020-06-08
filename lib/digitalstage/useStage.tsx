@@ -11,10 +11,15 @@ import {MediasoupAudioTrack} from "./types/MediasoupAudioTrack";
 import {MediasoupVideoTrack} from "./types/MediasoupVideoTrack";
 import {useAudioContext} from "../useAudioContext";
 
+export interface Stage extends types.DatabaseStage {
+    id: string
+}
+
 /**
  * Client-based member model holding the media tracks
  */
 export interface StageMember extends types.DatabaseStageMember {
+    uid: string;
     audio: {
         //globalGain: IGainNode<IAudioContext>;
         audioTracks: MediasoupAudioTrack[];
@@ -32,7 +37,7 @@ interface StageProps {
 
     loading: boolean;
 
-    stage?: types.DatabaseStage,
+    stage?: Stage,
 
 
     error?: string;
@@ -63,7 +68,7 @@ export const StageProvider = (props: {
     const {user} = useAuth();
     const [error, setError] = useState<string>();
     const [stageId, setStageId] = useState<string>();
-    const [stage, setStage] = useState<types.DatabaseStage>(undefined);
+    const [stage, setStage] = useState<Stage>(undefined);
     const [members, setMembers] = useState<StageMember[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const {audioContext, createAudioContext} = useAudioContext();
@@ -110,7 +115,7 @@ export const StageProvider = (props: {
 
     const onStageUpdated = useCallback((snapshot: firebase.firestore.DocumentSnapshot<types.DatabaseStage>) => {
         const stage: types.DatabaseStage = snapshot.data();
-        setStage(stage);
+        setStage({...stage, id: snapshot.id});
         setLoading(false);
     }, []);
 
@@ -122,7 +127,7 @@ export const StageProvider = (props: {
                     //const globalGain: IGainNode<IAudioContext> = audioContext.createGain();
                     //globalGain.gain.value = 0;
                     setMembers(prevState => [...prevState, {
-                        uid: member.uid,
+                        uid: change.doc.id,
                         displayName: member.displayName,
                         videoTracks: [],
                         audio: {
@@ -132,12 +137,12 @@ export const StageProvider = (props: {
                         }
                     } as StageMember]);
                 } else if (change.type === "modified") {
-                    setMembers(prevState => prevState.map((m: StageMember) => m.uid === member.uid ? {
+                    setMembers(prevState => prevState.map((m: StageMember) => m.uid === change.doc.id ? {
                         ...m,
                         displayName: member.displayName
                     } as StageMember : m));
                 } else if (change.type === "removed") {
-                    setMembers(prevState => prevState.filter((m: StageMember) => m.uid !== member.uid));
+                    setMembers(prevState => prevState.filter((m: StageMember) => m.uid !== change.doc.id));
                 }
             })
     }, [audioContext]);
@@ -286,7 +291,7 @@ export const StageProvider = (props: {
 
     const setReceiveAudio = useCallback((receive: boolean) => {
         // FIX FOR IOS RESTRICTION (AUDIO CONTEXT IS PAUSED PER DEFAULT)
-        if( receive ) {
+        if (receive) {
             audioContext.resume();
         }
         mediasoup.setReceiveAudio(receive);

@@ -52,6 +52,11 @@ export default (props: {
         }
     }, [panelRef])
 
+    useEffect(() => {
+        console.log("Member changed");
+        console.log(props.member);
+    }, [props.member])
+
     return (
         <MemberPanel ref={panelRef}>
             <MemberTitle>{props.member.displayName}</MemberTitle>

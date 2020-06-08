@@ -17,7 +17,7 @@
   "dependencies": {
     "@sentry/browser": "^5.16.1",
     "baseui": "^9.82.0",
-    "digitalstage-client-base": "0.0.22",
+    "digitalstage-client-base": "0.1.5",
     "digitalstage-mediasoup-web": "0.0.13",
     "firebase": "^7.15.0",
     "formik": "latest",

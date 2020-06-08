@@ -1,4 +1,4 @@
-import {types} from 'digitalstage-client-base'
+import {types, LocalDevice} from 'digitalstage-client-base'
 import mediasoupClient from 'mediasoup-client'
 import * as firebase from 'firebase/app'
 import 'firebase/firestore'
@@ -11,9 +11,8 @@ import {RouterGetUrls, RouterPostUrls} from './queries'
 import {Producer} from './types/Producer'
 import {Consumer} from './types/Consumer'
 import {debug, handleError, warn} from "./../../Debugger";
-import LocalDevice from "../device/LocalDevice";
-import {DeviceEventType} from "../device/AbstractDevice";
 import {DatabaseUser} from "digitalstage-client-base/lib/types/DatabaseUser";
+import { DeviceEventType } from 'digitalstage-client-base/lib/AbstractDevice'
 
 const omit = require('lodash.omit');
 
@@ -138,9 +137,7 @@ export class MediasoupDevice extends LocalDevice {
                         Object.values(this.producers).forEach((producer: Producer) =>
                             this.publishProducerToStage(databaseUser.stageId, producer)
                         )
-                        console.log("FINDS ME");
-                        //TODO: THIS IS NOT WORKING!!!
-                        firebase.firestore().collection("users").doc(this.user.uid)
+                        userRef
                             .collection('producers')
                             .onSnapshot(this.handleRemoteProducer)
                     } else {

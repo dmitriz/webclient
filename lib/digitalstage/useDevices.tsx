@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import firebase from "firebase/app";
 import "firebase/database";
 import {useAuth} from "../useAuth";
-import ReadonlyDevice from "./device/ReadonlyDevice";
+import { ReadonlyDevice } from "digitalstage-client-base";
 
 export default function useDevices() {
     const {user} = useAuth();
