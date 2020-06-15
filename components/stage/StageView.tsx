@@ -1,7 +1,6 @@
 import React, {useState} from "react";
 import LocalDevicePanel from "./LocalDevicePanel";
 import {styled} from "baseui";
-import NavBar from "../theme/NavBar";
 import MemberView from "./MemberView";
 import Click from "../click/Click";
 import {FlexGrid, FlexGridItem} from "baseui/flex-grid";
@@ -11,6 +10,7 @@ import DevicesView from "../devices/DevicesView";
 import {ANCHOR, Drawer} from 'baseui/drawer';
 import {SHAPE, StyledBaseButton} from "baseui/button";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
+import {Layer} from "baseui/layer";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -28,9 +28,9 @@ const ToggleDeviceButton = styled(StyledBaseButton, {
 });
 
 const ClickPanel = styled("div", {
-    position: "relative",
-    width: "100%",
-    flexGrow: 1001
+    position: "fixed",
+    top: "100px",
+    right: "50px"
 });
 
 const itemProps: BlockProps = {};
@@ -42,7 +42,6 @@ export default () => {
     return (
         <>
             <Wrapper>
-                <NavBar/>
                 <ClickPanel>
                     <Click/>
                 </ClickPanel>
@@ -75,22 +74,24 @@ export default () => {
                 </ToggleDeviceButton>
             </Wrapper>
 
-            <Drawer
-                autoFocus
-                size="full"
-                onClose={() => setShowDevices(false)}
-                isOpen={showDevices}
-                anchor={ANCHOR.bottom}
-                overrides={{
-                    Root: {
-                        style: {
-                            zIndex: 2000
+            <Layer index={2000}>
+                <Drawer
+                    autoFocus
+                    size="full"
+                    onClose={() => setShowDevices(false)}
+                    isOpen={showDevices}
+                    anchor={ANCHOR.bottom}
+                    overrides={{
+                        Root: {
+                            style: {
+                                zIndex: 2000
+                            }
                         }
-                    }
-                }}
-            >
-                <DevicesView/>
-            </Drawer>
+                    }}
+                >
+                    <DevicesView/>
+                </Drawer>
+            </Layer>
         </>
     )
 }

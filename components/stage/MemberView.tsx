@@ -20,7 +20,6 @@ const MemberTitle = styled("div", {
     top: "8px",
     right: 0,
     left: "8px",
-    zIndex: 20,
     boxSizing: "border-box",
     textShadow: "0 0 4px #000"
 });
@@ -33,7 +32,6 @@ const MemberVideo = styled(CanvasPlayer, {
     right: 0,
     left: 0,
     bottom: 0,
-    zIndex: 10,
     boxSizing: "border-box"
 });
 

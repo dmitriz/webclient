@@ -49,7 +49,7 @@ const DeviceRow = (props: {
                 />
             </StyledBodyCell>
             <StyledBodyCell>
-                <Button onClick={() => setIsOpen(true)}>Settings</Button>
+                <Button size="mini" onClick={() => setIsOpen(true)}>Settings</Button>
                 <Modal onClose={() => setIsOpen(false)} isOpen={isOpen}
                        unstable_ModalBackdropScroll={true}
                        overrides={{

@@ -110,6 +110,10 @@ export const DigitalStageProvider = (props: {
                 }))
             });
             setApi(api);
+        } else {
+            setApi(undefined);
+            setStage(undefined);
+            setMembers([]);
         }
     }, [user]);
 

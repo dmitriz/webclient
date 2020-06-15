@@ -15,8 +15,7 @@ const SliderOverlay = styled("div", {
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-end",
-    zIndex: 10
+    justifyContent: "flex-end"
 });
 
 const SliderWrapper = styled("div", {

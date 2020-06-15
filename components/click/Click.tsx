@@ -1,20 +1,13 @@
-import {useCallback, useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import useTimesync from "../../lib/useTimesync";
-import {Button} from "baseui/button";
 import firebase from "firebase/app";
 import "firebase/database";
 import useClick from "../../lib/useClick";
-import {styled} from "baseui";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
+import {OverlayButton} from "../theme/OverlayButton";
 
-const Panel = styled("div", {
-    width: "100%",
-    display: "flex",
-})
 
 export default () => {
-    const [offsetTime, setOffsetTime] = useState<number>(0);
-    const [useOffset, setUseOffset] = useState<boolean>(true);
     const {stage} = useDigitalStage();
 
     // Audio specific
@@ -22,7 +15,7 @@ export default () => {
     const {enabled, enableClick, playing, setPlaying} = useClick({
         bpm: 120,
         startTime: startTime,
-        offset: useOffset ? offsetTime : 0,
+        offset: 0,
         timeSignature: {
             beats: 4,
             measure: 4
@@ -31,13 +24,7 @@ export default () => {
 
 
     // Timesync specific
-    const {timesync, offset} = useTimesync();
-
-
-    useEffect(() => {
-        setOffsetTime(offset);
-    }, [offset]);
-
+    const {timesync} = useTimesync();
 
     // Now we prepare the playback handling of the click
     useEffect(() => {
@@ -86,19 +73,8 @@ export default () => {
     }, [timesync, playing, stage]);
 
     return (
-        <Panel>
-            {enabled ? (
-                <>
-                    <Button onClick={toggleClick}>
-                        {playing ? "Stop" : "Start"} click
-                    </Button>
-                </>
-            ) : (
-                <Button onClick={enableClick}>
-                    Enable click
-                </Button>
-            )}
-
-        </Panel>
+        <OverlayButton $active={enabled} onClick={enabled ? toggleClick : enableClick}>
+            <img src={playing ? "music_note-24px.svg" : "music_off-24px.svg"}/>
+        </OverlayButton>
     );
 };

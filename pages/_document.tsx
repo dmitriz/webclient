@@ -23,6 +23,10 @@ class MyDocument extends Document<DocProps> {
         return (
             <html>
             <Head>
+                <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1, shrink-to-fit=no"
+                />
                 {this.props.stylesheets.map((sheet, i) => (
                     <style
                         className="_styletron_hydrate_"

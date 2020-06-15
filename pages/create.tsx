@@ -9,6 +9,8 @@ import Layout from "../components/theme/Layout";
 import CenteredCard from "../components/theme/CenteredCard";
 import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
 import {DatabaseStage} from "digitalstage-client-base/lib/types";
+import {DisplayMedium} from "baseui/typography";
+import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 export default () => {
     const {user, loading} = useAuth();
@@ -17,6 +19,7 @@ export default () => {
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
     const [stage, setStage] = useState<DatabaseStage>();
+    const [copied, setCopied] = useState<boolean>(false);
 
     const create = useCallback((name: string, password: string) => {
         createStage(name, password)
@@ -33,12 +36,28 @@ export default () => {
     }
 
     if (stage) {
+        const link: string = "https://digitalstage.now.sh/?id=" + stage.id + "&password=" + stage.password;
         return (
             <Layout>
                 <CenteredCard>
-                    <h1>Stage</h1>
+                    <DisplayMedium>Stage details</DisplayMedium>
                     <p>
-                        Share this id:
+                        Share this link:
+                    </p>
+                    <p>
+                        <li>
+                            <CopyToClipboard text={link}
+                                             onCopy={() => setCopied(true)}>
+                                <span>{link}</span>
+                            </CopyToClipboard>
+                            <CopyToClipboard text={link}
+                                             onCopy={() => setCopied(true)}>
+                                <Button>{copied ? "Copied!" : "Copy"}</Button>
+                            </CopyToClipboard>
+                        </li>
+                    </p>
+                    <p>
+                        Or this ID and password:
                     </p>
                     <p>
                         <li>
@@ -57,17 +76,19 @@ export default () => {
     return (
         <Layout>
             <CenteredCard>
-                <h1>Create stage</h1>
-                <FormControl label={"Stage name"}>
-                    <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
-                </FormControl>
-                <FormControl label={"Passwort"}
-                             caption={"Optional"}>
-                    <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
-                </FormControl>
-                <Button isLoading={stageLoading}
-                        disabled={stageLoading}
-                        onClick={() => create(stageName, password)}>Create</Button>
+                <DisplayMedium>Create stage</DisplayMedium>
+                <form>
+                    <FormControl label={"Stage name"}>
+                        <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
+                    </FormControl>
+                    <FormControl label={"Passwort"}
+                                 caption={"Optional"}>
+                        <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
+                    </FormControl>
+                    <Button isLoading={stageLoading}
+                            disabled={stageLoading}
+                            onClick={() => create(stageName, password)}>Create</Button>
+                </form>
             </CenteredCard>
         </Layout>
     );

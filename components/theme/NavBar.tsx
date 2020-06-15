@@ -1,14 +1,43 @@
-import {ALIGN, HeaderNavigation, StyledNavigationItem, StyledNavigationList} from "baseui/header-navigation";
-import React from "react";
-import {Button, KIND} from "baseui/button";
+import React, {useEffect, useState} from "react";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
+import {ItemT, MainNavItemT, Unstable_AppNavBar as AppNavBar, UserNavItemT,} from 'baseui/app-nav-bar';
+import {Delete as DeleteIcon, Overflow as OverflowIcon} from 'baseui/icon';
+import {StyledLink} from "baseui/link";
+import {useRouter} from 'next/router'
 
-const NavContainer = styled("div", {
-    width: '100%'
-});
+
+interface NavItem extends ItemT {
+    label: string;
+    href?: string;
+    onClick?: () => void;
+}
+
+function renderItemToString(item: NavItem) {
+    return item.label;
+}
+
+function renderItem(item: NavItem) {
+    if (item.href) {
+        return (
+            <Link href={item.href}>
+                <StyledLink>
+                    {item.label}
+                </StyledLink>
+            </Link>
+        )
+    }
+    if (item.onClick) {
+        return (
+            <div onClick={item.onClick}>
+                {item.label}
+            </div>
+        )
+    }
+    return item.label;
+}
 
 const CenterVertical = styled("div", {
     display: 'flex',
@@ -20,73 +49,104 @@ const Banner = styled("img", {
     paddingRight: '1rem'
 });
 
+const AppNavWrapper = styled("div", {
+    boxSizing: 'border-box',
+    width: '100vw',
+    position: 'relative'
+})
+
+const USER_NAV: UserNavItemT[] = [{
+    icon: OverflowIcon,
+    item: {label: 'Account', href: "/account"},
+    mapItemToNode: renderItem,
+    mapItemToString: renderItemToString,
+},
+    {
+        icon: DeleteIcon,
+        item: {label: 'Logout', href: '/logout'},
+        mapItemToNode: renderItem,
+        mapItemToString: renderItemToString,
+    }];
+
 export default () => {
-    const {user, loading} = useAuth();
+    const router = useRouter()
+    const {user} = useAuth();
     const {leave, stage} = useDigitalStage();
+    const [activeNavItem, setActiveNavItem] = useState<MainNavItemT | UserNavItemT>();
+    const [nav, setNav] = useState<MainNavItemT[]>()
+
+    useEffect(() => {
+        if (user) {
+            if (stage) {
+                setNav([
+                    {
+                        item: {label: 'Leave stage', onClick: leave},
+                        mapItemToNode: renderItem,
+                        mapItemToString: renderItemToString,
+                    }
+                ]);
+            } else {
+                setNav([
+                    {
+                        item: {label: 'Create stage', href: '/create'},
+                        mapItemToNode: renderItem,
+                        mapItemToString: renderItemToString,
+                    },
+                    {
+                        item: {label: 'Join stage', href: '/'},
+                        mapItemToNode: renderItem,
+                        mapItemToString: renderItemToString,
+                    }
+                ]);
+            }
+        } else {
+            setNav([{
+                item: {label: 'Login', href: '/login'},
+                mapItemToNode: renderItem,
+                mapItemToString: renderItemToString,
+            },
+                {
+                    item: {label: 'Sign up', href: '/signup'},
+                    mapItemToNode: renderItem,
+                    mapItemToString: renderItemToString,
+                }]);
+        }
+    }, [user, stage])
+
+    useEffect(() => {
+        if (nav) {
+            const activeItem = nav.find((item) => {
+                if (item.item.href) {
+                    return item.item.href === router.pathname;
+                }
+                return false;
+            });
+            setActiveNavItem(activeItem);
+        }
+    }, [router.pathname, nav])
 
     return (
-        <NavContainer>
-            <HeaderNavigation>
-                <StyledNavigationList $align={ALIGN.left}>
-                    <StyledNavigationItem>
-                        <CenterVertical>
-                            <Banner src={"/logo.png"}/>
-                            {stage ? stage.name : "Digital Stage"}
-                        </CenterVertical>
-                    </StyledNavigationItem>
-                </StyledNavigationList>
-                <StyledNavigationList $align={ALIGN.center}/>
-                <StyledNavigationList $align={ALIGN.right}>
-                    {!user ? (
-                        <>
-                            <StyledNavigationItem>
-                                <Link href="/signup">
-                                    <Button isLoading={loading}>Sign Up</Button>
-                                </Link>
-                            </StyledNavigationItem>
-                            <StyledNavigationItem>
-                                <Link href="/login">
-                                    <Button isLoading={loading}>Login</Button>
-                                </Link>
-                            </StyledNavigationItem>
-                        </>
-                    ) : (
-                        <>
-                            {stage ? (
-                                <>
-                                    <StyledNavigationItem>
-                                        <Button kind={KIND.minimal} onClick={() => leave()}>
-                                            Leave
-                                        </Button>
-                                    </StyledNavigationItem>
-                                </>
-                            ) : (
-                                <>
-                                    <StyledNavigationItem>
-                                        <Link href="/create">
-                                            <Button kind={KIND.minimal}>
-                                                Create stage
-                                            </Button>
-                                        </Link>
-                                    </StyledNavigationItem>
-                                    <StyledNavigationItem>
-                                        <Link href="/">
-                                            <Button kind={KIND.minimal}>
-                                                Join stage
-                                            </Button>
-                                        </Link>
-                                    </StyledNavigationItem>
-                                    <StyledNavigationItem>
-                                        <Link href="/logout">
-                                            <Button isLoading={loading}>Logout</Button>
-                                        </Link>
-                                    </StyledNavigationItem>
-                                </>
-                            )}
-                        </>
-                    )}
-                </StyledNavigationList>
-            </HeaderNavigation>
-        </NavContainer>
+        <AppNavWrapper>
+            <AppNavBar
+                appDisplayName={(
+                    <CenterVertical>
+                        <Banner src={"/logo.png"}/>
+                        {stage ? stage.name : "Digital Stage"}
+                    </CenterVertical>
+                )}
+                mainNav={nav}
+                isNavItemActive={({item}) => {
+                    return (
+                        item === activeNavItem
+                    );
+                }}
+                onNavItemSelect={() => {
+                }}
+                userNav={user ? USER_NAV : undefined}
+                username={user ? user.displayName : undefined}
+                usernameSubtitle={user ? user.email : undefined}
+                userImgUrl={user ? user.photoURL : undefined}
+            />
+        </AppNavWrapper>
     );
 };

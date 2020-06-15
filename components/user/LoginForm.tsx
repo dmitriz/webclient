@@ -57,6 +57,7 @@ export default (props: {
             >
                 <Input type="email"
                        name="email"
+                       required={true}
                        value={formik.values.email}
                        onChange={formik.handleChange}
                        onBlur={formik.handleBlur}/>
@@ -67,6 +68,7 @@ export default (props: {
             >
                 <Input type="password"
                        name="password"
+                       required={true}
                        value={formik.values.password}
                        onChange={formik.handleChange}
                        onBlur={formik.handleBlur}/>
