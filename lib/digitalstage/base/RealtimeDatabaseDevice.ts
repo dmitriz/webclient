@@ -2,7 +2,8 @@ import {DatabaseDevice} from "./types";
 import {DigitalStageAPI} from "./api/DigitalStageAPI";
 import {DeviceEvents, IDevice} from "./IDevice";
 import {EventEmitter} from "events";
-import firebase from "firebase";
+import * as firebase from "firebase/app";
+import "firebase/database";
 import {Debugger} from "./Debugger";
 
 /**

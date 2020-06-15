@@ -6,7 +6,8 @@ import {MediasoupVideoTrack} from "./types/MediasoupVideoTrack";
 import {DatabaseStage, DatabaseStageMember} from "./base/types";
 import {DeviceEvent, MemberEvent, SoundjackEvent} from "./base/api/DigitalStageAPI";
 import * as mediasoupLib from "./mediasoup";
-import firebase from "firebase";
+import * as firebase from "firebase/app";
+import "firebase/database";
 import {useAudioContext} from "../useAudioContext";
 
 
