@@ -313,8 +313,8 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         return this.userRef
             .child("devices")
             .push(initialDatabaseDevice)
-            .then((reference: firebase.database.Reference) => {
-                reference.onDisconnect().remove();
+            .then(async (reference: firebase.database.Reference) => {
+                await reference.onDisconnect().remove();
                 if (reference.key) {
                     this.devices[reference.key] = device;
                     Debugger.debug("Device registered: " + reference.key, this);

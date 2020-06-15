@@ -5,15 +5,15 @@ import {styled} from "baseui";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {ItemT, MainNavItemT, Unstable_AppNavBar as AppNavBar, UserNavItemT,} from 'baseui/app-nav-bar';
 import {Delete as DeleteIcon, Overflow as OverflowIcon} from 'baseui/icon';
-import {StyledLink} from "baseui/link";
 import {useRouter} from 'next/router'
-
+import {LabelMedium} from "baseui/typography";
 
 interface NavItem extends ItemT {
     label: string;
     href?: string;
     onClick?: () => void;
 }
+
 
 function renderItemToString(item: NavItem) {
     return item.label;
@@ -23,9 +23,9 @@ function renderItem(item: NavItem) {
     if (item.href) {
         return (
             <Link href={item.href}>
-                <StyledLink>
+                <LabelMedium as="a">
                     {item.label}
-                </StyledLink>
+                </LabelMedium>
             </Link>
         )
     }
