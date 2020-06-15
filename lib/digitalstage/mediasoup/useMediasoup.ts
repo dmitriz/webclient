@@ -3,8 +3,10 @@ import {useCallback, useEffect, useState} from 'react'
 import * as firebase from 'firebase/app'
 import {Consumer, Producer} from "./types";
 import {handleError} from "../../Debugger";
+import {DigitalStageAPI} from "digitalstage-client-base";
+import {useAudioContext} from "../../useAudioContext";
 
-export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User) => {
+export const useMediasoup = (firebaseApp: firebase.app.App, api: DigitalStageAPI) => {
     const [connected, setConnected] = useState<boolean>(false)
     const [device, setDevice] = useState<MediasoupDevice>()
     const [sendAudio, setSendAudioInternal] = useState<boolean>()
@@ -13,13 +15,14 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
     const [receiveVideo, setReceiveVideoInternal] = useState<boolean>()
     const [producers, setProducers] = useState<Producer[]>([]);
     const [consumers, setConsumers] = useState<Consumer[]>([]);
+    const {audioContext, createAudioContext} = useAudioContext();
 
     useEffect(() => {
-        if (user) {
-            const mediasoupDevice: MediasoupDevice = new MediasoupDevice(user)
+        if (api) {
+            const mediasoupDevice: MediasoupDevice = new MediasoupDevice(api)
             setDevice(mediasoupDevice)
         }
-    }, [user])
+    }, [api])
 
     useEffect(() => {
         if (device) {
@@ -38,10 +41,8 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
             device.on('receiveVideo', (receiveVideo) =>
                 setReceiveVideoInternal(receiveVideo)
             )
-            device.on('consumer-added', (consumer: Consumer) => {
-                    console.log("consumer-added: " + consumer.globalProducer.id);
-                    setConsumers(prevState => [...prevState, consumer])
-                }
+            device.on('consumer-added', (consumer: Consumer) =>
+                setConsumers(prevState => [...prevState, consumer])
             )
             device.on('consumer-changed', (consumer: Consumer) =>
                 setConsumers(prevState => prevState.map((c: Consumer) => c.consumer.id === consumer.consumer.id ? consumer : c))
@@ -93,12 +94,14 @@ export const useMediasoup = (firebaseApp: firebase.app.App, user: firebase.User)
     )
     const setReceiveVideo = useCallback(
         (enable: boolean) => {
-            if (device && connected) {
-                device.setReceiveVideo(enable)
-                    .catch((error) => handleError(error))
+            if (device && connected && audioContext) {
+                return audioContext.resume()
+                    .then(() =>
+                        device.setReceiveVideo(enable)
+                            .catch((error) => handleError(error)));
             }
         },
-        [connected, device]
+        [connected, audioContext, device]
     )
 
     const connect = useCallback(() => {

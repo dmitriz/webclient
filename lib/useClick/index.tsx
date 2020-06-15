@@ -1,6 +1,5 @@
 import {useCallback, useEffect, useState} from "react";
-import {AudioContext, IAudioBufferSourceNode, IAudioContext} from "standardized-audio-context";
-import webAudioTouchUnlock from "../webAudioTouchUnlock";
+import {IAudioBufferSourceNode, IAudioContext} from "standardized-audio-context";
 import {useAudioContext} from "../useAudioContext";
 
 // Some global settings

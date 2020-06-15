@@ -4,7 +4,7 @@ import {Button, KIND} from "baseui/button";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
-import {useStage} from "../../lib/digitalstage/useStage";
+import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 
 const NavContainer = styled("div", {
     width: '100%'
@@ -22,7 +22,7 @@ const Banner = styled("img", {
 
 export default () => {
     const {user, loading} = useAuth();
-    const {leave, stage} = useStage();
+    const {leave, stage} = useDigitalStage();
 
     return (
         <NavContainer>

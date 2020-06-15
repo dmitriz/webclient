@@ -1,4 +1,3 @@
-import {useStage} from "../../lib/digitalstage/useStage"
 import React, {useState} from "react";
 import LocalDevicePanel from "./LocalDevicePanel";
 import {styled} from "baseui";
@@ -11,6 +10,7 @@ import {AspectRatioBox, AspectRatioBoxBody} from "baseui/aspect-ratio-box";
 import DevicesView from "../devices/DevicesView";
 import {ANCHOR, Drawer} from 'baseui/drawer';
 import {SHAPE, StyledBaseButton} from "baseui/button";
+import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -36,7 +36,7 @@ const ClickPanel = styled("div", {
 const itemProps: BlockProps = {};
 
 export default () => {
-    const {members} = useStage();
+    const {members} = useDigitalStage();
     const [showDevices, setShowDevices] = useState<boolean>(false);
 
     return (

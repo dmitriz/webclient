@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {styled} from "baseui";
 import CanvasPlayer from "./video/CanvasPlayer";
-import {StageMember} from "../../lib/digitalstage/useStage";
+import {StageMember} from "../../lib/digitalstage/useDigitalStage";
 import {MediasoupVideoTrack} from "../../lib/digitalstage/types/MediasoupVideoTrack";
 import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
 
@@ -37,6 +37,14 @@ const MemberVideo = styled(CanvasPlayer, {
     boxSizing: "border-box"
 });
 
+const SoundjackLogo = styled("img", {
+    position: "absolute",
+    top: "2px",
+    right: "2px",
+    width: "24px",
+    height: "24px"
+});
+
 export default (props: {
     member: StageMember
 }) => {
@@ -52,17 +60,16 @@ export default (props: {
         }
     }, [panelRef])
 
-    useEffect(() => {
-        console.log("Member changed");
-        console.log(props.member);
-    }, [props.member])
-
     return (
         <MemberPanel ref={panelRef}>
+            {props.member.audio.soundjackVolume && (
+                <SoundjackLogo src="/soundjack.png"/>
+            )}
             <MemberTitle>{props.member.displayName}</MemberTitle>
             <MemberVideo width={width} height={height}
                          videoTracks={props.member.videoTracks.map((videoTrack: MediasoupVideoTrack) => videoTrack.track)}/>
             <MediasoupAudioPlayer member={props.member}/>
+
         </MemberPanel>
     )
 }

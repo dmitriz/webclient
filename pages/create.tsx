@@ -1,20 +1,27 @@
 import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
 import {Button} from "baseui/button";
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
-import {useStage} from "../lib/digitalstage/useStage";
 import Loading from "../components/theme/Loading";
 import Layout from "../components/theme/Layout";
 import CenteredCard from "../components/theme/CenteredCard";
+import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
+import {DatabaseStage} from "digitalstage-client-base/lib/types";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {create, stage, loading: stageLoading} = useStage();
+    const {create: createStage, loading: stageLoading} = useDigitalStage();
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");
+    const [stage, setStage] = useState<DatabaseStage>();
+
+    const create = useCallback((name: string, password: string) => {
+        createStage(name, password)
+            .then((stage: DatabaseStage) => setStage(stage));
+    }, [createStage]);
 
     if (loading) {
         return (

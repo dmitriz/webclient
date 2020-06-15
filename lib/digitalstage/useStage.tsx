@@ -2,11 +2,10 @@ import firebase from "firebase/app";
 import "firebase/firestore";
 import "firebase/auth";
 import "firebase/database";
-import React, {createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState} from "react";
+import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
 import fetch from "isomorphic-unfetch";
 import {useAuth} from "../useAuth";
 import {types} from "digitalstage-client-base";
-import * as mediasoupLib from "./mediasoup";
 import {MediasoupAudioTrack} from "./types/MediasoupAudioTrack";
 import {MediasoupVideoTrack} from "./types/MediasoupVideoTrack";
 import {useAudioContext} from "../useAudioContext";
@@ -48,14 +47,15 @@ interface StageProps {
 
     setConnected(connected: boolean): void;
 
-    sendVideo: boolean;
-    setSendVideo: Dispatch<SetStateAction<boolean>>;
-    sendAudio: boolean;
-    setSendAudio: Dispatch<SetStateAction<boolean>>;
-    receiveAudio: boolean;
-    setReceiveVideo: Dispatch<SetStateAction<boolean>>;
-    receiveVideo: boolean;
-    setReceiveAudio: Dispatch<SetStateAction<boolean>>;
+    /*
+        sendVideo: boolean;
+        setSendVideo: Dispatch<SetStateAction<boolean>>;
+        sendAudio: boolean;
+        setSendAudio: Dispatch<SetStateAction<boolean>>;
+        receiveAudio: boolean;
+        setReceiveVideo: Dispatch<SetStateAction<boolean>>;
+        receiveVideo: boolean;
+        setReceiveAudio: Dispatch<SetStateAction<boolean>>;*/
 }
 
 const StageContext = createContext<StageProps>(undefined);
@@ -225,10 +225,10 @@ export const StageProvider = (props: {
 
     /***
      * Mediasoup specific
-     */
-    const mediasoup = mediasoupLib.useMediasoup(firebase.app("[DEFAULT]"), user);
+     *
+     const mediasoup = mediasoupLib.useMediasoup(firebase.app("[DEFAULT]"), user);
 
-    const addConsumer = useCallback((members: StageMember[], consumer: mediasoupLib.types.Consumer) => {
+     const addConsumer = useCallback((members: StageMember[], consumer: mediasoupLib.types.Consumer) => {
         if (!audioContext) {
             console.error("not ready");
         }
@@ -249,11 +249,11 @@ export const StageProvider = (props: {
         });
     }, [audioContext]);
 
-    const onConsumerAdded = useCallback((consumer: mediasoupLib.types.Consumer) => {
+     const onConsumerAdded = useCallback((consumer: mediasoupLib.types.Consumer) => {
         setMembers(prevState => addConsumer(prevState, consumer));
     }, [members, audioContext]);
 
-    const onConsumerRemoved = useCallback((consumer: mediasoupLib.types.Consumer) => {
+     const onConsumerRemoved = useCallback((consumer: mediasoupLib.types.Consumer) => {
         setMembers(prevState => prevState.map((member: StageMember) => {
             if (member.uid === consumer.globalProducer.uid) {
                 if (consumer.globalProducer.kind === "audio") {
@@ -266,14 +266,14 @@ export const StageProvider = (props: {
         }))
     }, [members]);
 
-    useEffect(() => {
+     useEffect(() => {
         if (mediasoup.device && audioContext) {
             mediasoup.device.on("consumer-added", onConsumerAdded);
             mediasoup.device.on("consumer-removed", onConsumerRemoved)
         }
     }, [mediasoup.device, audioContext]);
 
-    useEffect(() => {
+     useEffect(() => {
         if (mediasoup.connected) {
             setLoading(false);
         } else {
@@ -281,7 +281,7 @@ export const StageProvider = (props: {
         }
     }, [mediasoup.connected]);
 
-    const setConnected = useCallback(async (connected: boolean) => {
+     const setConnected = useCallback(async (connected: boolean) => {
         if (connected) {
             return mediasoup.connect();
         } else {
@@ -289,13 +289,13 @@ export const StageProvider = (props: {
         }
     }, [mediasoup.device]);
 
-    const setReceiveAudio = useCallback((receive: boolean) => {
+     const setReceiveAudio = useCallback((receive: boolean) => {
         // FIX FOR IOS RESTRICTION (AUDIO CONTEXT IS PAUSED PER DEFAULT)
         if (receive) {
             audioContext.resume();
         }
         mediasoup.setReceiveAudio(receive);
-    }, [mediasoup, audioContext]);
+    }, [mediasoup, audioContext]);*/
 
     return (
         <StageContext.Provider value={{
@@ -306,6 +306,9 @@ export const StageProvider = (props: {
             loading: loading,
             error: error,
             members: members,
+            connected: true,
+            setConnected: () => {
+            }/*
             connected: mediasoup.connected,
             setConnected: setConnected,
             sendVideo: mediasoup.sendVideo,
@@ -315,7 +318,7 @@ export const StageProvider = (props: {
             receiveAudio: mediasoup.receiveAudio,
             setReceiveAudio: setReceiveAudio,
             receiveVideo: mediasoup.receiveVideo,
-            setReceiveVideo: mediasoup.setReceiveVideo
+            setReceiveVideo: mediasoup.setReceiveVideo*/
         }}>
             {props.children}
         </StageContext.Provider>

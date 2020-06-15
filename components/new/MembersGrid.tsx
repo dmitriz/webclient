@@ -1,7 +1,7 @@
 import {styled} from "baseui";
 import React, {useCallback, useEffect, useState} from "react";
 import MemberView from "../stage/MemberView";
-import {StageMember} from "../../lib/digitalstage/useStage";
+import { StageMember } from "../../lib/digitalstage/useDigitalStage";
 
 const MOBILE: string = "@media screen and (max-width: 880px)";
 

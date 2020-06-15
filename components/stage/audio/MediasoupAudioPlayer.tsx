@@ -1,9 +1,9 @@
 import {MediasoupAudioTrack} from "../../../lib/digitalstage/types/MediasoupAudioTrack";
 import {styled} from "baseui";
 import React, {MutableRefObject, useEffect, useRef, useState} from "react";
-import {StageMember} from "../../../lib/digitalstage/useStage";
 import useHover from "../../../lib/useHover";
 import VolumeSlider from "../../theme/VolumeSlider";
+import {StageMember} from "../../../lib/digitalstage/useDigitalStage";
 
 const HiddenAudioPlayer = styled("audio", {})
 

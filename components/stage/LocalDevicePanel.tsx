@@ -1,7 +1,8 @@
-import React from "react";
-import {useStage} from "../../lib/digitalstage/useStage";
-import {styled, withStyle} from "baseui";
-import {SHAPE, SIZE, Button as BaseButton} from "baseui/button";
+import React, {useEffect, useState} from "react";
+import {styled} from "baseui";
+import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
+import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
+import {IDevice} from "digitalstage-client-base";
 
 const SoundjackLogo = styled("img", {
     width: "24px",
@@ -54,48 +55,56 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const stage = useStage();
+    const {devices, connected, setConnected, loading} = useDigitalStage();
+    const [localDevice, setLocalDevice] = useState<IDevice>();
+
+    useEffect(() => {
+        if (devices) {
+            const localDevice: IDevice = devices.find((device: IDevice) => device.isRemote !== false);
+            setLocalDevice(localDevice);
+        }
+    }, [devices])
 
     return (
         <Panel>
-            {stage.connected ? (
+            {localDevice ? (
                 <>
                     <Button
-                        onClick={() => stage.setSendVideo(!stage.sendVideo)}
+                        onClick={() => localDevice.setSendVideo(!localDevice.sendVideo)}
                         size={buttonSize}
                         shape={buttonShape}
-                        $active={stage.sendVideo}
+                        $active={localDevice.sendVideo}
                     >
-                        <img src={stage.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
+                        <img src={localDevice.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
                     </Button>
                     <Button
-                        onClick={() => stage.setSendAudio(!stage.sendAudio)}
+                        onClick={() => localDevice.setSendAudio(!localDevice.sendAudio)}
                         size={buttonSize}
                         shape={buttonShape}
-                        $active={stage.sendAudio}
+                        $active={localDevice.sendAudio}
                     >
-                        <img src={stage.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
+                        <img src={localDevice.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
                     </Button>
                     <Button
-                        onClick={() => stage.setReceiveVideo(!stage.receiveVideo)}
+                        onClick={() => localDevice.setReceiveVideo(!localDevice.receiveVideo)}
                         size={buttonSize}
                         shape={buttonShape}
-                        $active={stage.receiveVideo}
+                        $active={localDevice.receiveVideo}
                     >
-                        <img src={stage.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
+                        <img src={localDevice.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
                     </Button>
                     <Button
-                        onClick={() => stage.setReceiveAudio(!stage.receiveAudio)}
+                        onClick={() => localDevice.setReceiveAudio(!localDevice.receiveAudio)}
                         size={buttonSize}
                         shape={buttonShape}
-                        $active={stage.receiveAudio}
+                        $active={localDevice.receiveAudio}
                     >
-                        <img src={stage.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
+                        <img src={localDevice.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
                     </Button>
                 </>
             ) : (
-                <Button isLoading={!stage || stage.loading}
-                        onClick={() => stage.setConnected(true)} $active={stage.loading}>
+                <Button isLoading={!localDevice || loading}
+                        onClick={() => setConnected(true)} $active={loading}>
                     Connect
                 </Button>
             )}

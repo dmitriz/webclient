@@ -1,4 +1,4 @@
-import React, {Context, createContext, useCallback, useContext, useState} from "react";
+import React, {Context, createContext, useCallback, useContext, useEffect, useState} from "react";
 import {AudioContext as RealAudioContext, IAudioContext} from "standardized-audio-context";
 import webAudioTouchUnlock from "../util/webAudioTouchUnlock";
 
@@ -32,6 +32,10 @@ export const AudioContextProvider = (props: {
                 setContext(audioContext);
                 return audioContext;
             });
+    }, []);
+
+    useEffect(() => {
+        createAudioContext();
     }, []);
 
     return (

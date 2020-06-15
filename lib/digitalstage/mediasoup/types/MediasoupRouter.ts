@@ -1,4 +1,4 @@
-import {types} from "digitalstage-client-base";
+import {types} from "../../base";
 
 /**
  * Extended version of the database router, necessary for client interactions

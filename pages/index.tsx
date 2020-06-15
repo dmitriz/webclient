@@ -4,18 +4,18 @@ import {FormControl} from "baseui/form-control";
 import {Input} from "baseui/input";
 import {useAuth} from "../lib/useAuth";
 import Layout from "../components/theme/Layout";
-import {useStage} from "../lib/digitalstage/useStage";
 import Loading from "../components/theme/Loading";
 import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/stage/StageView";
 import CenteredCard from "../components/theme/CenteredCard";
+import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {join, stage, error, loading: stageLoading} = useStage();
-    const [stageId, setStageId] = useState<string>("-M7eC0Swye-Ye-V7_o0J");
-    const [password, setPassword] = useState<string>('hello');
+    const {join, stage, error, loading: stageLoading} = useDigitalStage();
+    const [stageId, setStageId] = useState<string>("-M9p2_4r-DNWAbhj74Jj");
+    const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
     if (loading) {

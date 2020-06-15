@@ -1,18 +1,16 @@
-import useDevices from "../../lib/digitalstage/useDevices";
 import {StyledBodyCell, StyledHeadCell, StyledTable} from 'baseui/table-grid';
 import React from "react";
 import {Checkbox, STYLE_TYPE} from "baseui/checkbox";
 import {useStyletron} from "baseui";
-import {AbstractDevice} from "digitalstage-client-base";
 import {Button} from "baseui/button";
 import {Modal, ModalBody, ModalHeader} from "baseui/modal";
+import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
+import {IDevice} from "digitalstage-client-base";
 
 const DeviceRow = (props: {
-    device: AbstractDevice
+    device: IDevice
 }) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-
-    console.log(props.device);
 
     return (
         <>
@@ -53,6 +51,7 @@ const DeviceRow = (props: {
             <StyledBodyCell>
                 <Button onClick={() => setIsOpen(true)}>Settings</Button>
                 <Modal onClose={() => setIsOpen(false)} isOpen={isOpen}
+                       unstable_ModalBackdropScroll={true}
                        overrides={{
                            Root: {
                                style: {
@@ -72,7 +71,7 @@ const DeviceRow = (props: {
 }
 
 export default () => {
-    const devices = useDevices();
+    const {devices} = useDigitalStage();
     const [css] = useStyletron();
 
     return (
@@ -90,7 +89,7 @@ export default () => {
                 <StyledHeadCell $sticky={false}>Receive video</StyledHeadCell>
                 <StyledHeadCell $sticky={false}>Receive audio</StyledHeadCell>
                 <StyledHeadCell $sticky={false}/>
-                {devices.map((device: AbstractDevice) => <DeviceRow key={device.id} device={device}/>)}
+                {devices.map((device: IDevice) => <DeviceRow key={device.id} device={device}/>)}
             </StyledTable>
         </div>
     )

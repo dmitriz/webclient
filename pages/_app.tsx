@@ -5,10 +5,10 @@ import {debug, styletron} from '../styletron'
 import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {DarkModeContext, DarkModeStageProvider} from '../lib/useDarkModeSwitch';
 import {AuthContextProvider} from "../lib/useAuth";
-import {StageProvider} from "../lib/digitalstage/useStage";
 import {AudioContextProvider} from "../lib/useAudioContext";
 
 import * as Sentry from '@sentry/browser';
+import {DigitalStageProvider} from "../lib/digitalstage/useDigitalStage";
 
 if (process.env.NODE_ENV === "production")
     Sentry.init({dsn: "https://4c5911aca6334d9aafdc6c7b106a7b1e@o403353.ingest.sentry.io/5265870"});
@@ -32,7 +32,7 @@ export default class MyApp extends App<Props, States> {
             <StyletronProvider value={styletron} debug={debug} debugAfterHydration>
                 <AuthContextProvider>
                     <AudioContextProvider>
-                        <StageProvider>
+                        <DigitalStageProvider>
                             <DarkModeStageProvider>
                                 <DarkModeContext.Consumer>
                                     {({darkMode}) => (
@@ -81,7 +81,7 @@ export default class MyApp extends App<Props, States> {
                                     )}
                                 </DarkModeContext.Consumer>
                             </DarkModeStageProvider>
-                        </StageProvider>
+                        </DigitalStageProvider>
                     </AudioContextProvider>
                 </AuthContextProvider>
             </StyletronProvider>
