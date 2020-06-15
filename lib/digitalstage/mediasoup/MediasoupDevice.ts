@@ -60,8 +60,6 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
     private registerDeviceListeners() {
         Debugger.debug("registerDeviceListeners()", this);
         this.on('sendAudio', (sendAudio: boolean) => {
-            Debugger.debug("sendAudio", this);
-            console.log(sendAudio);
             if (sendAudio) {
                 Debugger.debug("Activate sendAudio", this);
                 getLocalAudioTracks().then((tracks: MediaStreamTrack[]) => {
@@ -424,10 +422,8 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                 id: this.producers[trackId].producer.id
             })
                 .then(() => {
-                    console.log("Closing local producer");
                     this.producers[trackId].producer.close()
                     // Remove public offer
-                    console.log("Global ID: " + this.producers[trackId].globalProducerId);
                     if (this.producers[trackId].globalProducerId)
                         this.mApi.unpublishProducer(this.producers[trackId].globalProducerId);
                     this.producers = omit(this.producers, trackId)

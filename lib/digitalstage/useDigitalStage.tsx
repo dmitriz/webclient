@@ -169,12 +169,10 @@ export const DigitalStageProvider = (props: {
     }, [audioContext]);
 
     const onConsumerAdded = useCallback((consumer: mediasoupLib.types.Consumer) => {
-        console.log("ONCONSUMERADDED");
         setMembers(prevState => addConsumer(prevState, consumer));
     }, [members, audioContext]);
 
     const onConsumerRemoved = useCallback((consumer: mediasoupLib.types.Consumer) => {
-        console.log("ONCONSUMERREMOVED");
         setMembers(prevState => prevState.map((member: StageMember) => {
             if (member.uid === consumer.globalProducer.uid) {
                 if (consumer.globalProducer.kind === "audio") {
@@ -189,7 +187,6 @@ export const DigitalStageProvider = (props: {
 
     useEffect(() => {
         if (mediasoup.device && audioContext) {
-            console.log("REGISTER");
             mediasoup.device.on("consumer-added", onConsumerAdded);
             mediasoup.device.on("consumer-removed", onConsumerRemoved)
         }
