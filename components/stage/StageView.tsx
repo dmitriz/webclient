@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import LocalDevicePanel from "./LocalDevicePanel";
-import {styled} from "baseui";
+import {styled, withStyle} from "baseui";
 import MemberView from "./MemberView";
 import Click from "../click/Click";
 import {FlexGrid, FlexGridItem} from "baseui/flex-grid";
@@ -10,7 +10,7 @@ import DevicesView from "../devices/DevicesView";
 import {ANCHOR, Drawer} from 'baseui/drawer';
 import {SHAPE, StyledBaseButton} from "baseui/button";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
-import {Layer} from "baseui/layer";
+import {KIND, Toast} from "baseui/toast";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -20,24 +20,34 @@ const Wrapper = styled("div", {
     height: '100vh'
 });
 
-const ToggleDeviceButton = styled(StyledBaseButton, {
+const ToggleDeviceButton = withStyle(StyledBaseButton, {
     position: "fixed",
     bottom: "50px",
     right: "50px",
-    zIndex: 9999
+    zIndex: 2
 });
 
 const ClickPanel = styled("div", {
     position: "fixed",
     top: "100px",
-    right: "50px"
+    right: "50px",
+    zIndex: 2
 });
 
 const itemProps: BlockProps = {};
 
 export default () => {
-    const {members} = useDigitalStage();
+    const {error, members} = useDigitalStage();
     const [showDevices, setShowDevices] = useState<boolean>(false);
+    const [showToast, setShowToast] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (error) {
+            console.log("NEW ERROR:");
+            console.log(error);
+            setShowToast(true);
+        }
+    }, [error])
 
     return (
         <>
@@ -74,24 +84,31 @@ export default () => {
                 </ToggleDeviceButton>
             </Wrapper>
 
-            <Layer index={2000}>
-                <Drawer
-                    autoFocus
-                    size="full"
-                    onClose={() => setShowDevices(false)}
-                    isOpen={showDevices}
-                    anchor={ANCHOR.bottom}
-                    overrides={{
-                        Root: {
-                            style: {
-                                zIndex: 2000
-                            }
+            <Drawer
+                autoFocus
+                size="full"
+                onClose={() => setShowDevices(false)}
+                isOpen={showDevices}
+                anchor={ANCHOR.bottom}
+                overrides={{
+                    Root: {
+                        style: {
+                            zIndex: 9999
                         }
-                    }}
-                >
-                    <DevicesView/>
-                </Drawer>
-            </Layer>
+                    }
+                }}
+            >
+                <DevicesView/>
+            </Drawer>
+            {error && showToast && (
+                <Toast overrides={{
+                    Body: {
+                        style: {
+                            zIndex: 99999
+                        }
+                    }
+                }} kind={KIND.negative} closeable={true} onClose={() => setShowToast(false)}>{error}</Toast>
+            )}
         </>
     )
 }

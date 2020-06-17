@@ -1,18 +1,20 @@
 import React from "react";
-import NavBar from "./NavBar";
-import {Layer} from "baseui/layer";
+import Navigation from "./Navigation";
+import {styled} from "baseui";
+
+const NavBar = styled(Navigation, {
+    position: "relative",
+    width: "100vw",
+    zIndex: 9999
+})
 
 export default (props: {
     children: React.ReactNode
 }) => {
     return (
         <>
-            <Layer index={2}>
-                <NavBar/>
-            </Layer>
-            <Layer index={1}>
-                {props.children}
-            </Layer>
+            <NavBar/>
+            {props.children}
         </>
     );
 }

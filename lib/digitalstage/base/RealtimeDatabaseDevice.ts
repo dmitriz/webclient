@@ -81,7 +81,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
         this.mLatestSnapshot = snapshot.val();
         this.emit("device-changed", this);
 
-        if (before) {
+        if (before && this.mLatestSnapshot) {
             if (before.caption !== this.mLatestSnapshot.caption) {
                 Debugger.debug("caption changed to " + this.mLatestSnapshot.caption, this);
                 this.emit("caption", this.mLatestSnapshot.caption);

@@ -3,24 +3,13 @@ import React, {createContext, useCallback, useContext, useEffect, useState} from
 import {useAuth} from "../useAuth";
 import {MediasoupAudioTrack} from "./types/MediasoupAudioTrack";
 import {MediasoupVideoTrack} from "./types/MediasoupVideoTrack";
-import {DatabaseStage, DatabaseStageMember} from "./base/types";
+import {DatabaseStage} from "./base/types";
 import {DeviceEvent, MemberEvent, SoundjackEvent} from "./base/api/DigitalStageAPI";
 import * as mediasoupLib from "./mediasoup";
 import * as firebase from "firebase/app";
 import "firebase/database";
 import {useAudioContext} from "../useAudioContext";
-
-
-export interface StageMember extends DatabaseStageMember {
-    uid: string;
-    audio: {
-        //globalGain: IGainNode<IAudioContext>;
-        audioTracks: MediasoupAudioTrack[];
-        soundjackVolume?: number;
-        globalVolume: number;
-    }
-    videoTracks: MediasoupVideoTrack[];
-}
+import {StageMember} from "./types/StageMember";
 
 interface DigitalStageProps {
 
@@ -59,6 +48,7 @@ export const DigitalStageProvider = (props: {
     const [stage, setStage] = useState<DatabaseStage>(undefined);
     const [members, setMembers] = useState<StageMember[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string>(undefined);
     const {audioContext} = useAudioContext();
 
     useEffect(() => {
@@ -122,6 +112,7 @@ export const DigitalStageProvider = (props: {
             setLoading(true);
             return api
                 .createStage(name, password)
+                .catch((err) => setError(err.message))
                 .finally(() => {
                     setLoading(false);
                 });
@@ -132,6 +123,7 @@ export const DigitalStageProvider = (props: {
         if (api) {
             setLoading(true);
             return api.joinStage(stageId, password)
+                .catch((err) => setError(err.message))
                 .finally(() => {
                     setLoading(false);
                 });
@@ -142,6 +134,7 @@ export const DigitalStageProvider = (props: {
         if (api) {
             setLoading(true);
             return api.leaveStage()
+                .catch((err) => setError(err.message))
                 .finally(() => {
                     setStage(undefined);
                     setMembers([]);
@@ -159,7 +152,7 @@ export const DigitalStageProvider = (props: {
         return members.map((member: StageMember) => {
             if (member.uid === consumer.globalProducer.uid) {
                 if (consumer.globalProducer.kind === "audio") {
-                    const audioTrack: MediasoupAudioTrack = new MediasoupAudioTrack(consumer.globalProducer.id, consumer.consumer, audioContext);
+                    const audioTrack: MediasoupAudioTrack = new MediasoupAudioTrack(consumer.globalProducer.id, consumer.consumer, audioContext, api);
                     member.audio.audioTracks.push(audioTrack);
                 } else {
                     member.videoTracks.push({
@@ -207,7 +200,11 @@ export const DigitalStageProvider = (props: {
 
     const setConnected = useCallback(async (connected: boolean) => {
         if (connected) {
-            return mediasoup.connect();
+            return mediasoup.connect()
+                .catch((error) => {
+                    Debugger.handleError(error);
+                    setError(error.message);
+                })
         } else {
             return mediasoup.disconnect();
         }
@@ -223,6 +220,7 @@ export const DigitalStageProvider = (props: {
             join,
             loading,
             leave,
+            error,
             connected: mediasoup.connected,
             setConnected
         }}>

@@ -14,28 +14,58 @@ export interface AuthProps {
 }
 
 const AuthContext = React.createContext(undefined);
+export const useAuthDep = (): AuthProps => {
+    const [state, setState] = useState<AuthProps>(() => {
+        const user = firebase.auth().currentUser;
+        return {
+            loading: !user,
+            user
+        };
+    });
+
+    function onChange(user: firebase.User | null) {
+        setState({loading: false, user});
+
+        if (user) {
+            user.getIdToken().then(
+                (token: string) => {
+                    cookie.set('token', token, {expires: 1});
+                }
+            );
+        } else {
+            cookie.remove('token');
+        }
+    }
+
+    useEffect(() => {
+        // Listen for auth state changes.
+        const unsubscribe = firebase.auth().onAuthStateChanged(onChange);
+
+        // Unsubscribe to the listener when unmounting.
+        return () => unsubscribe();
+    }, []);
+
+    return state;
+};
 
 export const useAuth = (): AuthProps => React.useContext<AuthProps>(AuthContext);
 
 export const AuthContextProvider = (props: {
     children: React.ReactNode
 }) => {
-    const [user, setUser] = useState<firebase.User>(firebase.auth().currentUser);
-    const [loading, setLoading] = useState<boolean>(!user);
-
-    /*
     const [state, setState] = useState<AuthProps>((): AuthProps => {
         const user = firebase.auth().currentUser;
         return {
             user: user,
             loading: !user
         };
-    });*/
+    });
 
     const handleChange = (user: firebase.User | null) => {
-        console.log("YES SIR!");
-        setUser(user);
-        setLoading(false);
+        setState({
+            user: user,
+            loading: false
+        });
         if (user) {
             user.getIdToken().then(
                 (token: string) => {
@@ -53,10 +83,7 @@ export const AuthContextProvider = (props: {
     }, []);
 
     return (
-        <AuthContext.Provider value={{
-            user: user,
-            loading: loading
-        }}>
+        <AuthContext.Provider value={state}>
             {props.children}
         </AuthContext.Provider>
     );

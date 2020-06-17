@@ -1,6 +1,7 @@
 import {IAudioContext, IGainNode, IMediaStreamTrackAudioSourceNode} from "standardized-audio-context";
 import mediasoupClient from "mediasoup-client";
 import {IMediasoupTrack} from "./IMediasoupTrack";
+import {DigitalStageAPI} from "../base";
 
 export class MediasoupAudioTrack implements IMediasoupTrack {
     public readonly type = "audio";
@@ -9,6 +10,7 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
     public readonly gainNode: IGainNode<IAudioContext>;
     public readonly mediaStream: MediaStream;
     public readonly id: string;
+    private readonly api: DigitalStageAPI;
     private muted: boolean;
     private internalVolume: number = 0;
 
@@ -16,7 +18,7 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
         return this.internalVolume
     }
 
-    constructor(id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext) {
+    constructor(id: string, consumer: mediasoupClient.types.Consumer, audioContext: IAudioContext, api: DigitalStageAPI) {
         this.id = id;
         this.track = consumer.track;
         this.source = audioContext.createMediaStreamTrackSource(consumer.track);
@@ -32,16 +34,19 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
     public mute = () => {
         this.gainNode.gain.value = 0;
         this.muted = true;
+        this.api.setRemoteProducerVolume(this.id, 0);
     }
     public unmute = () => {
         this.gainNode.gain.value = this.internalVolume;
         this.muted = false;
+        this.api.setRemoteProducerVolume(this.id, this.internalVolume);
     }
 
     public setVolume = (volume: number) => {
         this.internalVolume = volume;
         if (!this.muted) {
             this.gainNode.gain.value = volume;
+            this.api.setRemoteProducerVolume(this.id, volume);
         }
     }
 }

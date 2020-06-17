@@ -16,7 +16,6 @@ const Panel = styled("div", {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
     bottom: "50px",
     left: "50px",
     height: "auto"
@@ -34,7 +33,7 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const {devices, connected, setConnected, loading} = useDigitalStage();
+    const {devices, setConnected, loading} = useDigitalStage();
     const [localDevice, setLocalDevice] = useState<IDevice>();
 
     useEffect(() => {

@@ -77,18 +77,16 @@ export default () => {
         <Layout>
             <CenteredCard>
                 <DisplayMedium>Create stage</DisplayMedium>
-                <form>
-                    <FormControl label={"Stage name"}>
-                        <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
-                    </FormControl>
-                    <FormControl label={"Passwort"}
-                                 caption={"Optional"}>
-                        <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
-                    </FormControl>
-                    <Button isLoading={stageLoading}
-                            disabled={stageLoading}
-                            onClick={() => create(stageName, password)}>Create</Button>
-                </form>
+                <FormControl label={"Stage name"}>
+                    <Input value={stageName} onChange={e => setStageName(e.currentTarget.value)}/>
+                </FormControl>
+                <FormControl label={"Passwort"}
+                             caption={"Optional"}>
+                    <Input type="password" value={password} onChange={e => setPassword(e.currentTarget.value)}/>
+                </FormControl>
+                <Button isLoading={stageLoading}
+                        disabled={stageLoading}
+                        onClick={() => create(stageName, password)}>Create</Button>
             </CenteredCard>
         </Layout>
     );

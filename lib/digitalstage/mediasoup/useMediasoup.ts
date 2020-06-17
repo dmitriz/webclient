@@ -15,7 +15,7 @@ export const useMediasoup = (firebaseApp: firebase.app.App, api: DigitalStageAPI
     const [receiveVideo, setReceiveVideoInternal] = useState<boolean>()
     const [producers, setProducers] = useState<Producer[]>([]);
     const [consumers, setConsumers] = useState<Consumer[]>([]);
-    const {audioContext, createAudioContext} = useAudioContext();
+    const {audioContext} = useAudioContext();
 
     useEffect(() => {
         if (api) {
@@ -106,9 +106,9 @@ export const useMediasoup = (firebaseApp: firebase.app.App, api: DigitalStageAPI
 
     const connect = useCallback(() => {
         if (device) {
-            device.connect()
-                .catch((error) => handleError(error))
+            return device.connect();
         }
+        return Promise.resolve();
     }, [device])
 
     const disconnect = useCallback(() => {

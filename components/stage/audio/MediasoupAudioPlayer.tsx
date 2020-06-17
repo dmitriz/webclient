@@ -3,7 +3,8 @@ import {styled} from "baseui";
 import React, {MutableRefObject, useEffect, useRef, useState} from "react";
 import useHover from "../../../lib/useHover";
 import VolumeSlider from "../../theme/VolumeSlider";
-import {StageMember} from "../../../lib/digitalstage/useDigitalStage";
+import {useDigitalStage} from "../../../lib/digitalstage/useDigitalStage";
+import { StageMember } from "../../../lib/digitalstage/types/StageMember";
 
 const HiddenAudioPlayer = styled("audio", {})
 
@@ -15,7 +16,8 @@ const SliderOverlay = styled("div", {
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-end"
+    justifyContent: "flex-end",
+    zIndex: 1
 });
 
 const SliderWrapper = styled("div", {
@@ -28,7 +30,8 @@ const SliderPopout = styled("div", (props: {
     opacity: props.$hovered ? 1 : 0,
     transitionTimingFunction: "cubic-bezier(0, 0, 1, 1)",
     transitionDuration: "200ms",
-    transitionProperty: "opacity"
+    transitionProperty: "opacity",
+    zIndex: 2
 }));
 
 const MediasoupAudioSlider = (props: {
@@ -63,6 +66,7 @@ export default (props: {
     const [globalVolume, setGlobalVolume] = useState<number>(props.member.audio.globalVolume * 100);
     const hoverRef: MutableRefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
     const hovered = useHover<HTMLDivElement>(hoverRef);
+    const {api} = useDigitalStage();
 
     //TODO: For later, when Chromium fixed this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=933677
     /*
@@ -72,6 +76,7 @@ export default (props: {
 
     useEffect(() => {
         props.member.audio.globalVolume = globalVolume / 100;
+        api.setRemoteMasterVolume(props.member.uid, props.member.audio.globalVolume);
     }, [globalVolume]);
 
     return (

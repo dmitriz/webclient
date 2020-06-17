@@ -17,7 +17,7 @@
   "dependencies": {
     "@sentry/browser": "^5.17.0",
     "baseui": "^9.84.0",
-    "detect-browser": "^5.1.0",
+    "detect-browser": "^5.1.1",
     "digitalstage-client-base": "0.2.19",
     "firebase": "^7.15.1",
     "formik": "latest",
@@ -29,7 +29,7 @@
     "mediasoup-client": "^3.6.10",
     "next": "^9.4.4",
     "next-cookies": "latest",
-    "now": "^19.1.0",
+    "now": "^19.1.1",
     "ping.js": "^0.2.3",
     "promise": "^8.1.0",
     "public-ip": "^4.0.1",

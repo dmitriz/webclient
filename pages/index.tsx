@@ -19,7 +19,7 @@ export default () => {
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
-    if (loading || stageLoading) {
+    if (loading) {
         return (
             <Loading><h1>Loading</h1></Loading>
         )
@@ -45,21 +45,19 @@ export default () => {
                     As an alternative we already created a public stage, so just click on
                     Join to test Digital Stage :)
                 </ParagraphMedium>
-                <form>
-                    <FormControl label="Stage ID">
-                        <Input value={stageId} onChange={(e) => setStageId(e.currentTarget.value)}/>
-                    </FormControl>
-                    <FormControl label="Password">
-                        <Input type="password" value={password} onChange={(e) => setPassword(e.currentTarget.value)}/>
-                    </FormControl>
-                    {error && (
-                        <Notification kind={KIND.negative}>
-                            {error}
-                        </Notification>
-                    )}
-                    <Button isLoading={stageLoading} disabled={stageId.length === 0}
-                            onClick={() => join(stageId, "")}>Join</Button>
-                </form>
+                <FormControl label="Stage ID">
+                    <Input value={stageId} onChange={(e) => setStageId(e.currentTarget.value)}/>
+                </FormControl>
+                <FormControl label="Password">
+                    <Input type="password" value={password} onChange={(e) => setPassword(e.currentTarget.value)}/>
+                </FormControl>
+                {error && (
+                    <Notification kind={KIND.negative}>
+                        {error}
+                    </Notification>
+                )}
+                <Button isLoading={stageLoading} disabled={stageId.length === 0}
+                        onClick={() => join(stageId, "")}>Join</Button>
             </CenteredCard>
         </Layout>
     )
