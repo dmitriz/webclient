@@ -20,6 +20,7 @@ export class MediasoupAudioTrack implements IMediasoupTrack {
         this.id = id;
         this.track = consumer.track;
         this.source = audioContext.createMediaStreamTrackSource(consumer.track);
+        this.api = api;
 
         //TODO: This is so ugly, but necessary, see https://bugs.chromium.org/p/chromium/issues/detail?id=933677
         this.mediaStream = new MediaStream([consumer.track]);

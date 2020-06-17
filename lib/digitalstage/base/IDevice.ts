@@ -29,6 +29,8 @@ export interface IDevice extends EventEmitter {
     readonly inputAudioDevice: number | undefined;
     readonly outputAudioDevice: number | undefined;
 
+    setDeviceId(deviceId: string);
+
     addListener(event: DeviceEvents | string, listener: (...args: any[]) => void): this;
 
     removeListener(event: DeviceEvents | string, listener: (...args: any[]) => void): this;

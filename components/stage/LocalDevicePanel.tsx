@@ -1,8 +1,7 @@
-import React, {useEffect, useState} from "react";
+import React from "react";
 import {styled} from "baseui";
 import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
-import {IDevice} from "digitalstage-client-base";
 import {OverlayButton} from "../theme/OverlayButton";
 
 const SoundjackLogo = styled("img", {
@@ -16,7 +15,6 @@ const Panel = styled("div", {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
     bottom: "50px",
     left: "50px",
     height: "auto"
@@ -34,15 +32,7 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const {devices, connected, setConnected, loading} = useDigitalStage();
-    const [localDevice, setLocalDevice] = useState<IDevice>();
-
-    useEffect(() => {
-        if (devices) {
-            const localDevice: IDevice = devices.find((device: IDevice) => device.isRemote !== false);
-            setLocalDevice(localDevice);
-        }
-    }, [devices])
+    const {device: localDevice, setConnected, loading} = useDigitalStage();
 
     return (
         <Panel>

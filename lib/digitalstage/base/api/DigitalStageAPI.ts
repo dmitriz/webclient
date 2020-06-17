@@ -12,7 +12,8 @@ import {IDevice} from "../IDevice";
 
 export type DigitalStageEvents =
     "stage-id-changed"
-    | "stage-changed"
+    | "stage-name-changed"
+    | "stage-password-changed"
     | "joined"
     | "created"
     | "left"
@@ -36,7 +37,8 @@ export type DigitalStageEvents =
     | "producer-published"
     | "producer-unpublished"
     | "soundjack-published"
-    | "soundjack-unpublished";
+    | "soundjack-unpublished"
+    | "click";
 
 export type SoundjackEvent = {
     id: string;
@@ -53,25 +55,28 @@ export type VolumeEvent = {
     volume: number;
 }
 
-export type StageEvent = DatabaseStage | undefined;
-
 export type StageIdEvent = string | undefined;
+export type StageNameEvent = string | undefined;
+export type StagePasswordEvent = string | undefined;
+
+export type StageCreatedEvent = DatabaseStage;
+
+export type StageJoinedEvent = DatabaseStage;
 
 export type MemberEvent = {
     uid: string;
     member: DatabaseStageMember;
 }
 
-export type DeviceEvent = IDevice;
+export type DeviceEvent = {
+    id: string;
+    device: DatabaseDevice;
+};
 
 export abstract class DigitalStageAPI extends EventEmitter {
+    public abstract removeHandlers(): void;
+
     public abstract getUid(): string;
-
-    public abstract getStage(): DatabaseStage | undefined;
-
-    public abstract getDevices(): IDevice[];
-
-    public abstract getDevice(deviceId: string): IDevice | undefined;
 
     public abstract createStage(name: string, password?: string): Promise<DatabaseStage>;
 
@@ -79,7 +84,7 @@ export abstract class DigitalStageAPI extends EventEmitter {
 
     public abstract leaveStage(): Promise<boolean>;
 
-    public abstract registerDevice(device: IDevice, initialDatabaseDevice: DatabaseDevice): Promise<string>;
+    public abstract registerDevice(device: IDevice): Promise<string>;
 
     public abstract updateDevice(deviceId: string, device: Partial<DatabaseDevice>): Promise<any>;
 
@@ -98,6 +103,10 @@ export abstract class DigitalStageAPI extends EventEmitter {
     public abstract publishProducer(producer: DatabaseGlobalProducer): Promise<string>;
 
     public abstract unpublishProducer(id: string): Promise<any>;
+
+    public abstract startClick(time: number): Promise<any>;
+
+    public abstract stopClick(): Promise<any>;
 
     public addListener(event: DigitalStageEvents, listener: (...args: any[]) => void): this {
         return super.addListener(event, listener);

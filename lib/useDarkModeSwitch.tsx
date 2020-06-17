@@ -15,11 +15,11 @@ export const DarkModeStageProvider = (props: {
     children: React.ReactNode
 }) => {
     const [darkMode, setDarkMode] = useState<boolean>(false);
-    const {stage} = useDigitalStage();
+    const {id} = useDigitalStage();
 
     useEffect(() => {
-        setDarkMode(stage !== undefined);
-    }, [stage]);
+        setDarkMode(id !== undefined);
+    }, [id]);
 
     return (
         <DarkModeContext.Provider value={{

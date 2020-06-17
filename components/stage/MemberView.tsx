@@ -1,9 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
 import {styled} from "baseui";
 import CanvasPlayer from "./video/CanvasPlayer";
-import {StageMember} from "../../lib/digitalstage/useDigitalStage";
-import {MediasoupVideoTrack} from "../../lib/digitalstage/types/MediasoupVideoTrack";
 import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
+import {MediasoupMember} from "../../lib/digitalstage/mediasoup/types/MediasoupMember";
+import {MediasoupVideoProducer} from "../../lib/digitalstage/mediasoup/types/MediasoupVideoProducer";
 
 const MemberPanel = styled("div", {
     width: '100%',
@@ -11,7 +11,8 @@ const MemberPanel = styled("div", {
     maxHeight: '100%',
     overflow: 'hidden',
     position: 'relative',
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    zIndex: 1
 });
 
 const MemberTitle = styled("div", {
@@ -21,7 +22,8 @@ const MemberTitle = styled("div", {
     right: 0,
     left: "8px",
     boxSizing: "border-box",
-    textShadow: "0 0 4px #000"
+    textShadow: "0 0 4px #000",
+    zIndex: 2
 });
 
 const MemberVideo = styled(CanvasPlayer, {
@@ -32,7 +34,8 @@ const MemberVideo = styled(CanvasPlayer, {
     right: 0,
     left: 0,
     bottom: 0,
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    zIndex: 1
 });
 
 const SoundjackLogo = styled("img", {
@@ -40,11 +43,16 @@ const SoundjackLogo = styled("img", {
     top: "2px",
     right: "2px",
     width: "24px",
-    height: "24px"
+    height: "24px",
+    zIndex: 2
+});
+
+const StyledMediasoupAudioPlayer = styled(MediasoupAudioPlayer, {
+    zIndex: 3
 });
 
 export default (props: {
-    member: StageMember
+    member: MediasoupMember
 }) => {
     const [width, setWidth] = useState<number>(0);
     const [height, setHeight] = useState<number>(0);
@@ -60,14 +68,14 @@ export default (props: {
 
     return (
         <MemberPanel ref={panelRef}>
-            {props.member.audio.soundjackVolume && (
+            {props.member.soundjacks.length > 0 && (
                 <SoundjackLogo src="/soundjack.png"/>
             )}
-            <MemberTitle>{props.member.displayName}</MemberTitle>
+            <MemberTitle>{props.member.name}</MemberTitle>
             <MemberVideo width={width} height={height}
-                         videoTracks={props.member.videoTracks.map((videoTrack: MediasoupVideoTrack) => videoTrack.track)}/>
-            <MediasoupAudioPlayer member={props.member}/>
+                         videoTracks={props.member.getVideoProducers().map((videoProducer: MediasoupVideoProducer) => videoProducer.track)}/>
 
+            <StyledMediasoupAudioPlayer member={props.member}/>
         </MemberPanel>
     )
 }

@@ -8,9 +8,9 @@ import Loading from "../components/theme/Loading";
 import Layout from "../components/theme/Layout";
 import CenteredCard from "../components/theme/CenteredCard";
 import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
-import {DatabaseStage} from "digitalstage-client-base/lib/types";
 import {DisplayMedium} from "baseui/typography";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
+import { DatabaseStage } from "../lib/digitalstage/base/types";
 
 export default () => {
     const {user, loading} = useAuth();

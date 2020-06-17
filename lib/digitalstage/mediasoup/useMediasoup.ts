@@ -3,8 +3,8 @@ import {useCallback, useEffect, useState} from 'react'
 import * as firebase from 'firebase/app'
 import {Consumer, Producer} from "./types";
 import {handleError} from "../../Debugger";
-import {DigitalStageAPI} from "digitalstage-client-base";
 import {useAudioContext} from "../../useAudioContext";
+import {DigitalStageAPI} from "../base";
 
 export const useMediasoup = (firebaseApp: firebase.app.App, api: DigitalStageAPI) => {
     const [connected, setConnected] = useState<boolean>(false)

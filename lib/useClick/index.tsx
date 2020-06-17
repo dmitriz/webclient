@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from "react";
 import {IAudioBufferSourceNode, IAudioContext} from "standardized-audio-context";
 import {useAudioContext} from "../useAudioContext";
+import {Debugger} from "../digitalstage/base";
 
 // Some global settings
 const freq = 600;
@@ -58,9 +59,17 @@ export default (props: {
     const [buffer, setBuffer] = useState<IAudioBufferSourceNode<IAudioContext>>();
     const [enabled, setEnabled] = useState<boolean>(false);
 
-    const enableClick = useCallback(async() => {
+    useEffect(() => {
+        if (buffer && playing) {
+            return () => {
+                buffer.stop();
+            }
+        }
+    }, [buffer, playing]);
+
+    const enableClick = useCallback(async () => {
         let audioCtx = audioContext;
-        if( !audioCtx ) {
+        if (!audioCtx) {
             audioCtx = await createAudioContext();
         }
         const source: IAudioBufferSourceNode<IAudioContext> = audioCtx.createBufferSource();
@@ -72,10 +81,10 @@ export default (props: {
         });
         setBuffer(source);
         setEnabled(true);
-    },[]);
+    }, [audioContext]);
 
     const startInternal = useCallback(() => {
-        if( audioContext ) {
+        if (audioContext) {
             const nextStartTime = audioContext.currentTime + calculateNextStartTime(props.startTime, props.offset, props.bpm, props.timeSignature);
             buffer.start(nextStartTime);
         }

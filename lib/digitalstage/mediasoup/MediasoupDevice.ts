@@ -7,7 +7,7 @@ import {getFastestRouter, getLocalAudioTracks, getLocalVideoTracks} from './util
 import {RouterGetUrls, RouterPostUrls} from './queries'
 import {Producer} from './types/Producer'
 import {Consumer} from './types/Consumer'
-import {DatabaseDevice, DatabaseGlobalProducer} from "../base/types";
+import {DatabaseGlobalProducer} from "../base/types";
 import {detect} from "detect-browser";
 import {ProducerEvent} from "../base/api/DigitalStageAPI";
 
@@ -54,6 +54,20 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
     constructor(api: DigitalStageAPI) {
         super(api, false);
         this.device = new MediasoupClientDevice();
+        const browser = detect();
+        const caption: string = browser ? browser.os + "(" + browser.name + ")" : "";
+        this.mLatestSnapshot = {
+            uid: this.mApi.getUid(),
+            name: "Browser",
+            caption: caption,
+            canAudio: true,
+            canVideo: true,
+            sendVideo: false,
+            sendAudio: false,
+            receiveAudio: false,
+            receiveVideo: false,
+            audioDevices: []
+        };
     }
 
 
@@ -198,23 +212,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         if (this.connected) {
             return Promise.resolve();
         }
-        const browser = detect();
-        const caption: string = browser ? browser.os + "(" + browser.name + ")" : "";
-        const initialDatabaseDevice: DatabaseDevice = {
-            uid: this.mApi.getUid(),
-            name: "Browser",
-            caption: caption,
-            canAudio: true,
-            canVideo: true,
-            sendVideo: false,
-            sendAudio: false,
-            receiveAudio: false,
-            receiveVideo: false,
-            audioDevices: []
-        };
-        return this.mApi.registerDevice(this, initialDatabaseDevice)
-            .then((deviceId: string) => this.setDeviceId(deviceId))
-            .then(() => getFastestRouter())
+        return getFastestRouter()
             .then(async (router: MediasoupRouter) => {
                     this.router = router
                     const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities()

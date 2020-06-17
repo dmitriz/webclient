@@ -29,7 +29,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
         this.mIsRemote = isRemote;
     }
 
-    protected setDeviceId(deviceId: string) {
+    public setDeviceId(deviceId: string) {
         if (this.mDeviceRef) {
             Debugger.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
             this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);

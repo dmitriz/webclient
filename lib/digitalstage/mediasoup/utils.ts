@@ -1,9 +1,9 @@
 import * as firebase from 'firebase/app'
 import 'firebase/firestore'
 
-import {types} from 'digitalstage-client-base'
 import {MediasoupRouter} from './types'
 import {Debugger} from "../base";
+import { DatabaseRouter } from '../base/types';
 
 export const getFastestRouter = (): Promise<MediasoupRouter> => {
     return new Promise<MediasoupRouter>((resolve, reject) => {
@@ -18,10 +18,10 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                 }
                 const lowestLatency = -1
                 const routers: {
-                    [id: string]: types.DatabaseRouter
+                    [id: string]: DatabaseRouter
                 } = snapshot.val()
                 for (const routerId of Object.keys(routers)) {
-                    const router: types.DatabaseRouter = routers[routerId]
+                    const router: DatabaseRouter = routers[routerId]
                     const latency: number = await ping(
                         'https://' + router.domain + ':' + router.port + '/ping'
                     ).catch((err) => {

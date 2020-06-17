@@ -5,7 +5,7 @@ import {useStyletron} from "baseui";
 import {Button} from "baseui/button";
 import {Modal, ModalBody, ModalHeader} from "baseui/modal";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
-import {IDevice} from "digitalstage-client-base";
+import {IDevice} from "../../lib/digitalstage/base";
 
 const DeviceRow = (props: {
     device: IDevice
