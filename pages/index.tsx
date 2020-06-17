@@ -19,8 +19,6 @@ export default () => {
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
-    console.log(id);
-
     if (loading) {
         return (
             <Loading><h1>Loading</h1></Loading>

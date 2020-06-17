@@ -1,20 +1,29 @@
 import {DigitalStage} from "../base/DigitalStage";
-import {DigitalStageAPI} from "../base";
 import {MediasoupDevice} from "./MediasoupDevice";
 import {Consumer} from "./types/Consumer";
 import {MediasoupMember} from "./types/MediasoupMember";
+import * as firebase from "firebase/app";
 
 
 export class DigitalStageWithMediasoup extends DigitalStage {
-    protected readonly mDevice: MediasoupDevice;
+    protected mDevice: MediasoupDevice;
     protected mMembers: MediasoupMember[] = [];
 
-    constructor(api: DigitalStageAPI) {
-        super(api);
-        this.mDevice = new MediasoupDevice(api);
+    constructor(user: firebase.User) {
+        super(user);
+    }
+
+    public connect() {
+        super.connect();
+        this.mDevice = new MediasoupDevice(this.mApi);
         this.addMediasoupHandlers();
         this.addLocalDevice(this.mDevice)
             .then(() => this.mDevice.connect());
+    }
+
+    public disconnect() {
+        this.removeHandlers();
+        super.disconnect();
     }
 
     public get device() {
@@ -46,7 +55,7 @@ export class DigitalStageWithMediasoup extends DigitalStage {
     }
 
 
-    public removeHandlers() {
+    protected removeHandlers() {
         this.device.disconnect();
         this.removeMediasoupHandlers();
         super.removeHandlers();

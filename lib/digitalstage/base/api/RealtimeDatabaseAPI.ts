@@ -34,14 +34,21 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         super();
         this.mUser = user;
         this.mUserRef = firebase.database().ref("users/" + this.mUser.uid);
+    }
+
+    public connect() {
         this.addHandlers();
+    }
+
+    public disconnect() {
+        this.removeHandlers();
     }
 
     public getUid(): string {
         return this.mUser.uid;
     }
 
-    public removeHandlers() {
+    protected removeHandlers() {
         this.removeStageHandlers();
         if (this.mUserRef) {
             this.mUserRef.child("stageId").off();
@@ -52,7 +59,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         }
     }
 
-    private addHandlers() {
+    protected addHandlers() {
         this.mUserRef
             .child("stageId")
             .on("value", async snapshot => {
@@ -349,7 +356,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
 
     updateDevice(deviceId: string, device: Partial<DatabaseDevice>): Promise<any> {
         return this.mUserRef
-            .child("mDevices/" + deviceId)
+            .child("devices/" + deviceId)
             .update(device);
     }
 

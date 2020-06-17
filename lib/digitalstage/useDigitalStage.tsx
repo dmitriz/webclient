@@ -1,4 +1,4 @@
-import {Debugger, DigitalStageAPI, IDevice, RealtimeDatabaseAPI} from "./base";
+import {Debugger, IDevice} from "./base";
 import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
 import {useAuth} from "../useAuth";
 import "firebase/database";
@@ -18,7 +18,7 @@ interface DigitalStageProps {
 
     loading: boolean;
 
-    device?: MediasoupDevice,
+    localDevice?: MediasoupDevice,
 
     devices?: IDevice[],
 
@@ -40,7 +40,6 @@ export const DigitalStageProvider = (props: {
     children: React.ReactNode
 }) => {
     const {user} = useAuth();
-    const [api, setApi] = useState<DigitalStageAPI>();
     const [stage, setStage] = useState<DigitalStageWithMediasoup>();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>(undefined);
@@ -48,48 +47,44 @@ export const DigitalStageProvider = (props: {
     const [id, setId] = useState<string>(undefined);
     const [name, setName] = useState<string>(undefined);
     const [password, setPassword] = useState<string>(undefined);
+    const [device, setDevice] = useState<MediasoupDevice>(undefined);
     const [devices, setDevices] = useState<IDevice[]>([]);
     const [members, setMembers] = useState<MediasoupMember[]>([]);
 
     useEffect(() => {
         if (user) {
             setLoading(true);
-            Debugger.debug("Creating API", "useDigitalStage");
-            const api: DigitalStageAPI = new RealtimeDatabaseAPI(user);
-            setApi(api);
-            Debugger.debug("Creating Stage", "useDigitalStage");
-            const stage: DigitalStageWithMediasoup = new DigitalStageWithMediasoup(api);
+            Debugger.debug("Initializing Stage", "useDigitalStage");
+            const stage: DigitalStageWithMediasoup = new DigitalStageWithMediasoup(user);
 
-            api.on("stage-id-changed", id => setId(id));
-            api.on("stage-name-changed", name => setName(name));
-            api.on("stage-password-changed", password => setPassword(password));
+            stage.on("stage-id-changed", id => setId(id));
+            stage.on("stage-name-changed", name => setName(name));
+            stage.on("stage-password-changed", password => setPassword(password));
             stage.on("device-added", device => {
                 setDevices(prevState => [...prevState, device]);
             });
             stage.on("device-removed", device => setDevices(prevState => prevState.filter(d => d.id !== device.id)));
             stage.on("member-added", member => setMembers(prevState => [...prevState, member]));
             stage.on("member-removed", member => setMembers(prevState => prevState.filter(m => m.uid !== member.uid)));
-
+            stage.connect();
             setStage(stage);
+            setDevice(stage.device);
             setLoading(false);
         } else {
             if (stage) {
+                stage.disconnect();
                 Debugger.debug("Removing stage handlers", "useDigitalStage");
-                stage.removeHandlers();
             }
+            setDevice(undefined);
             setStage(undefined);
-            if (api) {
-                Debugger.debug("Removing API handlers", "useDigitalStage");
-                api.removeHandlers();
-            }
-            setApi(undefined);
         }
     }, [user]);
 
     const create = useCallback((name: string, password: string) => {
-        if (api) {
+        if (stage) {
             setLoading(true);
-            return api
+            return stage
+                .api
                 .createStage(name, password)
                 .then(() => setError(undefined))
                 .catch((err) => setError(err.message))
@@ -97,31 +92,32 @@ export const DigitalStageProvider = (props: {
                     setLoading(false);
                 });
         }
-    }, [api])
+    }, [stage])
 
     const join = useCallback((stageId: string, password: string) => {
-        if (api) {
+        if (stage) {
             setLoading(true);
-            return api.joinStage(stageId, password)
+            return stage
+                .api.joinStage(stageId, password)
                 .then(() => setError(undefined))
                 .catch((err) => setError(err.message))
                 .finally(() => {
                     setLoading(false);
                 });
         }
-    }, [api]);
+    }, [stage]);
 
     const leave = useCallback(() => {
-        if (api) {
+        if (stage) {
             setLoading(true);
-            return api.leaveStage()
+            return stage.api.leaveStage()
                 .then(() => setError(undefined))
                 .catch((err) => setError(err.message))
                 .finally(() => {
                     setLoading(false);
                 });
         }
-    }, [api]);
+    }, [stage]);
 
     const setConnected = useCallback((connected: boolean) => {
         if (stage) {
@@ -136,7 +132,7 @@ export const DigitalStageProvider = (props: {
     return (
         <DigitalStageContext.Provider value={{
             id: id,
-            device: stage ? stage.device : undefined,
+            localDevice: device,
             devices: devices,
             members: members,
             name: name,

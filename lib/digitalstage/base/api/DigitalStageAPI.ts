@@ -74,7 +74,9 @@ export type DeviceEvent = {
 };
 
 export abstract class DigitalStageAPI extends EventEmitter {
-    public abstract removeHandlers(): void;
+    public abstract connect(): void;
+
+    public abstract disconnect(): void;
 
     public abstract getUid(): string;
 

@@ -1,7 +1,8 @@
-import {DigitalStageAPI, IDevice, RemoteDevice} from "./index";
+import {DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./index";
 import {Member} from "./Member";
 import {DeviceEvent, MemberEvent, StageIdEvent, StageNameEvent, StagePasswordEvent} from "./api/DigitalStageAPI";
 import {EventEmitter} from "events";
+import * as firebase from "firebase/app";
 
 export type RealtimeDatabaseStageEvents =
     | "stage-id-changed"
@@ -24,14 +25,27 @@ export class DigitalStage extends EventEmitter {
     protected mMembers: Member[] = [];
     protected mDevices: IDevice[] = [];
 
-    constructor(api: DigitalStageAPI) {
+    constructor(user: firebase.User) {
         super();
-        this.mApi = api;
+        this.mApi = new RealtimeDatabaseAPI(user);
+    }
+
+    public connect() {
         this.addHandlers();
+        this.mApi.connect();
+    }
+
+    public disconnect() {
+        this.removeHandlers();
+        this.mApi.disconnect();
     }
 
     public get id(): string {
         return this.mStageId;
+    }
+
+    public get api(): DigitalStageAPI {
+        return this.mApi;
     }
 
     public get name(): string {
@@ -75,7 +89,7 @@ export class DigitalStage extends EventEmitter {
         }
     }
 
-    private addHandlers() {
+    protected addHandlers() {
         this.mApi.on("stage-id-changed", this.handleStageIdChanged);
         this.mApi.on("stage-name-changed", this.handleStageNameChanged);
         this.mApi.on("stage-password-changed", this.handleStagePasswordChanged);
@@ -85,7 +99,7 @@ export class DigitalStage extends EventEmitter {
         this.mApi.on("device-removed", this.handleDeviceRemoved);
     }
 
-    public removeHandlers() {
+    protected removeHandlers() {
         this.mApi.off("stage-id-changed", this.handleStageIdChanged);
         this.mApi.off("stage-name-changed", this.handleStageNameChanged);
         this.mApi.off("stage-password-changed", this.handleStagePasswordChanged);
@@ -118,6 +132,7 @@ export class DigitalStage extends EventEmitter {
     private handleStageIdChanged = (event: StageIdEvent) => {
         if (event) {
             this.mStageId = event;
+            this.emit("stage-id-changed", this.mStageId);
         } else {
             this.mStageId = undefined;
             this.emit("stage-id-changed", undefined);

@@ -32,7 +32,7 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const {device: localDevice, setConnected, loading} = useDigitalStage();
+    const {localDevice: localDevice, setConnected, loading} = useDigitalStage();
 
     return (
         <Panel>

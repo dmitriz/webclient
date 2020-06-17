@@ -71,13 +71,13 @@ const USER_NAV: UserNavItemT[] = [{
 export default () => {
     const router = useRouter()
     const {user} = useAuth();
-    const {leave, stage} = useDigitalStage();
+    const {leave, id, name} = useDigitalStage();
     const [activeNavItem, setActiveNavItem] = useState<MainNavItemT | UserNavItemT>();
     const [nav, setNav] = useState<MainNavItemT[]>()
 
     useEffect(() => {
         if (user) {
-            if (stage) {
+            if (id) {
                 setNav([
                     {
                         item: {label: 'Leave stage', onClick: leave},
@@ -111,7 +111,7 @@ export default () => {
                     mapItemToString: renderItemToString,
                 }]);
         }
-    }, [user, stage])
+    }, [user, id])
 
     useEffect(() => {
         if (nav) {
@@ -131,7 +131,7 @@ export default () => {
                 appDisplayName={(
                     <CenterVertical>
                         <Banner src={"/logo.png"}/>
-                        {stage ? stage.name : "Digital Stage"}
+                        {name ? name : "Digital Stage"}
                     </CenterVertical>
                 )}
                 mainNav={nav}

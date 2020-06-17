@@ -203,36 +203,42 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     }
 
     setCaption(caption: string): Promise<boolean> {
+        Debugger.debug("setCaption()", this);
         return this.update({
             caption: caption
         });
     }
 
     setCanAudio(enable: boolean): Promise<boolean> {
+        Debugger.debug("setCanAudio()", this);
         return this.update({
             canAudio: enable
         });
     }
 
     setCanVideo(enable: boolean): Promise<boolean> {
+        Debugger.debug("setCanVideo()", this);
         return this.update({
             canVideo: enable
         });
     }
 
     setReceiveAudio(enable: boolean): Promise<boolean> {
+        Debugger.debug("setReceiveAudio()", this);
         return this.update({
             receiveAudio: enable
         });
     }
 
     setReceiveVideo(enable: boolean): Promise<boolean> {
+        Debugger.debug("setReceiveVideo()", this);
         return this.update({
             receiveVideo: enable
         });
     }
 
     setSendAudio(enable: boolean): Promise<boolean> {
+        Debugger.debug("setSendAudio()", this);
         return this.update({
             sendAudio: enable
         });
@@ -240,12 +246,14 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
 
 
     setSendVideo(enable: boolean): Promise<boolean> {
+        Debugger.debug("setSendVideo()", this);
         return this.update({
             sendVideo: enable
         });
     }
 
     setError(error?: string): Promise<boolean> {
+        Debugger.debug("setError()", this);
         return this.update({
             error: error
         });
@@ -253,18 +261,21 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
 
 
     setAudioDevices(audioDevices: string[]): Promise<boolean> {
+        Debugger.debug("setAudioDevices()", this);
         return this.update({
             audioDevices: audioDevices
         });
     }
 
     setAudioInputDevice(audioDeviceId: number): Promise<boolean> {
+        Debugger.debug("setAudioInputDevice()", this);
         return this.update({
             inputAudioDevice: audioDeviceId
         })
     }
 
     setAudioOutputDevice(audioDeviceId: number): Promise<boolean> {
+        Debugger.debug("setAudioOutputDevice()", this);
         return this.update({
             outputAudioDevice: audioDeviceId
         })
