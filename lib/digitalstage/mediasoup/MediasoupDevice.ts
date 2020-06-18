@@ -33,7 +33,6 @@ export interface GlobalProducer extends DatabaseGlobalProducer {
 
 export class MediasoupDevice extends RealtimeDatabaseDevice {
     protected readonly device: MediasoupClientDevice
-    protected connected: boolean = false
     protected router?: MediasoupRouter = undefined
     protected sendTransport?: mediasoupClient.types.Transport
     protected receiveTransport?: mediasoupClient.types.Transport
@@ -70,6 +69,43 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         };
     }
 
+    public connect(): Promise<boolean> {
+        Debugger.debug("connect()", this);
+        return super.connect()
+            .then(result => result ? getFastestRouter() : null)
+            .then(async (router: MediasoupRouter | null) => {
+                    if (router) {
+                        this.router = router
+                        const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities()
+                        if (!this.device.loaded)
+                            await this.device.load({routerRtpCapabilities: rtpCapabilities})
+                        this.sendTransport = await this.createWebRTCTransport('send')
+                        this.receiveTransport = await this.createWebRTCTransport('receive')
+                        this.emit('connected', true)
+                        this.registerDeviceListeners();
+                        return true;
+                    }
+                    return false;
+                }
+            )
+    }
+
+    public disconnect(): Promise<boolean> {
+        Debugger.debug("disconnect()", this);
+        return super.disconnect()
+            .then(result => {
+                if (result) {
+                    if (this.sendTransport) {
+                        this.sendTransport.close()
+                    }
+                    if (this.receiveTransport) {
+                        this.receiveTransport.close()
+                    }
+                    this.router = undefined
+                }
+                return result;
+            })
+    }
 
     private registerDeviceListeners() {
         Debugger.debug("registerDeviceListeners()", this);
@@ -151,44 +187,14 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                 (event.producer.kind === 'audio' && this.receiveAudio) ||
                 (event.producer.kind === 'video' && this.receiveVideo)
             ) {
-                this.createConsumer(this.availableGlobalProducers[event.id]);
+                return this.createConsumer(this.availableGlobalProducers[event.id]);
             }
         });
         this.mApi.on("producer-removed", (event: ProducerEvent) => {
             Debugger.debug("Handling removal of global producer " + event.id, this);
             this.availableGlobalProducers = omit(this.availableGlobalProducers, event.id);
-            if (this.consumers[event.id]) this.closeConsumer(event.id)
+            if (this.consumers[event.id]) return this.closeConsumer(event.id)
         });
-
-        /*
-        const userRef: firebase.firestore.DocumentReference = firebase.firestore().collection("users").doc(this.mApi.getUid());
-        userRef
-            .onSnapshot(snapshot => {
-                const databaseUser: DatabaseUser = snapshot.data() as DatabaseUser;
-                if (this.stageId !== databaseUser.stageId) {
-                    this.stageId = databaseUser.stageId;
-                    //TODO: We expect, that the stageId only change between something and undefined - not beween different stages
-                    if (this.stageId) {
-                        // Publish all local producers
-                        Object.values(this.producers).forEach((producer: Producer) =>
-                            this.publishProducerToStage(databaseUser.stageId, producer)
-                        )
-                        userRef
-                            .collection('producers')
-                            .onSnapshot(this.handleRemoteProducer)
-                    } else {
-                        // Un-publish all local producers
-                        firebase
-                            .firestore()
-                            .collection('producers')
-                            .where('deviceId', '==', this.id)
-                            .get()
-                            .then((snapshots: firebase.firestore.QuerySnapshot) =>
-                                snapshots.forEach((snapshot) => snapshot.ref.delete())
-                            )
-                    }
-                }
-            });*/
     }
 
     public on(event: MediasoupEventType | DeviceEvents, listener: (arg: any) => void): this {
@@ -207,46 +213,8 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         return super.off(event, listener);
     }
 
-    public connect(): Promise<void> {
-        Debugger.debug("connect()", this);
-        if (this.connected) {
-            return Promise.resolve();
-        }
-        return getFastestRouter()
-            .then(async (router: MediasoupRouter) => {
-                    this.router = router
-                    const rtpCapabilities: mediasoupClient.types.RtpCapabilities = await this.getRtpCapabilities()
-                    if (!this.device.loaded)
-                        await this.device.load({routerRtpCapabilities: rtpCapabilities})
-                    this.sendTransport = await this.createWebRTCTransport('send')
-                    this.receiveTransport = await this.createWebRTCTransport('receive')
-                    this.connected = true
-                    this.emit('connected', true)
-                }
-            )
-            .then(() => this.registerDeviceListeners())
-            .catch((error) => {
-                Debugger.handleError(error, this);
-                alert('Video & Audio not available right now ... sorry :(')
-                this.disconnect()
-            });
-    }
 
-    public disconnect() {
-        Debugger.debug("disconnect()", this);
-        if (!this.connected) return
-        if (this.sendTransport) {
-            this.sendTransport.close()
-        }
-        if (this.receiveTransport) {
-            this.receiveTransport.close()
-        }
-        this.emit('connected', false)
-        this.router = undefined
-        this.connected = false
-    }
-
-    protected async createConsumer(
+    protected createConsumer(
         globalProducer: GlobalProducer
     ): Promise<void> {
         Debugger.debug("createConsumer(" + globalProducer.id + ")", this);
@@ -294,7 +262,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
             })
     }
 
-    public async pauseConsumer(globalProducerId: string): Promise<void> {
+    public  pauseConsumer(globalProducerId: string): Promise<void> {
         Debugger.debug('pauseConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer && !consumer.consumer.paused) {
@@ -312,7 +280,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         }
     }
 
-    public async resumeConsumer(globalProducerId: string): Promise<void> {
+    public  resumeConsumer(globalProducerId: string): Promise<void> {
         Debugger.debug('resumeConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer && consumer.consumer.paused) {
@@ -330,7 +298,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         }
     }
 
-    public async closeConsumer(globalProducerId: string): Promise<void> {
+    public  closeConsumer(globalProducerId: string): Promise<void> {
         Debugger.debug('closeConsumer(' + globalProducerId + ')', this);
         const consumer: Consumer = this.consumers[globalProducerId]
         if (consumer) {
@@ -348,7 +316,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
         }
     }
 
-    public async createProducer(track: MediaStreamTrack): Promise<void> {
+    public  createProducer(track: MediaStreamTrack): Promise<void> {
         Debugger.debug('createProducer(' + track.id + ')', this);
         if (!this.sendTransport) {
             Debugger.warn('createProducer: no send transport available', this);
@@ -379,10 +347,10 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
             })
     }
 
-    public async pauseProducer(track: MediaStreamTrack): Promise<void> {
+    public  pauseProducer(track: MediaStreamTrack): Promise<void> {
         Debugger.debug('pauseProducer(' + track.id + ')', this);
         if (this.producers[track.id] && !this.producers[track.id].producer.paused) {
-            this.fetchPostJson(RouterPostUrls.PauseProducer, {
+            return this.fetchPostJson(RouterPostUrls.PauseProducer, {
                 id: this.producers[track.id].producer.id
             })
                 .then(() => {
@@ -394,12 +362,13 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                     Debugger.handleError(error, this);
                 })
         }
+        return Promise.resolve();
     }
 
-    public async resumeProducer(track: MediaStreamTrack): Promise<void> {
+    public  resumeProducer(track: MediaStreamTrack): Promise<void> {
         Debugger.debug('resumeProducer(' + track.id + ')', this);
         if (this.producers[track.id] && this.producers[track.id].producer.paused) {
-            this.fetchPostJson(RouterPostUrls.ResumeProducer, {
+            return this.fetchPostJson(RouterPostUrls.ResumeProducer, {
                 id: this.producers[track.id].producer.id
             })
                 .then(() => {
@@ -411,9 +380,10 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                     Debugger.handleError(error, this);
                 })
         }
+        return Promise.resolve();
     }
 
-    public async stopProducer(trackId: string): Promise<void> {
+    public  stopProducer(trackId: string): Promise<void> {
         Debugger.debug('stopProducer(' + trackId + ')', this);
         if (this.producers[trackId]) {
             return this.fetchPostJson(RouterPostUrls.CloseProducer, {
@@ -431,6 +401,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                     Debugger.handleError(error, this);
                 })
         }
+        return Promise.resolve();
     }
 
     private handleRemoteProducer = (

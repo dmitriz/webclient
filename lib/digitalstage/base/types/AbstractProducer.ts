@@ -1,7 +1,7 @@
 import {DatabaseGlobalProducer} from "./DatabaseGlobalProducer";
 import {DigitalStageAPI} from "..";
-import {ProducerEvent} from "../api/DigitalStageAPI";
 import {EventEmitter} from "events";
+
 
 export abstract class AbstractProducer extends EventEmitter {
     protected readonly mApi: DigitalStageAPI;
@@ -13,22 +13,23 @@ export abstract class AbstractProducer extends EventEmitter {
         this.mApi = api;
         this.mId = id;
         this.mLatestSnapshot = initialData;
-        this.mApi.on("producer-changed", this.handleUpdate);
+        //this.mApi.on("producer-changed", this.handleUpdate);
     }
 
     public get id() {
-        return this.id;
+        return this.mId;
     }
 
     public disconnect() {
-        this.mApi.off("producer-changed", this.handleUpdate);
+        //this.mApi.off("producer-changed", this.handleUpdate);
     }
 
+    /*
     protected handleUpdate(event: ProducerEvent) {
         if (this.mId === event.id) {
             this.mLatestSnapshot = event.producer;
         }
-    }
+    }*/
 
     public get deviceId() {
         return this.mLatestSnapshot.deviceId;

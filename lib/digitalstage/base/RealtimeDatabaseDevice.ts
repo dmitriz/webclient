@@ -22,11 +22,48 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     protected mDeviceRef: firebase.database.Reference | undefined;
     protected mDeviceId: string | undefined;
     protected mLatestSnapshot: DatabaseDevice | undefined;
+    protected mConnected: boolean = false;
 
     protected constructor(api: DigitalStageAPI, isRemote: boolean = true) {
         super();
         this.mApi = api;
         this.mIsRemote = isRemote;
+    }
+
+    public get connected() {
+        return this.mConnected;
+    }
+
+    public connect(): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            if (!this.mDeviceRef)
+                return reject(new Error("Please set a valid device ID first"));
+            if (this.connected) {
+                return resolve(false);
+            }
+            Debugger.debug("Attach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDeviceRef = firebase.database()
+                .ref("users/" + this.mApi.getUid() + "/devices/" + this.mDeviceId);
+            this.mDeviceRef.on("value", this.handleDeviceChange, this.handleFirebaseError);
+            this.mConnected = true;
+            this.emit("connected", true);
+            return resolve(true);
+        });
+    }
+
+    public disconnect(): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            if (!this.mDeviceRef)
+                return reject(new Error("Please set a valid device ID first"));
+            if (this.connected) {
+                return resolve(false);
+            }
+            Debugger.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);
+            this.mConnected = false;
+            this.emit("connected", true);
+            return resolve(true);
+        });
     }
 
     public setDeviceId(deviceId: string) {
@@ -81,7 +118,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
         this.mLatestSnapshot = snapshot.val();
         this.emit("device-changed", this);
 
-        if (before) {
+        if (before && this.mLatestSnapshot) {
             if (before.caption !== this.mLatestSnapshot.caption) {
                 Debugger.debug("caption changed to " + this.mLatestSnapshot.caption, this);
                 this.emit("caption", this.mLatestSnapshot.caption);

@@ -1,6 +1,7 @@
 import {EventEmitter} from "events";
 
 export type DeviceEvents =
+    | "connected"
     | "sendAudio"
     | "sendVideo"
     | "receiveAudio"
@@ -28,6 +29,11 @@ export interface IDevice extends EventEmitter {
     readonly audioDevices: string[];
     readonly inputAudioDevice: number | undefined;
     readonly outputAudioDevice: number | undefined;
+    readonly connected: boolean;
+
+    connect(): Promise<boolean>;
+
+    disconnect(): Promise<boolean>;
 
     setDeviceId(deviceId: string);
 

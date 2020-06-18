@@ -11,7 +11,8 @@ import {EventEmitter} from "events";
 import {IDevice} from "../IDevice";
 
 export type DigitalStageEvents =
-    "stage-id-changed"
+    | "connection-state-changed"
+    | "stage-id-changed"
     | "stage-name-changed"
     | "stage-password-changed"
     | "joined"
@@ -74,6 +75,8 @@ export type DeviceEvent = {
 };
 
 export abstract class DigitalStageAPI extends EventEmitter {
+    public abstract readonly connected: boolean;
+
     public abstract connect(): void;
 
     public abstract disconnect(): void;

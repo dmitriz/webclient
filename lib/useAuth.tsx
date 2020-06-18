@@ -23,17 +23,7 @@ export const AuthContextProvider = (props: {
     const [user, setUser] = useState<firebase.User>(firebase.auth().currentUser);
     const [loading, setLoading] = useState<boolean>(!user);
 
-    /*
-    const [state, setState] = useState<AuthProps>((): AuthProps => {
-        const user = firebase.auth().currentUser;
-        return {
-            user: user,
-            loading: !user
-        };
-    });*/
-
     const handleChange = (user: firebase.User | null) => {
-        console.log("YES SIR!");
         setUser(user);
         setLoading(false);
         if (user) {
@@ -67,7 +57,7 @@ export const withAuth = (ComposedComponent: any) => {
         return (
             <AuthContext.Consumer>
                 {(auth: AuthProps) => (
-                    <ComposedComponent auth={auth} {...props} />
+                    <ComposedComponent user={auth.user} loading={auth.loading}  {...props} />
                 )}
             </AuthContext.Consumer>
         );

@@ -113,8 +113,9 @@ export class Member extends EventEmitter implements IVolumeControl {
 
     protected handleProducerRemoved = (event: ProducerEvent) => {
         const producer: AbstractProducer = this.getProducer(event.id);
-        this.mProducers = this.mProducers.filter((producer: AbstractProducer) => producer.id === event.id);
         if (producer) {
+            this.mProducers = this.mProducers.filter((producer: AbstractProducer) => producer.id !== event.id);
+            producer.disconnect();
             this.emit("producer-removed", producer)
             this.emit("changed", this);
         }
@@ -128,10 +129,11 @@ export class Member extends EventEmitter implements IVolumeControl {
     }
 
     protected handleSoundjackRemoved = (event: SoundjackEvent) => {
-        const soudjack: Soundjack = this.getSoundjack(event.id);
-        this.mSoundjacks = this.mSoundjacks.filter((soundjack: Soundjack) => soundjack.id === event.id);
-        if (soudjack) {
-            this.emit("soundjack-removed", soudjack);
+        const soundjack: Soundjack = this.getSoundjack(event.id);
+        if (soundjack) {
+            this.mSoundjacks = this.mSoundjacks.filter((soundjack: Soundjack) => soundjack.id !== event.id);
+            soundjack.disconnect();
+            this.emit("soundjack-removed", soundjack);
             this.emit("changed", this);
         }
     }

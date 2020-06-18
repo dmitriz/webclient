@@ -32,51 +32,42 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const {localDevice: localDevice, setConnected, loading} = useDigitalStage();
+    const {localDevice} = useDigitalStage();
 
-    return (
+    return localDevice ? (
         <Panel>
-            {localDevice ? (
-                <>
-                    <OverlayButton
-                        onClick={() => localDevice.setSendVideo(!localDevice.sendVideo)}
-                        size={buttonSize}
-                        shape={buttonShape}
-                        $active={localDevice.sendVideo}
-                    >
-                        <img src={localDevice.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
-                    </OverlayButton>
-                    <OverlayButton
-                        onClick={() => localDevice.setSendAudio(!localDevice.sendAudio)}
-                        size={buttonSize}
-                        shape={buttonShape}
-                        $active={localDevice.sendAudio}
-                    >
-                        <img src={localDevice.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
-                    </OverlayButton>
-                    <OverlayButton
-                        onClick={() => localDevice.setReceiveVideo(!localDevice.receiveVideo)}
-                        size={buttonSize}
-                        shape={buttonShape}
-                        $active={localDevice.receiveVideo}
-                    >
-                        <img src={localDevice.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
-                    </OverlayButton>
-                    <OverlayButton
-                        onClick={() => localDevice.setReceiveAudio(!localDevice.receiveAudio)}
-                        size={buttonSize}
-                        shape={buttonShape}
-                        $active={localDevice.receiveAudio}
-                    >
-                        <img src={localDevice.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
-                    </OverlayButton>
-                </>
-            ) : (
-                <OverlayButton isLoading={!localDevice || loading}
-                               onClick={() => setConnected(true)} $active={loading}>
-                    Connect
-                </OverlayButton>
-            )}
+            <OverlayButton
+                onClick={() => localDevice.setSendVideo(!localDevice.sendVideo)}
+                size={buttonSize}
+                shape={buttonShape}
+                $active={localDevice.sendVideo}
+            >
+                <img src={localDevice.sendVideo ? "videocam-24px.svg" : "videocam_off-24px.svg"}/>
+            </OverlayButton>
+            <OverlayButton
+                onClick={() => localDevice.setSendAudio(!localDevice.sendAudio)}
+                size={buttonSize}
+                shape={buttonShape}
+                $active={localDevice.sendAudio}
+            >
+                <img src={localDevice.sendAudio ? "mic-24px.svg" : "mic_off-24px.svg"}/>
+            </OverlayButton>
+            <OverlayButton
+                onClick={() => localDevice.setReceiveVideo(!localDevice.receiveVideo)}
+                size={buttonSize}
+                shape={buttonShape}
+                $active={localDevice.receiveVideo}
+            >
+                <img src={localDevice.receiveVideo ? "live_tv-24px.svg" : "tv_off-24px.svg"}/>
+            </OverlayButton>
+            <OverlayButton
+                onClick={() => localDevice.setReceiveAudio(!localDevice.receiveAudio)}
+                size={buttonSize}
+                shape={buttonShape}
+                $active={localDevice.receiveAudio}
+            >
+                <img src={localDevice.receiveAudio ? "volume_up-24px.svg" : "volume_off-24px.svg"}/>
+            </OverlayButton>
         </Panel>
-    )
+    ) : null;
 };

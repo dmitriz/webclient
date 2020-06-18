@@ -72,9 +72,10 @@ export default (props: {
                 <SoundjackLogo src="/soundjack.png"/>
             )}
             <MemberTitle>{props.member.name}</MemberTitle>
-            <MemberVideo width={width} height={height}
-                         videoTracks={props.member.getVideoProducers().map((videoProducer: MediasoupVideoProducer) => videoProducer.track)}/>
-
+            {props.member.getVideoProducers().length > 0 && (
+                <MemberVideo width={width} height={height}
+                             videoProducers={props.member.getVideoProducers().map((videoProducer: MediasoupVideoProducer) => videoProducer.track)}/>
+            )}
             <StyledMediasoupAudioPlayer member={props.member}/>
         </MemberPanel>
     )

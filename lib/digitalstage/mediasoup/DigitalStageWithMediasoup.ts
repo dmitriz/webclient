@@ -3,6 +3,7 @@ import {MediasoupDevice} from "./MediasoupDevice";
 import {Consumer} from "./types/Consumer";
 import {MediasoupMember} from "./types/MediasoupMember";
 import * as firebase from "firebase/app";
+import {DeviceEvent, MemberEvent} from "../base/api/DigitalStageAPI";
 
 
 export class DigitalStageWithMediasoup extends DigitalStage {
@@ -13,17 +14,31 @@ export class DigitalStageWithMediasoup extends DigitalStage {
         super(user);
     }
 
-    public connect() {
+    public connect(): Promise<boolean> {
         super.connect();
         this.mDevice = new MediasoupDevice(this.mApi);
         this.addMediasoupHandlers();
-        this.addLocalDevice(this.mDevice)
+        return this.addLocalDevice(this.mDevice)
             .then(() => this.mDevice.connect());
     }
 
-    public disconnect() {
-        this.removeHandlers();
-        super.disconnect();
+    public disconnect(): Promise<any> {
+        return this.mDevice.disconnect()
+            .then(() => this.removeLocalDevice(this.mDevice))
+            .finally(() => {
+                this.removeHandlers();
+                super.disconnect();
+            });
+    }
+
+
+    protected handleDeviceAdded(event: DeviceEvent) {
+        if (event.id !== this.mDevice.id)
+            super.handleDeviceAdded(event)
+    };
+
+    public get members() {
+        return this.mMembers;
     }
 
     public get device() {
@@ -35,14 +50,21 @@ export class DigitalStageWithMediasoup extends DigitalStage {
         this.mDevice.on("consumer-removed", this.handleConsumerRemoved);
     }
 
-    private handleConsumerAdded(consumer: Consumer) {
+    protected handleMemberAdded(event: MemberEvent) {
+        const member: MediasoupMember = new MediasoupMember(this.mApi, event.uid, event.member);
+        member.on("changed", this.handleMemberChanged);
+        this.mMembers.push(member);
+        this.emit("member-added", member);
+    }
+
+    private handleConsumerAdded = (consumer: Consumer) => {
         const member: MediasoupMember = this.mMembers.find(member => member.uid === consumer.globalProducer.uid);
         if (member) {
             member.addConsumer(consumer);
         }
     }
 
-    private handleConsumerRemoved(consumer: Consumer) {
+    private handleConsumerRemoved = (consumer: Consumer) => {
         const member: MediasoupMember = this.mMembers.find(member => member.uid === consumer.globalProducer.uid);
         if (member) {
             member.removeConsumer(consumer);

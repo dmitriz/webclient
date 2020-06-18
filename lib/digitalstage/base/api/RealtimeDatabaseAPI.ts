@@ -29,6 +29,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     private readonly mUser: firebase.User;
     private readonly mUserRef: firebase.database.Reference;
     private mStageRef: firebase.database.Reference | undefined;
+    private mConnected: boolean = false;
 
     constructor(user: firebase.User) {
         super();
@@ -36,12 +37,20 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         this.mUserRef = firebase.database().ref("users/" + this.mUser.uid);
     }
 
+    public get connected() {
+        return this.mConnected;
+    }
+
     public connect() {
         this.addHandlers();
+        this.mConnected = true;
+        this.emit("connection-state-changed", true);
     }
 
     public disconnect() {
         this.removeHandlers();
+        this.mConnected = false;
+        this.emit("connection-state-changed", false);
     }
 
     public getUid(): string {
@@ -248,6 +257,9 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
 
 
     createStage(name: string, password?: string): Promise<DatabaseStage> {
+        if (!this.mConnected) {
+            return Promise.reject("Not connected, please call connect() first");
+        }
         return this.mUser
             .getIdToken()
             .then((token: string) => fetch("https://digital-stages.de/api/v2/stages/create", {
@@ -273,6 +285,9 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     }
 
     joinStage(stageId: string, password?: string): Promise<DatabaseStage> {
+        if (!this.mConnected) {
+            return Promise.reject("Not connected, please call connect() first");
+        }
         return this.mUser
             .getIdToken()
             .then((token: string) => fetch("https://digital-stages.de/api/v2/stages/join", {

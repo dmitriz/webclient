@@ -1,10 +1,12 @@
-import {DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./index";
+import {Debugger, DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./index";
 import {Member} from "./Member";
 import {DeviceEvent, MemberEvent, StageIdEvent, StageNameEvent, StagePasswordEvent} from "./api/DigitalStageAPI";
 import {EventEmitter} from "events";
 import * as firebase from "firebase/app";
+import {DatabaseStage} from "./types";
 
 export type RealtimeDatabaseStageEvents =
+    | "connection-state-changed"
     | "stage-id-changed"
     | "stage-name-changed"
     | "stage-password-changed"
@@ -30,6 +32,10 @@ export class DigitalStage extends EventEmitter {
         this.mApi = new RealtimeDatabaseAPI(user);
     }
 
+    public get connected() {
+        return this.mApi.connected;
+    }
+
     public connect() {
         this.addHandlers();
         this.mApi.connect();
@@ -38,6 +44,21 @@ export class DigitalStage extends EventEmitter {
     public disconnect() {
         this.removeHandlers();
         this.mApi.disconnect();
+    }
+
+    public create(name: string, password: string): Promise<DatabaseStage> {
+        Debugger.debug("create()", this);
+        return this.mApi.createStage(name, password);
+    }
+
+    public join(name: string, password: string): Promise<DatabaseStage> {
+        Debugger.debug("join()", this);
+        return this.mApi.joinStage(name, password);
+    }
+
+    public leave(): Promise<boolean> {
+        Debugger.debug("leave()", this);
+        return this.mApi.leaveStage();
     }
 
     public get id(): string {
@@ -56,12 +77,12 @@ export class DigitalStage extends EventEmitter {
         return this.mStagePassword;
     }
 
-    public get members(): Member[] {
+    public get members() {
         return this.mMembers;
     }
 
 
-    public get devices(): IDevice[] {
+    public get devices() {
         return this.mDevices;
     }
 
@@ -90,46 +111,53 @@ export class DigitalStage extends EventEmitter {
     }
 
     protected addHandlers() {
+        this.mApi.on("connection-state-changed", this.handleConnectionStateChanged);
         this.mApi.on("stage-id-changed", this.handleStageIdChanged);
         this.mApi.on("stage-name-changed", this.handleStageNameChanged);
         this.mApi.on("stage-password-changed", this.handleStagePasswordChanged);
-        this.mApi.on("member-added", this.handleMemberAdded);
-        this.mApi.on("member-removed", this.handleMemberRemoved);
-        this.mApi.on("device-added", this.handleDeviceAdded);
-        this.mApi.on("device-removed", this.handleDeviceRemoved);
+        this.mApi.on("member-added", event => this.handleMemberAdded(event));
+        this.mApi.on("member-removed", event => this.handleMemberRemoved(event));
+        this.mApi.on("device-added", event => this.handleDeviceAdded(event));
+        this.mApi.on("device-removed", event => this.handleDeviceRemoved(event));
     }
 
     protected removeHandlers() {
+        this.mApi.off("connection-state-changed", this.handleConnectionStateChanged);
         this.mApi.off("stage-id-changed", this.handleStageIdChanged);
         this.mApi.off("stage-name-changed", this.handleStageNameChanged);
         this.mApi.off("stage-password-changed", this.handleStagePasswordChanged);
-        this.mApi.off("member-added", this.handleMemberAdded);
-        this.mApi.off("member-removed", this.handleMemberRemoved);
-        this.mApi.off("device-added", this.handleDeviceAdded);
-        this.mApi.off("device-removed", this.handleDeviceRemoved);
+        this.mApi.off("member-added", event => this.handleMemberAdded(event));
+        this.mApi.off("member-removed", event => this.handleMemberRemoved(event));
+        this.mApi.off("device-added", event => this.handleDeviceAdded(event));
+        this.mApi.off("device-removed", event => this.handleDeviceRemoved(event));
     }
 
-    private handleDeviceAdded = (event: DeviceEvent) => {
-        if (!this.devices.find(device => device.id !== event.id)) {
+    protected handleConnectionStateChanged = (connected: boolean) => {
+        this.emit("connection-state-changed", connected);
+    }
+
+    protected handleDeviceAdded(event: DeviceEvent) {
+        if (!this.mDevices.find(device => device.id !== event.id)) {
             const device: IDevice = new RemoteDevice(this.mApi, event.id, event.device);
             device.on("device-changed", this.handleDeviceChanged);
             this.emit("device-added", device);
         }
     }
 
-    private handleDeviceChanged = (device: IDevice) => {
+    protected handleDeviceChanged = (device: IDevice) => {
         this.emit("device-changed", device);
     }
 
-    private handleDeviceRemoved = (event: DeviceEvent) => {
+    protected handleDeviceRemoved(event: DeviceEvent) {
         const device: IDevice = this.devices.find(device => device.id !== event.id);
         if (device) {
             device.off("device-changed", this.handleDeviceChanged);
             this.emit("device-removed", device);
+            return device.disconnect();
         }
     }
 
-    private handleStageIdChanged = (event: StageIdEvent) => {
+    protected handleStageIdChanged = (event: StageIdEvent) => {
         if (event) {
             this.mStageId = event;
             this.emit("stage-id-changed", this.mStageId);
@@ -158,21 +186,22 @@ export class DigitalStage extends EventEmitter {
         this.emit("stage-password-changed", password);
     }
 
-    private handleMemberAdded = (event: MemberEvent) => {
+    protected handleMemberAdded(event: MemberEvent) {
         const member: Member = new Member(this.mApi, event.uid, event.member);
         member.on("changed", this.handleMemberChanged);
         this.mMembers.push(member);
         this.emit("member-added", member);
     }
 
-    private handleMemberChanged = (member: Member) => {
+    protected handleMemberChanged(member: Member) {
         this.emit("member-changed", member);
     }
 
-    private handleMemberRemoved = (event: MemberEvent) => {
+    protected handleMemberRemoved(event: MemberEvent) {
         const member: Member = this.mMembers.find(m => m.uid === event.uid);
         if (member) {
             member.off("changed", this.handleMemberChanged);
+            member.disconnect();
             this.mMembers = this.mMembers.filter(m => m.uid === member.uid);
             this.emit("member-removed", member);
         }
