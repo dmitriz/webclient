@@ -103,7 +103,23 @@ export default () => {
                                     </ul>
                                 )}
                             </li>
-                            <li>{m.soundjacks.length} Soundjacks</li>
+                            <li>
+                                {m.soundjacks.length} Soundjacks
+                                {m.soundjacks.length > 0 && (
+                                    <ul>
+                                        {m.soundjacks.map(soundjack => (
+                                            <li key={soundjack.id}>
+                                                <VolumeSlider
+                                                    min={0}
+                                                    max={1}
+                                                    step={0.1}
+                                                    value={soundjack.volume}
+                                                    onChange={e => soundjack.setVolume(e)}/>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </li>
                         </ul>
                         <VolumeSlider
                             min={0}

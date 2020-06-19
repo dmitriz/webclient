@@ -4,7 +4,7 @@ import {DeviceEvents, IDevice} from "./IDevice";
 import {EventEmitter} from "events";
 import * as firebase from "firebase/app";
 import "firebase/database";
-import {Debugger} from "./Debugger";
+import {IDebugger} from "./IDebugger";
 
 /**
  * Usage later:
@@ -23,11 +23,20 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     protected mDeviceId: string | undefined;
     protected mLatestSnapshot: DatabaseDevice | undefined;
     protected mConnected: boolean = false;
+    protected mDebug: IDebugger | undefined = undefined;
 
     protected constructor(api: DigitalStageAPI, isRemote: boolean = true) {
         super();
         this.mApi = api;
         this.mIsRemote = isRemote;
+    }
+
+    public get debug() {
+        return this.mDebug;
+    }
+
+    public setDebug(debug: IDebugger | undefined) {
+        this.mDebug = debug;
     }
 
     public get connected() {
@@ -41,7 +50,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
             if (this.connected) {
                 return resolve(false);
             }
-            Debugger.debug("Attach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDebug && this.mDebug.debug("Attach database listener for deviceId=" + this.mDeviceId, this);
             this.mDeviceRef = firebase.database()
                 .ref("users/" + this.mApi.getUid() + "/devices/" + this.mDeviceId);
             this.mDeviceRef.on("value", this.handleDeviceChange, this.handleFirebaseError);
@@ -58,7 +67,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
             if (this.connected) {
                 return resolve(false);
             }
-            Debugger.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDebug && this.mDebug.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
             this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);
             this.mConnected = false;
             this.emit("connected", true);
@@ -68,12 +77,12 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
 
     public setDeviceId(deviceId: string) {
         if (this.mDeviceRef) {
-            Debugger.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDebug && this.mDebug.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
             this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);
         }
         this.mDeviceId = deviceId;
         if (this.mDeviceId) {
-            Debugger.debug("Attach database listener for deviceId=" + this.mDeviceId, this);
+            this.mDebug && this.mDebug.debug("Attach database listener for deviceId=" + this.mDeviceId, this);
             this.mDeviceRef = firebase.database()
                 .ref("users/" + this.mApi.getUid() + "/devices/" + this.mDeviceId);
             this.mDeviceRef.on("value", this.handleDeviceChange, this.handleFirebaseError);
@@ -109,58 +118,58 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     }
 
     private handleFirebaseError(error: Error) {
-        Debugger.handleError(error, this);
+        this.mDebug && this.mDebug.handleError(error, this);
     }
 
     private handleDeviceChange = (snapshot: firebase.database.DataSnapshot) => {
-        Debugger.debug("Device changed", this);
+        this.mDebug && this.mDebug.debug("Device changed", this);
         const before: DatabaseDevice | undefined = this.mLatestSnapshot;
         this.mLatestSnapshot = snapshot.val();
         this.emit("device-changed", this);
 
         if (before && this.mLatestSnapshot) {
             if (before.caption !== this.mLatestSnapshot.caption) {
-                Debugger.debug("caption changed to " + this.mLatestSnapshot.caption, this);
+                this.mDebug && this.mDebug.debug("caption changed to " + this.mLatestSnapshot.caption, this);
                 this.emit("caption", this.mLatestSnapshot.caption);
             }
             if (before.audioDevices !== this.mLatestSnapshot.audioDevices) {
-                Debugger.debug("audioDevices changed to " + this.mLatestSnapshot.audioDevices, this);
+                this.mDebug && this.mDebug.debug("audioDevices changed to " + this.mLatestSnapshot.audioDevices, this);
                 this.emit("audioDevices", this.mLatestSnapshot.audioDevices);
             }
             if (before.inputAudioDevice !== this.mLatestSnapshot.inputAudioDevice) {
-                Debugger.debug("inputAudioDevice changed to " + this.mLatestSnapshot.inputAudioDevice, this);
+                this.mDebug && this.mDebug.debug("inputAudioDevice changed to " + this.mLatestSnapshot.inputAudioDevice, this);
                 this.emit("inputAudioDevice", this.mLatestSnapshot.inputAudioDevice);
             }
             if (before.outputAudioDevice !== this.mLatestSnapshot.outputAudioDevice) {
-                Debugger.debug("outputAudioDevice changed to " + this.mLatestSnapshot.outputAudioDevice, this);
+                this.mDebug && this.mDebug.debug("outputAudioDevice changed to " + this.mLatestSnapshot.outputAudioDevice, this);
                 this.emit("outputAudioDevice", this.mLatestSnapshot.outputAudioDevice);
             }
             if (before.canVideo !== this.mLatestSnapshot.canVideo) {
-                Debugger.debug("canVideo changed to " + this.mLatestSnapshot.canVideo, this);
+                this.mDebug && this.mDebug.debug("canVideo changed to " + this.mLatestSnapshot.canVideo, this);
                 this.emit("canVideo", this.mLatestSnapshot.canVideo);
             }
             if (before.canAudio !== this.mLatestSnapshot.canAudio) {
-                Debugger.debug("canAudio changed to " + this.mLatestSnapshot.canAudio, this);
+                this.mDebug && this.mDebug.debug("canAudio changed to " + this.mLatestSnapshot.canAudio, this);
                 this.emit("canAudio", this.mLatestSnapshot.canAudio);
             }
             if (before.receiveAudio !== this.mLatestSnapshot.receiveAudio) {
-                Debugger.debug("receiveAudio changed to " + this.mLatestSnapshot.receiveAudio, this);
+                this.mDebug && this.mDebug.debug("receiveAudio changed to " + this.mLatestSnapshot.receiveAudio, this);
                 this.emit("receiveAudio", this.mLatestSnapshot.receiveAudio);
             }
             if (before.receiveVideo !== this.mLatestSnapshot.receiveVideo) {
-                Debugger.debug("receiveVideo changed to " + this.mLatestSnapshot.receiveVideo, this);
+                this.mDebug && this.mDebug.debug("receiveVideo changed to " + this.mLatestSnapshot.receiveVideo, this);
                 this.emit("receiveVideo", this.mLatestSnapshot.receiveVideo);
             }
             if (before.sendAudio !== this.mLatestSnapshot.sendAudio) {
-                Debugger.debug("sendAudio changed to " + this.mLatestSnapshot.sendAudio, this);
+                this.mDebug && this.mDebug.debug("sendAudio changed to " + this.mLatestSnapshot.sendAudio, this);
                 this.emit("sendAudio", this.mLatestSnapshot.sendAudio);
             }
             if (before.sendVideo !== this.mLatestSnapshot.sendVideo) {
-                Debugger.debug("sendVideo changed to " + this.mLatestSnapshot.sendVideo, this);
+                this.mDebug && this.mDebug.debug("sendVideo changed to " + this.mLatestSnapshot.sendVideo, this);
                 this.emit("sendVideo", this.mLatestSnapshot.sendVideo);
             }
             if (before.error !== this.mLatestSnapshot.error) {
-                Debugger.debug("error changed to " + this.mLatestSnapshot.error, this);
+                this.mDebug && this.mDebug.debug("error changed to " + this.mLatestSnapshot.error, this);
                 this.emit("error", this.mLatestSnapshot.error);
             }
         }
@@ -240,42 +249,42 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     }
 
     setCaption(caption: string): Promise<boolean> {
-        Debugger.debug("setCaption()", this);
+        this.mDebug && this.mDebug.debug("setCaption()", this);
         return this.update({
             caption: caption
         });
     }
 
     setCanAudio(enable: boolean): Promise<boolean> {
-        Debugger.debug("setCanAudio()", this);
+        this.mDebug && this.mDebug.debug("setCanAudio()", this);
         return this.update({
             canAudio: enable
         });
     }
 
     setCanVideo(enable: boolean): Promise<boolean> {
-        Debugger.debug("setCanVideo()", this);
+        this.mDebug && this.mDebug.debug("setCanVideo()", this);
         return this.update({
             canVideo: enable
         });
     }
 
     setReceiveAudio(enable: boolean): Promise<boolean> {
-        Debugger.debug("setReceiveAudio()", this);
+        this.mDebug && this.mDebug.debug("setReceiveAudio()", this);
         return this.update({
             receiveAudio: enable
         });
     }
 
     setReceiveVideo(enable: boolean): Promise<boolean> {
-        Debugger.debug("setReceiveVideo()", this);
+        this.mDebug && this.mDebug.debug("setReceiveVideo()", this);
         return this.update({
             receiveVideo: enable
         });
     }
 
     setSendAudio(enable: boolean): Promise<boolean> {
-        Debugger.debug("setSendAudio()", this);
+        this.mDebug && this.mDebug.debug("setSendAudio()", this);
         return this.update({
             sendAudio: enable
         });
@@ -283,14 +292,14 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
 
 
     setSendVideo(enable: boolean): Promise<boolean> {
-        Debugger.debug("setSendVideo()", this);
+        this.mDebug && this.mDebug.debug("setSendVideo()", this);
         return this.update({
             sendVideo: enable
         });
     }
 
     setError(error?: string): Promise<boolean> {
-        Debugger.debug("setError()", this);
+        this.mDebug && this.mDebug.debug("setError()", this);
         return this.update({
             error: error
         });
@@ -298,21 +307,21 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
 
 
     setAudioDevices(audioDevices: string[]): Promise<boolean> {
-        Debugger.debug("setAudioDevices()", this);
+        this.mDebug && this.mDebug.debug("setAudioDevices()", this);
         return this.update({
             audioDevices: audioDevices
         });
     }
 
     setAudioInputDevice(audioDeviceId: number): Promise<boolean> {
-        Debugger.debug("setAudioInputDevice()", this);
+        this.mDebug && this.mDebug.debug("setAudioInputDevice()", this);
         return this.update({
             inputAudioDevice: audioDeviceId
         })
     }
 
     setAudioOutputDevice(audioDeviceId: number): Promise<boolean> {
-        Debugger.debug("setAudioOutputDevice()", this);
+        this.mDebug && this.mDebug.debug("setAudioOutputDevice()", this);
         return this.update({
             outputAudioDevice: audioDeviceId
         })

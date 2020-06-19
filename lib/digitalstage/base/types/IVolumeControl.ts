@@ -1,5 +1,5 @@
 export interface IVolumeControl {
     volume: number;
 
-    setVolume(volume: number);
+    setVolume(volume: number): void;
 }

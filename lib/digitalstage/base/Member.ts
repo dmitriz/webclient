@@ -22,7 +22,7 @@ export type MemberEvents =
 export class Member extends EventEmitter implements IVolumeControl {
     protected readonly mUid: string;
     protected readonly mApi: DigitalStageAPI;
-    protected mVolume: number;
+    protected mVolume: number = 0;
     protected mLatestSnapshot: DatabaseStageMember;
     protected mProducers: AbstractProducer[] = [];
     protected mSoundjacks: Soundjack[] = [];
@@ -32,6 +32,8 @@ export class Member extends EventEmitter implements IVolumeControl {
         this.mApi = api;
         this.mUid = uid;
         this.mLatestSnapshot = initialData;
+        if (initialData.volume)
+            this.mVolume = initialData.volume;
 
         this.mApi.on("member-changed", this.handleUpdate);
         this.mApi.on("producer-added", this.handleProducerAdded);
@@ -112,7 +114,7 @@ export class Member extends EventEmitter implements IVolumeControl {
     }
 
     protected handleProducerRemoved = (event: ProducerEvent) => {
-        const producer: AbstractProducer = this.getProducer(event.id);
+        const producer: AbstractProducer | undefined = this.getProducer(event.id);
         if (producer) {
             this.mProducers = this.mProducers.filter((producer: AbstractProducer) => producer.id !== event.id);
             producer.disconnect();
@@ -129,7 +131,7 @@ export class Member extends EventEmitter implements IVolumeControl {
     }
 
     protected handleSoundjackRemoved = (event: SoundjackEvent) => {
-        const soundjack: Soundjack = this.getSoundjack(event.id);
+        const soundjack: Soundjack | undefined = this.getSoundjack(event.id);
         if (soundjack) {
             this.mSoundjacks = this.mSoundjacks.filter((soundjack: Soundjack) => soundjack.id !== event.id);
             soundjack.disconnect();

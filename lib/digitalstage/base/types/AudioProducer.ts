@@ -9,6 +9,7 @@ export class AudioProducer extends AbstractProducer implements IVolumeControl {
 
     constructor(api: DigitalStageAPI, id: string, initialData: DatabaseGlobalAudioProducer) {
         super(api, id, initialData);
+        this.mLatestSnapshot = initialData;
     }
 
     public get volume() {

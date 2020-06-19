@@ -1,4 +1,4 @@
-import {Debugger, DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./index";
+import {DigitalStageAPI, IDebugger, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./index";
 import {Member} from "./Member";
 import {DeviceEvent, MemberEvent, StageIdEvent, StageNameEvent, StagePasswordEvent} from "./api/DigitalStageAPI";
 import {EventEmitter} from "events";
@@ -19,6 +19,7 @@ export type RealtimeDatabaseStageEvents =
     | "stage-changed";
 
 
+//@Deprecated
 export class DigitalStage extends EventEmitter {
     protected readonly mApi: DigitalStageAPI;
     protected mStageId: string | undefined;
@@ -26,10 +27,19 @@ export class DigitalStage extends EventEmitter {
     protected mStagePassword: string | undefined;
     protected mMembers: Member[] = [];
     protected mDevices: IDevice[] = [];
+    protected mDebug: IDebugger | undefined = undefined;
 
     constructor(user: firebase.User) {
         super();
         this.mApi = new RealtimeDatabaseAPI(user);
+    }
+
+    public get debug() {
+        return this.mDebug;
+    }
+
+    public setDebug(debug: IDebugger) {
+        this.mDebug = debug;
     }
 
     public get connected() {
@@ -47,21 +57,21 @@ export class DigitalStage extends EventEmitter {
     }
 
     public create(name: string, password: string): Promise<DatabaseStage> {
-        Debugger.debug("create()", this);
+        this.mDebug && this.mDebug.debug("create()", this);
         return this.mApi.createStage(name, password);
     }
 
     public join(name: string, password: string): Promise<DatabaseStage> {
-        Debugger.debug("join()", this);
+        this.mDebug && this.mDebug.debug("join()", this);
         return this.mApi.joinStage(name, password);
     }
 
     public leave(): Promise<boolean> {
-        Debugger.debug("leave()", this);
+        this.mDebug && this.mDebug.debug("leave()", this);
         return this.mApi.leaveStage();
     }
 
-    public get id(): string {
+    public get id(): string | undefined {
         return this.mStageId;
     }
 
@@ -69,11 +79,11 @@ export class DigitalStage extends EventEmitter {
         return this.mApi;
     }
 
-    public get name(): string {
+    public get name(): string | undefined {
         return this.mStageName;
     }
 
-    public get password(): string {
+    public get password(): string | undefined {
         return this.mStagePassword;
     }
 
@@ -149,12 +159,13 @@ export class DigitalStage extends EventEmitter {
     }
 
     protected handleDeviceRemoved(event: DeviceEvent) {
-        const device: IDevice = this.devices.find(device => device.id !== event.id);
+        const device: IDevice | undefined = this.devices.find(device => device.id !== event.id);
         if (device) {
             device.off("device-changed", this.handleDeviceChanged);
             this.emit("device-removed", device);
             return device.disconnect();
         }
+        return Promise.resolve(false);
     }
 
     protected handleStageIdChanged = (event: StageIdEvent) => {
@@ -198,7 +209,7 @@ export class DigitalStage extends EventEmitter {
     }
 
     protected handleMemberRemoved(event: MemberEvent) {
-        const member: Member = this.mMembers.find(m => m.uid === event.uid);
+        const member: Member | undefined = this.mMembers.find(m => m.uid === event.uid);
         if (member) {
             member.off("changed", this.handleMemberChanged);
             member.disconnect();

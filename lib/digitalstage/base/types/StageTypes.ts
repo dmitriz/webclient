@@ -25,7 +25,7 @@ export interface IProducer {
 export interface IVolumeControl {
     readonly volume: number;
 
-    setVolume(volume: number);
+    setVolume(volume: number): void;
 }
 
 export interface IVideoProducer extends IProducer {

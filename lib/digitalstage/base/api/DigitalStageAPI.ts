@@ -9,6 +9,7 @@ import {
 } from "../types";
 import {EventEmitter} from "events";
 import {IDevice} from "../IDevice";
+import {IDebugger} from "../IDebugger";
 
 export type DigitalStageEvents =
     | "connection-state-changed"
@@ -76,6 +77,9 @@ export type DeviceEvent = {
 
 export abstract class DigitalStageAPI extends EventEmitter {
     public abstract readonly connected: boolean;
+    public abstract debug: IDebugger | undefined;
+
+    public abstract setDebug(debug: IDebugger): void;
 
     public abstract connect(): void;
 

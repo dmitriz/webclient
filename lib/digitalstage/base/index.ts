@@ -4,7 +4,7 @@ import {DeviceEvents, IDevice} from './IDevice';
 import {RemoteDevice} from './RemoteDevice';
 import {DigitalStageAPI, DigitalStageEvents} from "./api/DigitalStageAPI";
 import {RealtimeDatabaseAPI} from "./api/RealtimeDatabaseAPI";
-import {Debugger} from "./Debugger";
+import {IDebugger} from "./IDebugger";
 /**
  * Expose all types.
  */
@@ -15,6 +15,6 @@ export {types};
 /**
  * Expose abstract device
  */
-export {RealtimeDatabaseDevice, RemoteDevice, DigitalStageAPI, RealtimeDatabaseAPI, Debugger};
-export type {IDevice, DeviceEvents, DigitalStageEvents};
+export {RealtimeDatabaseDevice, RemoteDevice, DigitalStageAPI, RealtimeDatabaseAPI};
+export type {IDevice, DeviceEvents, DigitalStageEvents, IDebugger};
 

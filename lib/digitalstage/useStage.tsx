@@ -1,9 +1,12 @@
 import {useAuth} from "../useAuth";
 import {useEffect, useState} from "react";
-import {Debugger, DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./base";
-import {DeviceEvent, MemberEvent, ProducerEvent, VolumeEvent} from "./base/api/DigitalStageAPI";
+import {DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./base";
+import {DeviceEvent, MemberEvent, ProducerEvent, SoundjackEvent, VolumeEvent} from "./base/api/DigitalStageAPI";
 import {MediasoupDevice} from "./mediasoup";
 import {Consumer} from "./mediasoup/types";
+import {WebDebugger} from "./WebDebugger";
+import video from "../../pages/tests/video";
+import omit from "lodash.omit";
 
 export interface IVolumeControl {
     volume: number;
@@ -42,13 +45,32 @@ export interface IMember extends IVolumeControl {
     soundjacks: ISoundjack[];
 }
 
+const debug = new WebDebugger();
+
 export const useStage = () => {
     const {user} = useAuth();
     const [api, setApi] = useState<DigitalStageAPI>(undefined);
     const [localDevice, setLocalDevice] = useState<MediasoupDevice>(undefined);
     const [devices, setDevices] = useState<IDevice[]>([]);
-    const [members, setMembers] = useState<IMember[]>([]);
     const [error, setError] = useState<Error>(undefined);
+
+    const [members, setMembers] = useState<IMember[]>([]);
+
+    const [soundjacks, setSoundjacks] = useState<{
+        [uid: string]: {
+            [id: string]: ISoundjack
+        }
+    }>({});
+    const [audioProducers, setAudioProducers] = useState<{
+        [uid: string]: {
+            [id: string]: IAudioProducer
+        }
+    }>({});
+    const [videoProducers, setVideoProducers] = useState<{
+        [uid: string]: {
+            [id: string]: IVideoProducer
+        }
+    }>({});
 
     const handleError = (error: Error) => {
         setError(error);
@@ -57,7 +79,7 @@ export const useStage = () => {
     useEffect(() => {
         // Clean up on unmount
         return () => {
-            Debugger.debug("Clean up on unmount", "useStage");
+            debug.debug("Clean up on unmount", "useStage");
             if (api) {
                 api.disconnect();
                 api.removeAllListeners();
@@ -70,8 +92,11 @@ export const useStage = () => {
     useEffect(() => {
         if (user) {
             const api = new RealtimeDatabaseAPI(user);
+            api.setDebug(debug);
             setApi(api);
-            setLocalDevice(new MediasoupDevice(api));
+            const localDevice = new MediasoupDevice(api);
+            localDevice.setDebug(debug);
+            setLocalDevice(localDevice);
         } else {
             if (api) {
                 api.disconnect();
@@ -86,18 +111,21 @@ export const useStage = () => {
 
     useEffect(() => {
         if (api && localDevice) {
-            api.on("member-added", (event: MemberEvent) => setMembers(
-                prevState => [...prevState, {
+            const handleMemberAdded = (event: MemberEvent) => {
+                console.log("Adding member and have soundjacks:");
+                console.log(soundjacks);
+                setMembers(prevState => [...prevState, {
                     uid: event.uid,
-                    audioProducers: [],
-                    videoProducers: [],
-                    soundjacks: [],
+                    audioProducers: audioProducers[event.uid] ? Object.values(audioProducers[event.uid]) : [],
+                    videoProducers: videoProducers[event.uid] ? Object.values(videoProducers[event.uid]) : [],
+                    soundjacks: soundjacks[event.uid] ? Object.values(soundjacks[event.uid]) : [],
                     name: event.member.displayName,
                     online: event.member.online,
                     volume: 0,
                     setVolume: v => api.setRemoteMasterVolume(event.uid, v)
-                }]
-            ));
+                }]);
+            }
+            api.on("member-added", handleMemberAdded);
             api.on("member-changed", (event: MemberEvent) => setMembers(
                 prevState => prevState.map(m => {
                     if (m.uid === event.uid) {
@@ -111,46 +139,157 @@ export const useStage = () => {
                 prevState => prevState.filter(m => m.uid === event.uid)
             ));
             api.on("producer-added", (event: ProducerEvent) => setMembers(
-                prevState => prevState.map(m => {
-                    if (m.uid === event.producer.uid) {
-                        if (event.producer.kind === "audio") {
-                            m.audioProducers.push({
-                                id: event.id,
-                                volume: event.producer.volume ? event.producer.volume : 0,
-                                setVolume: v => api.setRemoteProducerVolume(event.id, v)
-                            })
-                        } else {
-                            m.videoProducers.push({
-                                id: event.id,
-                            })
-                        }
+                prevState => {
+                    const audioProducer: IAudioProducer = event.producer.kind === "audio" ? {
+                        id: event.id,
+                        volume: event.producer.volume ? event.producer.volume : 0,
+                        setVolume: v => api.setRemoteProducerVolume(event.id, v)
+                    } : undefined;
+                    const videoProducer: IVideoProducer = event.producer.kind === "video" ? {
+                        id: event.id
+                    } : undefined;
+
+                    if (audioProducer) {
+                        setAudioProducers(prevState => ({
+                            ...prevState,
+                            [event.producer.uid]: {
+                                ...prevState[event.producer.uid],
+                                [event.id]: audioProducer
+                            }
+                        }));
+                    } else if (videoProducer) {
+                        setVideoProducers(prevState => ({
+                            ...prevState,
+                            [event.producer.uid]: {
+                                ...prevState[event.producer.uid],
+                                [event.id]: videoProducer
+                            }
+                        }));
                     }
-                    return m;
-                })
-            ));
-            api.on("producer-changed", (event: ProducerEvent) => event.producer.kind === "audio" && setMembers(
-                prevState => prevState.map(m => {
-                    if (m.uid === event.producer.uid) {
-                        const audioProducer = m.audioProducers.find(ap => ap.id === event.id);
-                        if (audioProducer) {
-                            audioProducer.volume = event.producer.volume;
+                    return prevState.map(m => {
+                        if (m.uid === event.producer.uid) {
+                            if (audioProducer) {
+                                m.audioProducers.push(audioProducer);
+                            } else if (videoProducer) {
+                                m.videoProducers.push(videoProducer);
+                            }
                         }
-                    }
-                    return m;
-                })
+                        return m;
+                    });
+                }
             ));
+            api.on("producer-changed", (event: ProducerEvent) => {
+                if (event.producer.kind === "audio") {
+                    setAudioProducers(prevState => ({
+                        ...prevState,
+                        [event.producer.uid]: omit(prevState[event.producer.uid], event.id)
+                    }));
+                    setMembers(
+                        prevState => prevState.map(m => {
+                            if (m.uid === event.producer.uid) {
+                                const audioProducer = m.audioProducers.find(ap => ap.id === event.id);
+                                if (audioProducer) {
+                                    audioProducer.volume = event.producer.volume;
+                                }
+                            }
+                            return m;
+                        })
+                    )
+                }
+            });
             api.on("producer-removed", (event: ProducerEvent) => setMembers(
-                prevState => prevState.map(m => {
-                    if (m.uid === event.producer.uid) {
-                        if (event.producer.kind === "audio") {
-                            m.audioProducers = m.audioProducers.filter(p => p.id !== event.id);
-                        } else {
-                            m.videoProducers = m.videoProducers.filter(p => p.id !== event.id);
+                prevState => {
+                    if (event.producer.kind === "audio") {
+                        setAudioProducers(prevState => ({
+                            ...prevState,
+                            [event.producer.uid]: omit(prevState[event.producer.uid], event.id)
+                        }));
+                        return prevState.map(m => {
+                            if (m.uid === event.producer.uid) {
+                                m.audioProducers = m.audioProducers.filter(p => p.id !== event.id);
+                            }
+                            return m;
+                        })
+                    } else {
+                        setVideoProducers(prevState => ({
+                            ...prevState,
+                            [event.producer.uid]: omit(prevState[event.producer.uid], event.id)
+                        }));
+                        return prevState.map(m => {
+                            if (m.uid === event.producer.uid) {
+                                m.videoProducers = m.videoProducers.filter(p => p.id !== event.id);
+                            }
+                            return m;
+                        })
+                    }
+                }
+            ));
+
+            api.on("soundjack-added", (event: SoundjackEvent) => {
+                const soundjack: ISoundjack = {
+                    id: event.id,
+                    ipv4: event.soundjack.ipv4,
+                    ipv6: event.soundjack.ipv6,
+                    volume: event.soundjack.volume ? event.soundjack.volume : 0,
+                    setVolume: v => api.setRemoteSoundjackVolume(event.id, v)
+                };
+                setSoundjacks(prevState => ({
+                    ...prevState,
+                    [event.soundjack.uid]: {
+                        ...prevState[event.soundjack.uid],
+                        [event.id]: soundjack
+                    }
+                }));
+                setMembers(
+                    prevState => {
+                        return prevState.map(m => {
+                            if (m.uid === event.soundjack.uid) {
+                                m.soundjacks.push(soundjack)
+                            }
+                            return m;
+                        });
+                    }
+                )
+            });
+
+            api.on("soundjack-changed", (event: SoundjackEvent) => {
+                setSoundjacks(prevState => ({
+                    ...prevState,
+                    [event.soundjack.uid]: {
+                        ...prevState[event.soundjack.uid],
+                        [event.id]: {
+                            ...prevState[event.soundjack.uid][event.id],
+                            volume: event.soundjack.volume
                         }
                     }
-                    return m;
-                })
-            ));
+                }));
+                setMembers(
+                    prevState => prevState.map(m => {
+                        if (m.uid === event.soundjack.uid) {
+                            const soundjack = m.soundjacks.find(ap => ap.id === event.id);
+                            if (soundjack) {
+                                soundjack.volume = event.soundjack.volume;
+                            }
+                        }
+                        return m;
+                    })
+                )
+            });
+
+            api.on("soundjack-removed", (event: SoundjackEvent) => {
+                setSoundjacks(prevState => ({
+                    ...prevState,
+                    [event.soundjack.uid]: omit(prevState[event.soundjack.uid], event.id)
+                }));
+                setMembers(
+                    prevState => prevState.map(m => {
+                        if (m.uid === event.soundjack.uid) {
+                            m.soundjacks = m.soundjacks.filter(p => p.id !== event.id);
+                        }
+                        return m;
+                    })
+                )
+            });
 
             api.on("volume-changed", (event: VolumeEvent) => setMembers(
                 prevState => prevState.map(m => {
@@ -228,6 +367,26 @@ export const useStage = () => {
                 .catch(handleError);
         }
     }, [api, localDevice])
+
+    useEffect(() => {
+        console.log("AUDIO PRODUCERS IS NOW:");
+        console.log(audioProducers);
+    }, [audioProducers]);
+
+    useEffect(() => {
+        console.log("SOUNDJACKS IS NOW:");
+        console.log(soundjacks);
+
+        /*
+        setMembers(prevState => prevState.map(
+            member => {
+                Object.values(soundjacks[member.uid])
+                    .forEach(soundjack => !member.soundjacks.find(sj => sj.id === soundjack.id) && member.soundjacks.push(soundjack))
+                return member;
+            }
+        ))*/
+
+    }, [soundjacks]);
 
     return {
         members,

@@ -2,10 +2,10 @@ import * as firebase from 'firebase/app'
 import 'firebase/firestore'
 
 import {MediasoupRouter} from './types'
-import {Debugger} from "../base";
-import { DatabaseRouter } from '../base/types';
+import {DatabaseRouter} from '../base/types';
+import {IDebugger} from "../base";
 
-export const getFastestRouter = (): Promise<MediasoupRouter> => {
+export const getFastestRouter = (debug?: IDebugger): Promise<MediasoupRouter> => {
     return new Promise<MediasoupRouter>((resolve, reject) => {
         let fastestRouter: MediasoupRouter
         return firebase
@@ -26,10 +26,10 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                         'https://' + router.domain + ':' + router.port + '/ping'
                     ).catch((err) => {
                         err.message = 'Could not ping router' + err.message;
-                        Debugger.handleError(err, "Mediasoup Utils")
+                        debug && debug.handleError(err, "Mediasoup Utils")
                         return 99999
                     })
-                    Debugger.debug('Latency of router ' + router.domain + ': ' + latency, "Mediasoup Utils");
+                    debug && debug.debug('Latency of router ' + router.domain + ': ' + latency, "Mediasoup Utils");
                     if (lowestLatency === -1 || lowestLatency > latency) {
                         fastestRouter = {
                             ...router,
@@ -38,7 +38,7 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                     }
                 }
                 if (fastestRouter) {
-                    Debugger.debug('USING ' + fastestRouter.domain, "Mediasoup Utils");
+                    debug && debug.debug('USING ' + fastestRouter.domain, "Mediasoup Utils");
                     return resolve(fastestRouter)
                 }
                 return reject(new Error('No routers available'))

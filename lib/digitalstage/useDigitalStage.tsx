@@ -1,12 +1,12 @@
-import {Debugger, IDevice} from "./base";
+import {IDebugger, IDevice} from "./base";
 import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
 import {useAuth, withAuth} from "../useAuth";
 import "firebase/database";
-import {Member} from "./base/Member";
 import {DigitalStageWithMediasoup} from "./mediasoup/DigitalStageWithMediasoup";
 import {MediasoupMember} from "./mediasoup/types/MediasoupMember";
 import {MediasoupDevice} from "./mediasoup";
 import * as firebase from "firebase/app";
+import {WebDebugger} from "./WebDebugger";
 
 interface DigitalStageProps {
     id?: string;
@@ -33,6 +33,8 @@ interface DigitalStageProps {
 
     connected: boolean;
 }
+
+const debug: IDebugger = new WebDebugger();
 
 const DigitalStageContext = createContext<DigitalStageProps>(undefined);
 export const useDigitalStage = () => useContext(DigitalStageContext);
@@ -66,7 +68,7 @@ export class DigitalStageProviderWithoutUser extends React.Component<{
     }
 
     onUserChanged() {
-        Debugger.debug("onUserChanged", "useDigitalStage");
+        debug.debug("onUserChanged", "useDigitalStage");
         if (this.props.user && !this.api) {
             this.api = new DigitalStageWithMediasoup(this.props.user);
             this.api.connect()
@@ -91,7 +93,7 @@ export class DigitalStageProviderWithoutUser extends React.Component<{
 
     componentDidUpdate(prevProps: Readonly<{ user: firebase.User; children: React.ReactNode }>, prevState: Readonly<DigitalStageProps>, snapshot?: any) {
         if (prevProps.user !== this.props.user) {
-            Debugger.debug("user changed", "useDigitalStage");
+            debug.debug("user changed", "useDigitalStage");
             //this.onUserChanged();
         }
     }
@@ -131,14 +133,14 @@ export const DigitalStageProvider2 = (props: {
     const [members, setMembers] = useState<MediasoupMember[]>([]);
 
     const handleError = useCallback((error: Error) => {
-        Debugger.handleError(error, "useDigitalStage");
+        debug.handleError(error, "useDigitalStage");
         setError(error.message);
     }, []);
 
     useEffect(() => {
         if (user) {
             setLoading(true);
-            Debugger.debug("Initializing Stage", "useDigitalStage");
+            debug.debug("Initializing Stage", "useDigitalStage");
             const stage: DigitalStageWithMediasoup = new DigitalStageWithMediasoup(user);
 
             stage.on("connection-state-changed", value => setConnected(value));
@@ -161,7 +163,7 @@ export const DigitalStageProvider2 = (props: {
                 stage.disconnect()
                     .catch(handleError);
                 stage.removeAllListeners();
-                Debugger.debug("Removing stage handlers", "useDigitalStage");
+                debug.debug("Removing stage handlers", "useDigitalStage");
             }
             setConnected(false);
             setStage(undefined);

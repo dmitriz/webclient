@@ -27,7 +27,7 @@ export class Soundjack extends EventEmitter implements IVolumeControl {
         }
     }
 
-    public get id() {
+    public get id(): string | undefined {
         return this.id;
     }
 

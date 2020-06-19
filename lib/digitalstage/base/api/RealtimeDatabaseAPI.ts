@@ -22,7 +22,7 @@ import * as firebase from "firebase/app";
 import "firebase/database";
 import {IDevice} from "../IDevice";
 import fetch from "isomorphic-unfetch";
-import {Debugger} from "./../index";
+import {IDebugger} from "../IDebugger";
 
 
 export class RealtimeDatabaseAPI extends DigitalStageAPI {
@@ -30,11 +30,21 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     private readonly mUserRef: firebase.database.Reference;
     private mStageRef: firebase.database.Reference | undefined;
     private mConnected: boolean = false;
+    private mDebug: IDebugger | undefined = undefined;
 
     constructor(user: firebase.User) {
         super();
         this.mUser = user;
         this.mUserRef = firebase.database().ref("users/" + this.mUser.uid);
+    }
+
+
+    public get debug() {
+        return this.mDebug;
+    }
+
+    public setDebug(debug: IDebugger) {
+        this.mDebug = debug;
     }
 
     public get connected() {
@@ -74,12 +84,12 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .on("value", async snapshot => {
                 const stageId: string | null = snapshot.val();
                 if (stageId) {
-                    Debugger.debug("stageId changed to: " + stageId, this);
+                    this.mDebug && this.mDebug.debug("stageId changed to: " + stageId, this);
                     this.mStageRef = firebase.database().ref("stages/" + stageId);
                     this.addStageHandlers();
                     this.emit("stage-id-changed", stageId as StageIdEvent);
                 } else {
-                    Debugger.debug("stageId changed to null, clean up stage handlers ", this);
+                    this.mDebug && this.mDebug.debug("stageId changed to null, clean up stage handlers ", this);
                     this.removeStageHandlers();
                     this.mStageRef = undefined;
                     this.emit("stage-id-changed", undefined as StageIdEvent);
@@ -91,7 +101,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                 if (snapshot.key) {
                     const dbDevice: DatabaseDevice = snapshot.val();
                     const deviceId: string = snapshot.key;
-                    Debugger.debug("Device added: " + deviceId, this);
+                    this.mDebug && this.mDebug.debug("Device added: " + deviceId, this);
                     this.emit("device-added", {id: deviceId, device: dbDevice} as DeviceEvent);
                 }
             }, this.handleFirebaseError)
@@ -100,7 +110,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .on("child_changed", snapshot => {
                 if (snapshot.key) {
                     const deviceId: string = snapshot.key;
-                    Debugger.debug("Device changed: " + deviceId, this);
+                    this.mDebug && this.mDebug.debug("Device changed: " + deviceId, this);
                     this.emit("device-changed", {
                         id: snapshot.key,
                         device: snapshot.val()
@@ -112,7 +122,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .on("child_removed", snapshot => {
                 if (snapshot.key) {
                     const deviceId: string = snapshot.key;
-                    Debugger.debug("Device removed: " + deviceId, this);
+                    this.mDebug && this.mDebug.debug("Device removed: " + deviceId, this);
                     this.emit("device-removed", {
                         id: snapshot.key,
                         device: snapshot.val()
@@ -122,89 +132,89 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         this.mUserRef
             .child("producers")
             .on("child_added", snapshot => {
-                Debugger.debug("Producer added: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Producer added: " + snapshot.key, this);
                 const producer: DatabaseUserRemoteProducer = snapshot.val();
                 this.emit("producer-added", {id: snapshot.key, producer: producer} as ProducerEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("producers")
             .on("child_changed", snapshot => {
-                Debugger.debug("Producer changed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Producer changed: " + snapshot.key, this);
                 const producer: DatabaseUserRemoteProducer = snapshot.val();
                 this.emit("producer-changed", {id: snapshot.key, producer: producer} as ProducerEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("producers")
             .on("child_removed", snapshot => {
-                Debugger.debug("Producer removed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Producer removed: " + snapshot.key, this);
                 const producer: DatabaseUserRemoteProducer = snapshot.val();
                 this.emit("producer-removed", {id: snapshot.key, producer: producer} as ProducerEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("soundjacks")
             .on("child_added", snapshot => {
-                Debugger.debug("Soundjack added: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Soundjack added: " + snapshot.key, this);
                 const soundjack: DatabaseUserRemoteSoundjack = snapshot.val();
                 this.emit("soundjack-added", {id: snapshot.key, soundjack: soundjack} as SoundjackEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("soundjacks")
             .on("child_changed", snapshot => {
-                Debugger.debug("Soundjack changed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Soundjack changed: " + snapshot.key, this);
                 const soundjack: DatabaseUserRemoteSoundjack = snapshot.val();
                 this.emit("soundjack-changed", {id: snapshot.key, soundjack: soundjack} as SoundjackEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("soundjacks")
             .on("child_removed", snapshot => {
-                Debugger.debug("Soundjack removed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Soundjack removed: " + snapshot.key, this);
                 const soundjack: DatabaseUserRemoteSoundjack = snapshot.val();
                 this.emit("soundjack-removed", {id: snapshot.key, soundjack: soundjack} as SoundjackEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("volumes")
             .on("child_added", snapshot => {
-                Debugger.debug("Volume added: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Volume added: " + snapshot.key, this);
                 const volume: number = snapshot.val().volume;
                 this.emit("volume-added", {uid: snapshot.key, volume: volume} as VolumeEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("volumes")
             .on("child_changed", snapshot => {
-                Debugger.debug("Volume changed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Volume changed: " + snapshot.key, this);
                 const volume: number = snapshot.val().volume;
                 this.emit("volume-changed", {uid: snapshot.key, volume: volume} as VolumeEvent);
             }, this.handleFirebaseError)
         this.mUserRef
             .child("volumes")
             .on("child_removed", snapshot => {
-                Debugger.debug("Volume removed: " + snapshot.key, this);
+                this.mDebug && this.mDebug.debug("Volume removed: " + snapshot.key, this);
                 const volume: number = snapshot.val().volume;
                 this.emit("volume-removed", {uid: snapshot.key, volume: volume} as VolumeEvent);
             }, this.handleFirebaseError)
     }
 
     private addStageHandlers() {
-        Debugger.debug("initStageMemberHandler() with " + (this.mStageRef ? "valid" : "undefined") + " stageref", this);
+        this.mDebug && this.mDebug.debug("initStageMemberHandler() with " + (this.mStageRef ? "valid" : "undefined") + " stageref", this);
         if (this.mStageRef && this.mStageRef.key) {
             this.mStageRef
                 .child("members")
                 .on("child_added", snapshot => {
-                    Debugger.debug("Member added: " + snapshot.key, this);
+                    this.mDebug && this.mDebug.debug("Member added: " + snapshot.key, this);
                     const member: DatabaseStageMember = snapshot.val();
                     this.emit("member-added", {uid: snapshot.key, member: member} as MemberEvent);
                 }, this.handleFirebaseError)
             this.mStageRef
                 .child("members")
                 .on("child_changed", snapshot => {
-                    Debugger.debug("Member changed: " + snapshot.key, this);
+                    this.mDebug && this.mDebug.debug("Member changed: " + snapshot.key, this);
                     const member: DatabaseStageMember = snapshot.val();
                     this.emit("member-changed", {uid: snapshot.key, member: member} as MemberEvent);
                 }, this.handleFirebaseError)
             this.mStageRef
                 .child("members")
                 .on("child_removed", snapshot => {
-                    Debugger.debug("Member removed: " + snapshot.key, this);
+                    this.mDebug && this.mDebug.debug("Member removed: " + snapshot.key, this);
                     const member: DatabaseStageMember = snapshot.val();
                     this.emit("member-removed", {uid: snapshot.key, member: member} as MemberEvent);
                     if (snapshot.key === this.getUid()) {
@@ -228,7 +238,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                         startTime: number;
                         playing: boolean;
                     } = snapshot.val();
-                    Debugger.debug("Click available: " + data.startTime, this);
+                    this.mDebug && this.mDebug.debug("Click available: " + data.startTime, this);
                     this.emit("click", data);
                 });
         }
@@ -252,7 +262,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     }
 
     private handleFirebaseError(error: Error) {
-        Debugger.handleError(error, this);
+        this.mDebug && this.mDebug.handleError(error, this);
     }
 
 
@@ -277,7 +287,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .then(response => response.json())
             .then(json => json as DatabaseStage)
             .then(stage => {
-                Debugger.debug("Stage created and joined: " + stage.name, this);
+                this.mDebug && this.mDebug.debug("Stage created and joined: " + stage.name, this);
                 this.emit("created", stage as StageCreatedEvent);
                 this.emit("joined", stage as StageJoinedEvent);
                 return stage;
@@ -304,7 +314,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .then(response => response.json())
             .then(json => json as DatabaseStage)
             .then(stage => {
-                Debugger.debug("Stage joined: " + stage.name, this);
+                this.mDebug && this.mDebug.debug("Stage joined: " + stage.name, this);
                 this.emit("joined", stage as StageJoinedEvent);
                 return stage;
             })
@@ -324,8 +334,8 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .then(json => json as { success: boolean })
             .then(result => result.success)
             .then(result => {
-                Debugger.debug("Stage left", this);
-                this.emit("left", this.mStageRef.key);
+                this.mDebug && this.mDebug.debug("Stage left", this);
+                this.emit("left", this.mStageRef ? this.mStageRef.key : undefined);
                 return result;
             })
     }
@@ -352,7 +362,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                 await reference.onDisconnect().remove();
                 if (reference.key) {
                     this.emit("device-registered", {id: reference.key});
-                    Debugger.debug("Device registered: " + reference.key, this);
+                    this.mDebug && this.mDebug.debug("Device registered: " + reference.key, this);
                     return reference.key;
                 }
                 throw new Error("No reference returned");
@@ -364,7 +374,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .child("devices/" + deviceId)
             .remove()
             .then(() => {
-                Debugger.debug("Device unregistered: " + deviceId, this);
+                this.mDebug && this.mDebug.debug("Device unregistered: " + deviceId, this);
                 this.emit("device-unregistered", deviceId)
             })
     }
@@ -405,7 +415,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .push(producer)
             .then((reference: firebase.database.Reference) => {
                 if (reference.key) {
-                    Debugger.debug("Producer published: " + reference.key, this);
+                    this.mDebug && this.mDebug.debug("Producer published: " + reference.key, this);
                     this.emit("producer-published", {id: reference.key, producer});
                     return reference.key;
                 }
@@ -419,7 +429,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .push(soundjack)
             .then((reference: firebase.database.Reference) => {
                 if (reference.key) {
-                    Debugger.debug("Soundjack published: " + reference.key, this);
+                    this.mDebug && this.mDebug.debug("Soundjack published: " + reference.key, this);
                     this.emit("soundjack-published", {id: reference.key, soundjack});
                     return reference.key;
                 }
@@ -432,7 +442,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .ref("/producers/" + id)
             .remove()
             .then(() => {
-                Debugger.debug("Producer unpublished: " + id, this);
+                this.mDebug && this.mDebug.debug("Producer unpublished: " + id, this);
                 this.emit("producer-unpublished", id)
             })
     }
@@ -442,7 +452,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
             .ref("/soundjacks/" + id)
             .remove()
             .then(() => {
-                Debugger.debug("Soundjack unpublished: " + id, this);
+                this.mDebug && this.mDebug.debug("Soundjack unpublished: " + id, this);
                 this.emit("soundjack-unpublished", id)
             })
     }

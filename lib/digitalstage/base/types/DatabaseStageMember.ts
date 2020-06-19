@@ -9,4 +9,5 @@
 export interface DatabaseStageMember {
     displayName: string;
     online: boolean;
+    volume?: number;
 }
