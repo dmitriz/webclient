@@ -40,9 +40,15 @@ export interface IMember extends IVolumeControl {
     uid: string;
     name: string;
     online?: boolean;
-    audioProducers: IAudioProducer[];
-    videoProducers: IVideoProducer[];
-    soundjacks: ISoundjack[];
+    audioProducers?: {
+        [id: string]: IAudioProducer
+    };
+    videoProducers?: {
+        [id: string]: IVideoProducer
+    };
+    soundjacks?: {
+        [id: string]: ISoundjack
+    };
 }
 
 const debug = new WebDebugger();
@@ -53,23 +59,10 @@ export const useStage = () => {
     const [localDevice, setLocalDevice] = useState<MediasoupDevice>(undefined);
     const [devices, setDevices] = useState<IDevice[]>([]);
     const [error, setError] = useState<Error>(undefined);
+    const [initialized, setInitialized] = useState<boolean>(false);
 
-    const [members, setMembers] = useState<IMember[]>([]);
-
-    const [soundjacks, setSoundjacks] = useState<{
-        [uid: string]: {
-            [id: string]: ISoundjack
-        }
-    }>({});
-    const [audioProducers, setAudioProducers] = useState<{
-        [uid: string]: {
-            [id: string]: IAudioProducer
-        }
-    }>({});
-    const [videoProducers, setVideoProducers] = useState<{
-        [uid: string]: {
-            [id: string]: IVideoProducer
-        }
+    const [members, setMembers] = useState<{
+        [uid: string]: IMember
     }>({});
 
     const handleError = (error: Error) => {
@@ -110,33 +103,29 @@ export const useStage = () => {
     }, [user]);
 
     useEffect(() => {
-        if (api && localDevice) {
-            const handleMemberAdded = (event: MemberEvent) => {
-                console.log("Adding member and have soundjacks:");
-                console.log(soundjacks);
-                setMembers(prevState => [...prevState, {
-                    uid: event.uid,
-                    audioProducers: audioProducers[event.uid] ? Object.values(audioProducers[event.uid]) : [],
-                    videoProducers: videoProducers[event.uid] ? Object.values(videoProducers[event.uid]) : [],
-                    soundjacks: soundjacks[event.uid] ? Object.values(soundjacks[event.uid]) : [],
+        if (api && localDevice && !initialized) {
+            api.on("member-added", (event: MemberEvent) => setMembers(prevState => ({
+                ...prevState,
+                [event.uid]: {
+                    ...prevState[event.uid],
                     name: event.member.displayName,
                     online: event.member.online,
-                    volume: 0,
-                    setVolume: v => api.setRemoteMasterVolume(event.uid, v)
-                }]);
-            }
-            api.on("member-added", handleMemberAdded);
-            api.on("member-changed", (event: MemberEvent) => setMembers(
-                prevState => prevState.map(m => {
-                    if (m.uid === event.uid) {
-                        m.name = event.member.displayName;
-                        m.online = event.member.online;
-                    }
-                    return m;
-                })
-            ));
+                    volume: prevState[event.uid].volume || 0,
+                    setVolume: prevState[event.uid].setVolume || ((v) => api.setRemoteMasterVolume(event.uid, v))
+                }
+            })));
+            api.on("member-changed", (event: MemberEvent) => setMembers(prevState => ({
+                ...prevState,
+                [event.uid]: {
+                    ...prevState[event.uid],
+                    name: event.member.displayName,
+                    online: event.member.online,
+                    volume: prevState[event.uid].volume || 0,
+                    setVolume: prevState[event.uid].setVolume || ((v) => api.setRemoteMasterVolume(event.uid, v))
+                }
+            })));
             api.on("member-removed", (event: MemberEvent) => setMembers(
-                prevState => prevState.filter(m => m.uid === event.uid)
+                prevState => omit(prevState, event.uid)
             ));
             api.on("producer-added", (event: ProducerEvent) => setMembers(
                 prevState => {
@@ -365,8 +354,9 @@ export const useStage = () => {
                 .then(() => localDevice.connect())
                 .then(() => localDevice.setReceiveAudio(true))
                 .catch(handleError);
+            setInitialized(true);
         }
-    }, [api, localDevice])
+    }, [api, localDevice, soundjacks, audioProducers, videoProducers])
 
     useEffect(() => {
         console.log("AUDIO PRODUCERS IS NOW:");
