@@ -1,4 +1,4 @@
-import {IDebugger, IDevice} from "./base";
+import {DigitalStageAPI, IDebugger, IDevice} from "./base";
 import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
 import {useAuth, withAuth} from "../useAuth";
 import "firebase/database";
@@ -9,6 +9,8 @@ import * as firebase from "firebase/app";
 import {WebDebugger} from "./WebDebugger";
 
 interface DigitalStageProps {
+    api: DigitalStageAPI,
+
     id?: string;
 
     create(name: string, password: string);

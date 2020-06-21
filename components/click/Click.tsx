@@ -4,7 +4,6 @@ import "firebase/database";
 import useClick from "../../lib/useClick";
 import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {OverlayButton} from "../theme/OverlayButton";
-import {Debugger} from "../../lib/digitalstage/base";
 
 
 export default () => {
