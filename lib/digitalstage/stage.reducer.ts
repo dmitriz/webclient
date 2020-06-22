@@ -62,7 +62,7 @@ export const initialState: Store = {
 
 
 const handleActions = {
-    [ACTION_TYPES.ADD_MEMBER]: (store: Store, payload: { api: DigitalStageAPI, event: MemberEvent }): Store => ({
+    [ACTION_TYPES.ADD_MEMBER]: (store: Store, payload: { api: DigitalStageAPI, event: MemberEvent }): Store => (store.members.find(m => m.uid === payload.event.uid) ? store : {
         ...store,
         members: [...store.members, {
             uid: payload.event.uid,
