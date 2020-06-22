@@ -55,7 +55,7 @@ export default (
                     </React.Fragment>
                 ) : null)}
             </SliderPopout>
-            {(props.member.audioProducers.length > 0 || props.member.soundjacks.length > 0) && (
+            {(props.member.audioProducers.find(ap => ap.consumer !== undefined) || props.member.soundjacks.length > 0) && (
                 <SliderWrapper>
                     <VolumeSlider min={0} max={1} step={0.1} value={props.member.volume}
                                   onChange={v => props.member.setVolume(v)}/>
