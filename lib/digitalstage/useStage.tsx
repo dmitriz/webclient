@@ -239,9 +239,10 @@ export const StageProvider = (props: {
 
             api.registerDevice(localDevice)
                 .then(deviceId => localDevice.setDeviceId(deviceId))
-                .then(() => api.connect())
                 .then(() => localDevice.connect())
                 .then(() => localDevice.setReceiveAudio(true))
+                .then(() => localDevice.setReceiveVideo(true))
+                .then(() => api.connect())
                 .catch(handleError)
                 .finally(() => setLoading(false));
             setInitialized(true);
