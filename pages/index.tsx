@@ -25,7 +25,7 @@ export default () => {
         )
     }
     if (!user) {
-        router.push("/login");
+        return router.push("/login");
     }
 
     if (id) {
