@@ -1,7 +1,7 @@
 import {ACTION_TYPES, useStageReducer} from "../../lib/digitalstage/stage.reducer";
 import {useEffect, useState} from "react";
 import {DigitalStageAPI} from "../../lib/digitalstage/base";
-import {DigitalStageMockupAPI} from "../../lib/digitalstage/base/api/DigitalStageMockupAPI";
+import {DigitalStageMockupAPI} from "../../lib/digitalstage/DigitalStageMockupAPI";
 import {MemberEvent, ProducerEvent, SoundjackEvent, VolumeEvent} from "../../lib/digitalstage/base/api/DigitalStageAPI";
 import {v4 as uuidv4} from 'uuid';
 

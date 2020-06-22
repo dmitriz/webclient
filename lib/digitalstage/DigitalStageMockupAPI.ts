@@ -1,5 +1,5 @@
-import {DigitalStageAPI, IDebugger, IDevice} from "../index";
-import {DatabaseDevice, DatabaseGlobalProducer, DatabaseGlobalSoundjack, DatabaseStage} from "../types";
+import {DigitalStageAPI, IDebugger, IDevice} from "./base";
+import {DatabaseDevice, DatabaseGlobalProducer, DatabaseGlobalSoundjack, DatabaseStage} from "./base/types";
 
 export class DigitalStageMockupAPI extends DigitalStageAPI {
     readonly connected: boolean;
