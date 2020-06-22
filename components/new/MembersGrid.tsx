@@ -1,7 +1,7 @@
 import {styled} from "baseui";
 import React, {useCallback, useEffect, useState} from "react";
 import MemberView from "../stage/MemberView";
-import { StageMember } from "../../lib/digitalstage/useDigitalStage";
+import {IMember} from "../../lib/digitalstage/useStage";
 
 const MOBILE: string = "@media screen and (max-width: 880px)";
 
@@ -70,7 +70,7 @@ const Inner = styled("div", {
 
 
 export default (props: {
-    members: StageMember[]
+    members: IMember[]
 }) => {
     const [numCols, setNumCols] = useState<number>();
 
@@ -112,7 +112,6 @@ export default (props: {
 
     useEffect(() => {
         window.addEventListener("resize", handleResize);
-        //return () => window.removeEventListener("onresize", handleResize);
     }, []);
 
     useEffect(() => {

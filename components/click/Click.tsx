@@ -2,12 +2,12 @@ import React, {useCallback, useEffect, useState} from "react";
 import useTimesync from "../../lib/useTimesync";
 import "firebase/database";
 import useClick from "../../lib/useClick";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {OverlayButton} from "../theme/OverlayButton";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 
 export default () => {
-    const {api} = useDigitalStage();
+    const {api} = useStage();
 
     // Audio specific
     const [startTime, setStartTime] = useState<number>(0);
@@ -41,9 +41,10 @@ export default () => {
         if (api) {
             api.on("click", handleUpdate);
             return  () => {
-                Debugger.debug("Cleaning up and stopping buffer", "Click");
-                if( api )
+                if( api ) {
+                    api.debug && api.debug.debug("Cleaning up and stopping buffer", "Click");
                     api.off("click", handleUpdate);
+                }
             }
         }
     }, [api]);

@@ -2,11 +2,11 @@ import React, {useEffect, useState} from "react";
 import {useAuth} from "../../lib/useAuth";
 import Link from "next/link";
 import {styled} from "baseui";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {ItemT, MainNavItemT, Unstable_AppNavBar as AppNavBar, UserNavItemT,} from 'baseui/app-nav-bar';
 import {Delete as DeleteIcon, Overflow as OverflowIcon} from 'baseui/icon';
 import {useRouter} from 'next/router'
 import {LabelMedium} from "baseui/typography";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 interface NavItem extends ItemT {
     label: string;
@@ -71,13 +71,13 @@ const USER_NAV: UserNavItemT[] = [{
 export default () => {
     const router = useRouter()
     const {user} = useAuth();
-    const {leave, id, name} = useDigitalStage();
+    const {leave, stageId, stageName} = useStage();
     const [activeNavItem, setActiveNavItem] = useState<MainNavItemT | UserNavItemT>();
     const [nav, setNav] = useState<MainNavItemT[]>()
 
     useEffect(() => {
         if (user) {
-            if (id) {
+            if (stageId) {
                 setNav([
                     {
                         item: {label: 'Leave stage', onClick: leave},
@@ -111,7 +111,7 @@ export default () => {
                     mapItemToString: renderItemToString,
                 }]);
         }
-    }, [user, id])
+    }, [user, stageId])
 
     useEffect(() => {
         if (nav) {
@@ -131,7 +131,7 @@ export default () => {
                 appDisplayName={(
                     <CenterVertical>
                         <Banner src={"/logo.png"}/>
-                        {name ? name : "Digital Stage"}
+                        {stageName ? stageName : "Digital Stage"}
                     </CenterVertical>
                 )}
                 mainNav={nav}

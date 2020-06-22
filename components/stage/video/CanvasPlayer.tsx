@@ -1,6 +1,6 @@
 import React from "react";
 import {styled} from "baseui";
-import {MediasoupVideoProducer} from "../../../lib/digitalstage/mediasoup/types/MediasoupVideoProducer";
+import {IVideoProducer} from "../../../lib/digitalstage/useStage";
 
 interface CanvasElement extends HTMLCanvasElement {
     captureStream(): MediaStream;
@@ -27,7 +27,7 @@ interface AnimationFrame {
 interface Props {
     width: number;
     height: number;
-    videoProducers: MediasoupVideoProducer[];
+    videoProducers: IVideoProducer[];
     onStreamAvailable?: (stream: MediaStream) => void
 }
 
@@ -53,8 +53,8 @@ export default class CanvasPlayer extends React.Component<Props, States> {
 
     private getVideoTrack = (id: string): MediaStreamTrack | undefined => {
         this.props.videoProducers.forEach(p => {
-            if (p.track && p.track.id === id) {
-                return p.track;
+            if (p.consumer && p.consumer.track.id === id) {
+                return p.consumer.track;
             }
         })
         return undefined;
@@ -62,10 +62,10 @@ export default class CanvasPlayer extends React.Component<Props, States> {
 
     private getUniqueTracks = (): MediaStreamTrack[] => {
         const uniqueTracks: MediaStreamTrack[] = [];
-        this.props.videoProducers.forEach((producer: MediasoupVideoProducer) => {
-            if (producer.track) {
-                if (!uniqueTracks.find((contained) => producer.track && contained.id === producer.track.id)) {
-                    uniqueTracks.push(producer.track);
+        this.props.videoProducers.forEach((producer: IVideoProducer) => {
+            if (producer.consumer && producer.consumer.track) {
+                if (!uniqueTracks.find((contained) => producer.consumer.track && contained.id === producer.consumer.track.id)) {
+                    uniqueTracks.push(producer.consumer.track);
                 }
             }
         });

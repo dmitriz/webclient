@@ -4,8 +4,8 @@ import {Checkbox, STYLE_TYPE} from "baseui/checkbox";
 import {useStyletron} from "baseui";
 import {Button} from "baseui/button";
 import {Modal, ModalBody, ModalHeader} from "baseui/modal";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {IDevice} from "../../lib/digitalstage/base";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const DeviceRow = (props: {
     device: IDevice
@@ -71,7 +71,7 @@ const DeviceRow = (props: {
 }
 
 export default () => {
-    const {devices} = useDigitalStage();
+    const {devices} = useStage();
     const [css] = useStyletron();
 
     return (

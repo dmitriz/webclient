@@ -1,22 +1,39 @@
 import {IAudioProducer, IMember, ISoundjack, IVideoProducer} from "./useStage";
 import {DigitalStageAPI} from "./base";
-import {MemberEvent, ProducerEvent, VolumeEvent} from "./base/api/DigitalStageAPI";
+import {MemberEvent, ProducerEvent, SoundjackEvent, VolumeEvent} from "./base/api/DigitalStageAPI";
 import {Consumer} from "./mediasoup/types/Consumer";
-import {useReducer} from "react";
+import {Reducer, useReducer} from "react";
 
-export const ACTION_TYPES = {
-    ADD_MEMBER: 'addMember',
-    CHANGE_MEMBER: 'changeMember',
-    REMOVE_MEMBER: 'removeMember',
-    ADD_PRODUCER: 'addProducer',
-    CHANGE_PRODUCER: 'changeProducer',
-    REMOVE_PRODUCER: 'removeProducer',
-    ADD_SOUNDJACK: 'addSoundjack',
-    CHANGE_SOUNDJACK: 'changeSoundjack',
-    REMOVE_SOUNDJACK: 'removeSoundjack',
-    CHANGE_VOLUME: 'changeVolume',
-    ADD_CONSUMER: 'addConsumer',
-    REMOVE_CONSUMER: 'removeConsumer'
+type StageReducerActionType = {
+    type:
+        | 'addMember'
+        | 'changeMember'
+        | 'removeMember'
+        | 'addProducer'
+        | 'changeProducer'
+        | 'removeProducer'
+        | 'addSoundjack'
+        | 'changeSoundjack'
+        | 'removeSoundjack'
+        | 'changeVolume'
+        | 'addConsumer'
+        | 'removeConsumer',
+    [other: string]: any
+}
+
+export enum ACTION_TYPES {
+    ADD_MEMBER = 'addMember',
+    CHANGE_MEMBER = 'changeMember',
+    REMOVE_MEMBER = 'removeMember',
+    ADD_PRODUCER = 'addProducer',
+    CHANGE_PRODUCER = 'changeProducer',
+    REMOVE_PRODUCER = 'removeProducer',
+    ADD_SOUNDJACK = 'addSoundjack',
+    CHANGE_SOUNDJACK = 'changeSoundjack',
+    REMOVE_SOUNDJACK = 'removeSoundjack',
+    CHANGE_VOLUME = 'changeVolume',
+    ADD_CONSUMER = 'addConsumer',
+    REMOVE_CONSUMER = 'removeConsumer'
 };
 
 export interface Store {
@@ -42,6 +59,7 @@ export const initialState: Store = {
     soundjacks: {},
     volumes: {}
 }
+
 
 const handleActions = {
     [ACTION_TYPES.ADD_MEMBER]: (store: Store, payload: { api: DigitalStageAPI, event: MemberEvent }): Store => ({
@@ -94,12 +112,12 @@ const handleActions = {
             return {
                 ...store,
                 videoProducers: {
-                    ...store.audioProducers,
-                    [payload.event.producer.uid]: store.audioProducers[payload.event.producer.uid] ? [...store.audioProducers[payload.event.producer.uid], producer] : [],
+                    ...store.videoProducers,
+                    [payload.event.producer.uid]: store.videoProducers[payload.event.producer.uid] ? [...store.videoProducers[payload.event.producer.uid], producer] : [producer],
                 },
                 members: store.members.map(m => m.uid === payload.event.producer.uid ? {
                     ...m,
-                    videoProducers: [...m.audioProducers, producer]
+                    videoProducers: [...m.videoProducers, producer]
                 } : m)
             }
         }
@@ -248,9 +266,57 @@ const handleActions = {
                 }
             }
         }
-    }
+    },
+    [ACTION_TYPES.ADD_SOUNDJACK]: (store: Store, payload: { api: DigitalStageAPI, event: SoundjackEvent }): Store => {
+        const soundjack: ISoundjack = {
+            id: payload.event.id,
+            ipv4: payload.event.soundjack.ipv4,
+            ipv6: payload.event.soundjack.ipv6,
+            volume: payload.event.soundjack.volume ? payload.event.soundjack.volume : 0,
+            setVolume: v => payload.api.setRemoteSoundjackVolume(payload.event.id, v)
+        };
+        return {
+            ...store,
+            soundjacks: {
+                ...store.soundjacks,
+                [payload.event.soundjack.uid]: store.soundjacks[payload.event.soundjack.uid] ? [...store.soundjacks[payload.event.soundjack.uid], soundjack] : [soundjack],
+            },
+            members: store.members.map(m => m.uid === payload.event.soundjack.uid ? {
+                ...m,
+                soundjacks: [...m.soundjacks, soundjack]
+            } : m)
+        };
+    },
+    [ACTION_TYPES.CHANGE_SOUNDJACK]: (store: Store, payload: { event: SoundjackEvent }): Store => ({
+        ...store,
+        soundjacks: {
+            ...store.soundjacks,
+            [payload.event.soundjack.uid]: store.soundjacks[payload.event.soundjack.uid].map(ap => ap.id === payload.event.id ? {
+                ...ap,
+                volume: payload.event.soundjack.volume
+            } : ap)
+        },
+        members: store.members.map(m => m.uid === payload.event.soundjack.uid ? {
+            ...m,
+            soundjacks: m.soundjacks.map(ap => ap.id === payload.event.id ? {
+                ...ap,
+                volume: payload.event.soundjack.volume
+            } : ap)
+        } : m)
+    }),
+    [ACTION_TYPES.REMOVE_SOUNDJACK]: (store: Store, payload: { event: SoundjackEvent }): Store => ({
+        ...store,
+        soundjacks: {
+            ...store.soundjacks,
+            [payload.event.soundjack.uid]: store.soundjacks[payload.event.soundjack.uid].filter(ap => ap.id !== payload.event.id)
+        },
+        members: store.members.map(m => m.uid === payload.event.soundjack.uid ? {
+            ...m,
+            soundjacks: m.soundjacks.filter(ap => ap.id !== payload.event.id)
+        } : m)
+    }),
 }
 
-export const reducer = (store, action) => Boolean(handleActions[action.type]) ? handleActions[action.type](store, action) : store;
+export const reducer: Reducer<Store, StageReducerActionType> = (store: Store, action: StageReducerActionType) => Boolean(handleActions[action.type]) ? handleActions[action.type](store, action as any) : store;
 
-export const useStageReducer = () => useReducer(reducer, initialState, undefined);
+export const useStageReducer = () => useReducer<typeof reducer>(reducer, initialState, undefined);

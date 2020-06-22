@@ -1,9 +1,12 @@
 import {styled} from "baseui";
-import React, {MutableRefObject, useCallback, useEffect, useRef, useState} from "react";
+import React, {MutableRefObject, useEffect, useRef, useState} from "react";
 import useHover from "../../../lib/useHover";
 import VolumeSlider from "../../theme/VolumeSlider";
-import {MediasoupMember} from "../../../lib/digitalstage/mediasoup/types/MediasoupMember";
-import {MediasoupAudioProducer} from "../../../lib/digitalstage/mediasoup/types/MediasoupAudioProducer";
+import {IAudioProducer, IMember, ISoundjack} from "../../../lib/digitalstage/useStage";
+import {useAudioContext} from "../../../lib/useAudioContext";
+import {IGainNode} from "standardized-audio-context/src/interfaces/gain-node";
+import {IAudioContext} from "standardized-audio-context";
+import {IMediaStreamAudioSourceNode} from "standardized-audio-context/src/interfaces/media-stream-audio-source-node";
 
 const HiddenAudioPlayer = styled("audio", {})
 
@@ -35,37 +38,64 @@ const SliderPopout = styled("div", (props: {
 
 const MediasoupAudioSlider = (props: {
     globalVolume: number;
-    producer: MediasoupAudioProducer;
+    producer: IAudioProducer;
 }) => {
     const audioRef = useRef<HTMLAudioElement>();
-    const [volume, setVolume] = useState<number>(props.producer.gainNode.gain.value * 100);
+    const {audioContext} = useAudioContext();
+    const [streamSource, setStreamSource] = useState<IMediaStreamAudioSourceNode<IAudioContext>>(undefined);
+    const [gainNode, setGainNode] = useState<IGainNode<IAudioContext>>(undefined);
+    const [volume, setVolume] = useState<number>(props.producer.volume * 100);
 
     useEffect(() => {
-        if (props.producer.mediaStream)
-            audioRef.current.srcObject = props.producer.mediaStream;
-    }, [audioRef, props.producer.mediaStream]);
-
-    useEffect(() => {
-        const realVolume = (props.globalVolume / 100) * (volume / 100);
-        console.log(realVolume);
-        if (props.producer.track) {
-            props.producer.gainNode.gain.setValueAtTime(realVolume, props.producer.gainNode.context.currentTime);
+        if (audioContext) {
+            if (props.producer.consumer) {
+                const streamSource = audioContext.createMediaStreamSource(new MediaStream([props.producer.consumer.track]));
+                const gainNode = audioContext.createGain();
+                streamSource.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                setGainNode(gainNode);
+                setStreamSource(streamSource);
+            } else {
+                if (streamSource) {
+                    streamSource.disconnect();
+                }
+                if (gainNode) {
+                    gainNode.disconnect();
+                }
+                setGainNode(undefined);
+                setStreamSource(undefined);
+            }
         }
-    }, [volume, props.globalVolume, props.producer.track]);
+    }, [props.producer.consumer, audioContext])
+
+    useEffect(() => {
+        if (audioRef && streamSource) {
+            audioRef.current.srcObject = streamSource.mediaStream;
+        } else {
+            audioRef.current.srcObject = undefined;
+        }
+    }, [audioRef, streamSource]);
+
+    useEffect(() => {
+        // Update gain node
+        if (audioContext && gainNode) {
+            const realVolume = props.globalVolume * props.producer.volume;
+            gainNode.gain.setValueAtTime(realVolume, audioContext.currentTime);
+        }
+    }, [props.producer.volume, props.globalVolume, gainNode, audioContext]);
 
     return (
         <SliderWrapper>
             <HiddenAudioPlayer ref={audioRef}/>
-            <VolumeSlider min={0} max={100} step={10} value={volume}
-                          onChange={(value) => setVolume(value)}/>
+            <VolumeSlider min={0} max={1} step={0.1} value={props.producer.volume}
+                          onChange={props.producer.setVolume}/>
         </SliderWrapper>
     );
 }
 
 export default (props: {
-    member: MediasoupMember
+    member: IMember
 }) => {
-    const [globalVolume, setVolumeInternal] = useState<number>(props.member.volume * 100);
     const hoverRef: MutableRefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
     const hovered = useHover<HTMLDivElement>(hoverRef);
 
@@ -75,25 +105,23 @@ export default (props: {
         props.member.globalGain.gain.setValueAtTime(globalVolume, props.member.globalGain.context.currentTime);
     }, [globalVolume]);*/
 
-    const setVolume = useCallback((volume: number) => {
-        console.log("setVolume(" + volume + ")");
-        return props.member.setVolume(volume / 100);
-    }, [props.member]);
-
     return (
         <>
             <SliderOverlay ref={hoverRef}>
-
                 <SliderPopout $hovered={hovered}>
-                    {props.member.getAudioProducers().map((producer: MediasoupAudioProducer) => (
+                    {props.member.soundjacks.map((soundjack: ISoundjack) => (
+                        <VolumeSlider min={0} max={1} step={0.1} value={soundjack.volume}
+                                      onChange={soundjack.setVolume}/>
+                    ))}
+                    {props.member.audioProducers.map((producer: IAudioProducer) => (
                         <MediasoupAudioSlider key={producer.id} globalVolume={props.member.volume}
                                               producer={producer}/>
                     ))}
                 </SliderPopout>
-                {props.member.getAudioProducers().length > 0 && (
+                {props.member.audioProducers.length > 0 || props.member.soundjacks.length > 0 && (
                     <SliderWrapper>
-                        <VolumeSlider min={0} max={100} step={5} value={props.member.volume}
-                                      onChange={(value) => setVolume(value)}/>
+                        <VolumeSlider min={0} max={1} step={0.1} value={props.member.volume}
+                                      onChange={props.member.setVolume}/>
                     </SliderWrapper>
                 )}
             </SliderOverlay>

@@ -1,4 +1,4 @@
-import {MutableRefObject, RefObject, useEffect, useRef, useState} from 'react';
+import {MutableRefObject, useEffect, useState} from 'react';
 
 // Hook
 export default function useHover<T extends HTMLElement>(parent: MutableRefObject<T>) {

@@ -9,17 +9,15 @@ import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/stage/StageView";
 import CenteredCard from "../components/theme/CenteredCard";
-import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
 import {DisplayMedium, ParagraphMedium} from "baseui/typography";
+import {useStage} from "../lib/digitalstage/useStage";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {join, id, error, loading: stageLoading} = useDigitalStage();
+    const {join, stageId: id, error, loading: stageLoading} = useStage();
     const [stageId, setStageId] = useState<string>("-M9p2_4r-DNWAbhj74Jj");
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
-
-    console.log("StageId: " + id);
 
     if (loading) {
         return (

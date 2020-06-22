@@ -7,14 +7,14 @@ import {useAuth} from "../lib/useAuth";
 import Loading from "../components/theme/Loading";
 import Layout from "../components/theme/Layout";
 import CenteredCard from "../components/theme/CenteredCard";
-import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
 import {DisplayMedium} from "baseui/typography";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
-import { DatabaseStage } from "../lib/digitalstage/base/types";
+import {DatabaseStage} from "../lib/digitalstage/base/types";
+import {useStage} from "../lib/digitalstage/useStage";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {create: createStage, loading: stageLoading} = useDigitalStage();
+    const {create: createStage, loading: stageLoading} = useStage();
     const [stageName, setStageName] = useState<string>("stage1");
     const router = useRouter();
     const [password, setPassword] = useState<string>("");

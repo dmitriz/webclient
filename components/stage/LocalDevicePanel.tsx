@@ -1,8 +1,8 @@
 import React from "react";
 import {styled} from "baseui";
 import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {OverlayButton} from "../theme/OverlayButton";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const SoundjackLogo = styled("img", {
     width: "24px",
@@ -32,7 +32,7 @@ const SoundjackButton = styled(BaseButton, {
 
 
 export default () => {
-    const {localDevice} = useDigitalStage();
+    const {localDevice} = useStage();
 
     return localDevice ? (
         <Panel>

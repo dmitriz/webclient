@@ -1,7 +1,14 @@
 import {useAuth} from "../useAuth";
-import {useEffect, useReducer, useState} from "react";
+import React, {createContext, useCallback, useContext, useEffect, useReducer, useState} from "react";
 import {DigitalStageAPI, IDevice, RealtimeDatabaseAPI, RemoteDevice} from "./base";
-import {DeviceEvent, MemberEvent, ProducerEvent, SoundjackEvent, VolumeEvent} from "./base/api/DigitalStageAPI";
+import {
+    DeviceEvent,
+    MemberEvent,
+    ProducerEvent,
+    SoundjackEvent,
+    StageIdEvent,
+    VolumeEvent
+} from "./base/api/DigitalStageAPI";
 import {MediasoupDevice} from "./mediasoup";
 import {Consumer} from "./mediasoup/types";
 import {WebDebugger} from "./WebDebugger";
@@ -47,8 +54,35 @@ export interface IMember extends IVolumeControl {
 
 const debug = new WebDebugger();
 
-export const useStage = () => {
+export interface StageProps {
+    api: DigitalStageAPI | undefined;
+    members: IMember[];
+    stageId: string | undefined;
+    stageName: string | undefined;
+    error: Error | undefined;
+    localDevice: MediasoupDevice | undefined;
+    devices: IDevice[];
+    loading: boolean;
+
+    create(name: string, password: string);
+
+    join(stageId: string, password: string);
+
+    leave();
+}
+
+
+const StageContext = createContext<StageProps>(undefined);
+
+export const useStage = () => useContext(StageContext);
+
+export const StageProvider = (props: {
+    children: React.ReactNode
+}) => {
     const {user} = useAuth();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [stageId, setStageId] = useState<string>(undefined);
+    const [stageName, setStageName] = useState<string>(undefined);
     const [api, setApi] = useState<DigitalStageAPI>(undefined);
     const [localDevice, setLocalDevice] = useState<MediasoupDevice>(undefined);
     const [devices, setDevices] = useState<IDevice[]>([]);
@@ -101,6 +135,8 @@ export const useStage = () => {
     useEffect(() => {
         if (api && localDevice && !initialized) {
             debug.debug("Initial listeners", this);
+            api.on("stage-id-changed", (event: StageIdEvent) => setStageId(event))
+            api.on("stage-name-changed", (event: StageIdEvent) => setStageName(event))
             api.on("member-added", (event: MemberEvent) => dispatch({
                 type: ACTION_TYPES.ADD_MEMBER,
                 api: api,
@@ -149,6 +185,12 @@ export const useStage = () => {
                 api: api,
                 event: event
             }));
+
+            api.on("volume-added", (event: VolumeEvent) => dispatch({
+                type: ACTION_TYPES.CHANGE_VOLUME,
+                api: api,
+                event: event
+            }))
 
             api.on("volume-changed", (event: VolumeEvent) => dispatch({
                 type: ACTION_TYPES.CHANGE_VOLUME,
@@ -203,15 +245,60 @@ export const useStage = () => {
         }
     }, [api, localDevice])
 
-    useEffect(() => {
-        console.log("STATE IS NOW:");
-        console.log(state);
-    }, [state]);
+    const create = useCallback((name: string, password: string) => {
+        if (api) {
+            setLoading(true);
+            return api
+                .createStage(name, password)
+                .then(() => setError(undefined))
+                .catch(handleError)
+                .finally(() => {
+                    setLoading(false);
+                });
+        }
+    }, [api])
 
-    return {
-        members: state.members,
-        error,
-        localDevice,
-        devices
-    }
+    const join = useCallback((stageId: string, password: string) => {
+        if (api) {
+            setLoading(true);
+            return api
+                .joinStage(stageId, password)
+                .then(() => setError(undefined))
+                .catch(handleError)
+                .finally(() => {
+                    setLoading(false);
+                });
+        }
+    }, [api]);
+
+    const leave = useCallback(() => {
+        if (api) {
+            setLoading(true);
+            return api
+                .leaveStage()
+                .then(() => setError(undefined))
+                .catch(handleError)
+                .finally(() => {
+                    setLoading(false);
+                });
+        }
+    }, [api]);
+
+    return (
+        <StageContext.Provider value={{
+            api,
+            loading,
+            members: state.members,
+            stageId,
+            stageName,
+            error,
+            localDevice,
+            devices,
+            create,
+            join,
+            leave
+        }}>
+            {props.children}
+        </StageContext.Provider>
+    );
 };

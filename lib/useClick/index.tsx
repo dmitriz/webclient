@@ -1,7 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
 import {IAudioBufferSourceNode, IAudioContext} from "standardized-audio-context";
 import {useAudioContext} from "../useAudioContext";
-import {Debugger} from "../digitalstage/base";
 
 // Some global settings
 const freq = 600;

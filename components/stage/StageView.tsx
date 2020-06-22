@@ -9,8 +9,8 @@ import {AspectRatioBox, AspectRatioBoxBody} from "baseui/aspect-ratio-box";
 import DevicesView from "../devices/DevicesView";
 import {ANCHOR, Drawer} from 'baseui/drawer';
 import {SHAPE, StyledBaseButton} from "baseui/button";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import {toaster, ToasterContainer} from "baseui/toast";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -37,13 +37,13 @@ const ClickPanel = styled("div", {
 const itemProps: BlockProps = {};
 
 export default () => {
-    const {error, members} = useDigitalStage();
+    const {error, members} = useStage();
     const [showDevices, setShowDevices] = useState<boolean>(false);
     const [toastKey, setToastKey] = React.useState<React.ReactText | null>(null);
 
     useEffect(() => {
         if (error) {
-            setToastKey(toaster.negative(error, {
+            setToastKey(toaster.negative(error.message, {
                 onClose: closeToast
             }));
         }
