@@ -102,7 +102,7 @@ const handleActions = {
                 },
                 members: store.members.map(m => m.uid === payload.event.producer.uid ? {
                     ...m,
-                    audioProducers: [...m.audioProducers, producer]
+                    audioProducers: m.audioProducers.find(ap => ap.id === payload.event.id) ? m.audioProducers : [...m.audioProducers, producer]
                 } : m)
             }
         } else {
@@ -117,7 +117,7 @@ const handleActions = {
                 },
                 members: store.members.map(m => m.uid === payload.event.producer.uid ? {
                     ...m,
-                    videoProducers: [...m.videoProducers, producer]
+                    videoProducers: m.videoProducers.find(ap => ap.id === payload.event.id) ? m.videoProducers : [...m.videoProducers, producer]
                 } : m)
             }
         }
@@ -283,7 +283,7 @@ const handleActions = {
             },
             members: store.members.map(m => m.uid === payload.event.soundjack.uid ? {
                 ...m,
-                soundjacks: [...m.soundjacks, soundjack]
+                soundjacks: m.soundjacks.find(ap => ap.id === payload.event.id) ? m.soundjacks : [...m.soundjacks, soundjack]
             } : m)
         };
     },
