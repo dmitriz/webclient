@@ -23,10 +23,11 @@ import "firebase/database";
 import {IDevice} from "../IDevice";
 import fetch from "isomorphic-unfetch";
 import {IDebugger} from "../IDebugger";
+import {USE_EMULULATOR} from "../../../../env";
 
-const CREATE_STAGE_URL: string = process.env.NODE_ENV === "development" ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/createStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/createStage";
-const JOIN_STAGE_URL: string = process.env.NODE_ENV === "development" ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/joinStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/joinStage";
-const LEAVE_STAGE_URL: string = process.env.NODE_ENV === "development" ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/leaveStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/leaveStage";
+const CREATE_STAGE_URL: string = USE_EMULULATOR ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/createStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/createStage";
+const JOIN_STAGE_URL: string = USE_EMULULATOR ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/joinStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/joinStage";
+const LEAVE_STAGE_URL: string = USE_EMULULATOR ? "http://localhost:5001/digitalstage-wirvsvirus/europe-west3/leaveStage" : "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/leaveStage";
 
 
 export class RealtimeDatabaseAPI extends DigitalStageAPI {

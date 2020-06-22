@@ -80,7 +80,7 @@ export const StageProvider = (props: {
     children: React.ReactNode
 }) => {
     const {user} = useAuth();
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
     const [stageId, setStageId] = useState<string>(undefined);
     const [stageName, setStageName] = useState<string>(undefined);
     const [api, setApi] = useState<DigitalStageAPI>(undefined);
@@ -114,6 +114,7 @@ export const StageProvider = (props: {
 
     useEffect(() => {
         if (user) {
+            setLoading(true);
             const api = new RealtimeDatabaseAPI(user);
             api.setDebug(debug);
             setApi(api);
@@ -121,6 +122,7 @@ export const StageProvider = (props: {
             localDevice.setDebug(debug);
             setLocalDevice(localDevice);
         } else {
+            setLoading(false);
             if (api) {
                 api.disconnect();
                 api.removeAllListeners();
@@ -240,7 +242,8 @@ export const StageProvider = (props: {
                 .then(() => api.connect())
                 .then(() => localDevice.connect())
                 .then(() => localDevice.setReceiveAudio(true))
-                .catch(handleError);
+                .catch(handleError)
+                .finally(() => setLoading(false));
             setInitialized(true);
         }
     }, [api, localDevice])

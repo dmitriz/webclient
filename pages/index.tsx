@@ -19,13 +19,13 @@ export default () => {
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
-    if (loading) {
+    if (loading || stageLoading) {
         return (
             <Loading><h1>Loading</h1></Loading>
         )
     }
     if (!user) {
-         router.push("/login");
+        router.push("/login");
     }
 
     if (id) {

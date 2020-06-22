@@ -1,4 +1,5 @@
-export const FIREBASE_CONFIG = process.env.NODE_ENV === "development" ? {
+export const USE_EMULULATOR: boolean = false;
+export const FIREBASE_CONFIG = USE_EMULULATOR ? {
     apiKey: "AIzaSyCWzfs4Xt9JH0X3lhjTbgb4JC7Q4Bsafr4",
     databaseURL: "http://localhost:9000/?ns=digitalstage-wirvsvirus",
     authDomain: "digitalstage-wirvsvirus.firebaseapp.com",

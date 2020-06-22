@@ -6,13 +6,11 @@ import {Button} from "baseui/button";
 import {Modal, ModalBody, ModalHeader} from "baseui/modal";
 import {IDevice} from "../../lib/digitalstage/base";
 import {useStage} from "../../lib/digitalstage/useStage";
-import {useDarkModeSwitch} from "../../lib/useDarkModeSwitch";
 
 const DeviceRow = (props: {
     device: IDevice
 }) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const {darkMode} = useDarkModeSwitch();
 
     return (
         <>
@@ -51,8 +49,7 @@ const DeviceRow = (props: {
                 />
             </StyledBodyCell>
             <StyledBodyCell>
-                <Button size="mini" kind="minimal" onClick={() => setIsOpen(true)}><img
-                    src={darkMode ? "more_horiz-white-18dp.svg" : "more_horiz-black-18dp.svg"}/></Button>
+                <Button size="mini" onClick={() => setIsOpen(true)}>Settings</Button>
                 <Modal onClose={() => setIsOpen(false)} isOpen={isOpen}
                        unstable_ModalBackdropScroll={true}
                        overrides={{
@@ -76,7 +73,6 @@ const DeviceRow = (props: {
 export default () => {
     const {devices} = useStage();
     const [css] = useStyletron();
-    const {darkMode} = useDarkModeSwitch();
 
     return (
         <div
@@ -86,18 +82,13 @@ export default () => {
             })}
         >
             <StyledTable $gridTemplateColumns="max-content auto auto auto auto auto auto">
-                <StyledHeadCell $sticky={true}/>
-                <StyledHeadCell $sticky={true}><img
-                    src={darkMode ? "toc-white-18dp.svg" : "toc-black-18dp.svg"}/></StyledHeadCell>
-                <StyledHeadCell $sticky={true}><img
-                    src={darkMode ? "videocam-white-18dp.svg" : "videocam-24px.svg"}/></StyledHeadCell>
-                <StyledHeadCell className={css({justifyContent: "center"})} $sticky={true}><img
-                    src={darkMode ? "mic-white-18dp.svg" : "mic-24px.svg"}/></StyledHeadCell>
-                <StyledHeadCell className={css({justifyContent: "center"})} $sticky={true}><img
-                    src={darkMode ? "live_tv-white-18dp.svg" : "live_tv-24px.svg"}/></StyledHeadCell>
-                <StyledHeadCell className={css({justifyContent: "center"})} $sticky={true}><img
-                    src={darkMode ? "volume_up-white-18dp.svg" : "volume_up-24px.svg"}/></StyledHeadCell>
-                <StyledHeadCell $sticky={true}/>
+                <StyledHeadCell $sticky={false}>Type</StyledHeadCell>
+                <StyledHeadCell $sticky={false}>Caption</StyledHeadCell>
+                <StyledHeadCell $sticky={false}>Send video</StyledHeadCell>
+                <StyledHeadCell $sticky={false}>Send audio</StyledHeadCell>
+                <StyledHeadCell $sticky={false}>Receive video</StyledHeadCell>
+                <StyledHeadCell $sticky={false}>Receive audio</StyledHeadCell>
+                <StyledHeadCell $sticky={false}/>
                 {devices.map((device: IDevice) => <DeviceRow key={device.id} device={device}/>)}
             </StyledTable>
         </div>

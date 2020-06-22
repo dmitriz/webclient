@@ -1,35 +1,26 @@
 import React from "react";
 import {styled} from "baseui";
-import {Button as BaseButton, SHAPE, SIZE} from "baseui/button";
+import {SHAPE, SIZE} from "baseui/button";
 import {OverlayButton} from "../theme/OverlayButton";
 import {useStage} from "../../lib/digitalstage/useStage";
 
-const SoundjackLogo = styled("img", {
-    width: "24px",
-    height: "24px"
-});
-
-const Panel = styled("div", {
+const Panel = styled("div", props => ({
     position: "fixed",
-    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     bottom: "50px",
     left: "50px",
-    height: "auto"
-});
+    height: "auto",
+    display: 'none',
+    zIndex: 8000,
+    [props.$theme.mediaQuery.medium]: {
+        display: "flex"
+    }
+}));
 
 const buttonSize = SIZE.large;
 const buttonShape = SHAPE.default;
-
-const SoundjackButton = styled(BaseButton, {
-    backgroundImage: "url('/soundjack.png')",
-    backgroundSize: "cover",
-    width: "56px",
-    height: "56px"
-});
-
 
 export default () => {
     const {localDevice} = useStage();
