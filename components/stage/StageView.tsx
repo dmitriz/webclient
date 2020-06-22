@@ -42,7 +42,7 @@ export default () => {
     const [toastKey, setToastKey] = React.useState<React.ReactText | null>(null);
 
     useEffect(() => {
-        if (error) {
+        if (error && error.message) {
             setToastKey(toaster.negative(error.message, {
                 onClose: closeToast
             }));

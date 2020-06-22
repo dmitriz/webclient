@@ -25,7 +25,7 @@ export default () => {
         )
     }
     if (!user) {
-        return router.push("/login");
+         router.push("/login");
     }
 
     if (id) {
@@ -53,7 +53,7 @@ export default () => {
                 </FormControl>
                 {error && (
                     <Notification kind={KIND.negative}>
-                        {error}
+                        {error.message}
                     </Notification>
                 )}
                 <Button isLoading={stageLoading} disabled={stageId.length === 0}

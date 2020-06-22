@@ -250,7 +250,10 @@ export const StageProvider = (props: {
             setLoading(true);
             return api
                 .createStage(name, password)
-                .then(() => setError(undefined))
+                .then(result => {
+                    setError(undefined);
+                    return result;
+                })
                 .catch(handleError)
                 .finally(() => {
                     setLoading(false);
@@ -263,7 +266,10 @@ export const StageProvider = (props: {
             setLoading(true);
             return api
                 .joinStage(stageId, password)
-                .then(() => setError(undefined))
+                .then(result => {
+                    setError(undefined);
+                    return result;
+                })
                 .catch(handleError)
                 .finally(() => {
                     setLoading(false);

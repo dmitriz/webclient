@@ -16,14 +16,19 @@ export default () => {
     const {user, loading} = useAuth();
     const {create: createStage, loading: stageLoading} = useStage();
     const [stageName, setStageName] = useState<string>("stage1");
-    const router = useRouter();
     const [password, setPassword] = useState<string>("");
     const [stage, setStage] = useState<DatabaseStage>();
     const [copied, setCopied] = useState<boolean>(false);
+    const router = useRouter();
 
     const create = useCallback((name: string, password: string) => {
         createStage(name, password)
-            .then((stage: DatabaseStage) => setStage(stage));
+            .then((stage: DatabaseStage) => {
+                console.log("YES");
+                console.log("YES");
+                setStage(stage)
+            })
+            .catch((error) => alert(error.message))
     }, [createStage]);
 
     if (loading) {
@@ -35,8 +40,10 @@ export default () => {
         router.push("/login");
     }
 
+    console.log(stage);
+
     if (stage) {
-        const link: string = "https://digitalstage.now.sh/?id=" + stage.id + "&password=" + stage.password;
+        const link: string = "https://live.digital-stage.de/?id=" + stage.id + "&password=" + stage.password;
         return (
             <Layout>
                 <CenteredCard>
