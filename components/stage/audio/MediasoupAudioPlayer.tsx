@@ -79,7 +79,10 @@ const MediasoupAudioSlider = (props: {
     useEffect(() => {
         // Update gain node
         if (audioContext && gainNode) {
+            console.log(props.globalVolume);
+            console.log(props.producer.volume);
             const realVolume = props.globalVolume * props.producer.volume;
+            console.log(realVolume);
             gainNode.gain.setValueAtTime(realVolume, audioContext.currentTime);
         }
     }, [props.producer.volume, props.globalVolume, gainNode, audioContext]);
@@ -88,7 +91,7 @@ const MediasoupAudioSlider = (props: {
         <SliderWrapper>
             <HiddenAudioPlayer ref={audioRef}/>
             <VolumeSlider min={0} max={1} step={0.1} value={props.producer.volume}
-                          onChange={props.producer.setVolume}/>
+                          onChange={v => props.producer.setVolume(v)}/>
         </SliderWrapper>
     );
 }
@@ -105,13 +108,15 @@ export default (props: {
         props.member.globalGain.gain.setValueAtTime(globalVolume, props.member.globalGain.context.currentTime);
     }, [globalVolume]);*/
 
+    console.log("GLOBAL VOLUME: " + props.member.volume);
+
     return (
         <>
             <SliderOverlay ref={hoverRef}>
                 <SliderPopout $hovered={hovered}>
                     {props.member.soundjacks.map((soundjack: ISoundjack) => (
                         <VolumeSlider min={0} max={1} step={0.1} value={soundjack.volume}
-                                      onChange={soundjack.setVolume}/>
+                                      onChange={v => soundjack.setVolume(v)}/>
                     ))}
                     {props.member.audioProducers.map((producer: IAudioProducer) => (
                         <MediasoupAudioSlider key={producer.id} globalVolume={props.member.volume}
@@ -121,7 +126,7 @@ export default (props: {
                 {props.member.audioProducers.length > 0 || props.member.soundjacks.length > 0 && (
                     <SliderWrapper>
                         <VolumeSlider min={0} max={1} step={0.1} value={props.member.volume}
-                                      onChange={props.member.setVolume}/>
+                                      onChange={v => props.member.setVolume(v)}/>
                     </SliderWrapper>
                 )}
             </SliderOverlay>

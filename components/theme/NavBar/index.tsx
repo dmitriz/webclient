@@ -186,13 +186,13 @@ export default (props: {
                     </LabelMedium>
                 )}
                 {props.main.map((item) => (
-                    <div className={css({
+                    <div key={item.label} className={css({
                         display: 'flex',
                         width: '100%',
                         flexDirection: 'column',
                     })}>
                         <DrawerMainMenuItem item={item}
-                                      key={item.label}/>
+                                            key={item.label}/>
                     </div>
                 ))}
             </Drawer>

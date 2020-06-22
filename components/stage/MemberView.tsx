@@ -3,6 +3,7 @@ import {styled} from "baseui";
 import CanvasPlayer from "./video/CanvasPlayer";
 import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
 import {IMember} from "../../lib/digitalstage/useStage";
+import AudioMixer from "./audio/AudioMixer";
 
 const MemberPanel = styled("div", {
     width: '100%',
@@ -46,7 +47,7 @@ const SoundjackLogo = styled("img", {
     zIndex: 2
 });
 
-const StyledMediasoupAudioPlayer = styled(MediasoupAudioPlayer, {
+const StyledAudioMixer = styled(AudioMixer, {
     zIndex: 3
 });
 
@@ -75,7 +76,7 @@ export default (props: {
                 <MemberVideo width={width} height={height}
                              videoProducers={props.member.videoProducers}/>
             )}
-            <StyledMediasoupAudioPlayer member={props.member}/>
+            <StyledAudioMixer member={props.member}/>
         </MemberPanel>
     )
 }
