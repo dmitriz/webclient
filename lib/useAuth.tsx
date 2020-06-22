@@ -14,58 +14,18 @@ export interface AuthProps {
 }
 
 const AuthContext = React.createContext(undefined);
-export const useAuthDep = (): AuthProps => {
-    const [state, setState] = useState<AuthProps>(() => {
-        const user = firebase.auth().currentUser;
-        return {
-            loading: !user,
-            user
-        };
-    });
-
-    function onChange(user: firebase.User | null) {
-        setState({loading: false, user});
-
-        if (user) {
-            user.getIdToken().then(
-                (token: string) => {
-                    cookie.set('token', token, {expires: 1});
-                }
-            );
-        } else {
-            cookie.remove('token');
-        }
-    }
-
-    useEffect(() => {
-        // Listen for auth state changes.
-        const unsubscribe = firebase.auth().onAuthStateChanged(onChange);
-
-        // Unsubscribe to the listener when unmounting.
-        return () => unsubscribe();
-    }, []);
-
-    return state;
-};
 
 export const useAuth = (): AuthProps => React.useContext<AuthProps>(AuthContext);
 
 export const AuthContextProvider = (props: {
     children: React.ReactNode
 }) => {
-    const [state, setState] = useState<AuthProps>((): AuthProps => {
-        const user = firebase.auth().currentUser;
-        return {
-            user: user,
-            loading: !user
-        };
-    });
+    const [user, setUser] = useState<firebase.User>(firebase.auth().currentUser);
+    const [loading, setLoading] = useState<boolean>(!user);
 
     const handleChange = (user: firebase.User | null) => {
-        setState({
-            user: user,
-            loading: false
-        });
+        setUser(user);
+        setLoading(false);
         if (user) {
             user.getIdToken().then(
                 (token: string) => {
@@ -83,7 +43,10 @@ export const AuthContextProvider = (props: {
     }, []);
 
     return (
-        <AuthContext.Provider value={state}>
+        <AuthContext.Provider value={{
+            user: user,
+            loading: loading
+        }}>
             {props.children}
         </AuthContext.Provider>
     );
@@ -94,7 +57,7 @@ export const withAuth = (ComposedComponent: any) => {
         return (
             <AuthContext.Consumer>
                 {(auth: AuthProps) => (
-                    <ComposedComponent auth={auth} {...props} />
+                    <ComposedComponent user={auth.user} loading={auth.loading}  {...props} />
                 )}
             </AuthContext.Consumer>
         );

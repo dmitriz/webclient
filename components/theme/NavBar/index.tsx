@@ -53,6 +53,44 @@ const MainMenuItem = (props: {
     )
 }
 
+
+const DrawerMainMenuItem = (props: {
+    item: NavItem,
+}) => {
+    if (props.item.href) {
+        return (
+            <Link href={props.item.href}>
+                <Button kind="minimal" size="large"
+                        overrides={{
+                            BaseButton: {
+                                style: {
+                                    width: "100%"
+                                }
+                            }
+                        }}>
+                    {props.item.label}
+                </Button>
+            </Link>
+        )
+    }
+
+    return (
+        <Button kind="minimal" size="large"
+                overrides={{
+                    BaseButton: {
+                        style: {
+                            width: "100%"
+                        }
+                    }
+                }}
+                onClick={props.item.onClick}>
+            <LabelMedium>
+                {props.item.label}
+            </LabelMedium>
+        </Button>
+    )
+}
+
 export default (props: {
     logo?: React.ReactNode,
     main: NavItem[],
@@ -148,8 +186,14 @@ export default (props: {
                     </LabelMedium>
                 )}
                 {props.main.map((item) => (
-                    <MainMenuItem item={item}
-                                  key={item.label}/>
+                    <div className={css({
+                        display: 'flex',
+                        width: '100%',
+                        flexDirection: 'column',
+                    })}>
+                        <DrawerMainMenuItem item={item}
+                                      key={item.label}/>
+                    </div>
                 ))}
             </Drawer>
         </>

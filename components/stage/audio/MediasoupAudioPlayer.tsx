@@ -1,10 +1,12 @@
-import {MediasoupAudioTrack} from "../../../lib/digitalstage/types/MediasoupAudioTrack";
 import {styled} from "baseui";
 import React, {MutableRefObject, useEffect, useRef, useState} from "react";
 import useHover from "../../../lib/useHover";
 import VolumeSlider from "../../theme/VolumeSlider";
-import {useDigitalStage} from "../../../lib/digitalstage/useDigitalStage";
-import { StageMember } from "../../../lib/digitalstage/types/StageMember";
+import {IAudioProducer, IMember, ISoundjack} from "../../../lib/digitalstage/useStage";
+import {useAudioContext} from "../../../lib/useAudioContext";
+import {IGainNode} from "standardized-audio-context/src/interfaces/gain-node";
+import {IAudioContext} from "standardized-audio-context";
+import {IMediaStreamAudioSourceNode} from "standardized-audio-context/src/interfaces/media-stream-audio-source-node";
 
 const HiddenAudioPlayer = styled("audio", {})
 
@@ -36,37 +38,66 @@ const SliderPopout = styled("div", (props: {
 
 const MediasoupAudioSlider = (props: {
     globalVolume: number;
-    audioTrack: MediasoupAudioTrack;
+    producer: IAudioProducer;
 }) => {
     const audioRef = useRef<HTMLAudioElement>();
-    const [volume, setVolume] = useState<number>(props.audioTrack.gainNode.gain.value * 100);
+    const {audioContext} = useAudioContext();
+    const [streamSource, setStreamSource] = useState<IMediaStreamAudioSourceNode<IAudioContext>>(undefined);
+    const [gainNode, setGainNode] = useState<IGainNode<IAudioContext>>(undefined);
+    const [volume, setVolume] = useState<number>(props.producer.volume * 100);
 
     useEffect(() => {
-        audioRef.current.srcObject = props.audioTrack.mediaStream;
-    }, [audioRef]);
+        if (audioContext) {
+            if (props.producer.consumer) {
+                const streamSource = audioContext.createMediaStreamSource(new MediaStream([props.producer.consumer.track]));
+                const gainNode = audioContext.createGain();
+                streamSource.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                setGainNode(gainNode);
+                setStreamSource(streamSource);
+            } else {
+                if (streamSource) {
+                    streamSource.disconnect();
+                }
+                if (gainNode) {
+                    gainNode.disconnect();
+                }
+                setGainNode(undefined);
+                setStreamSource(undefined);
+            }
+        }
+    }, [props.producer.consumer, audioContext])
 
     useEffect(() => {
-        const realVolume = (props.globalVolume / 100) * (volume / 100);
-        console.log(realVolume);
-        props.audioTrack.gainNode.gain.setValueAtTime(realVolume, props.audioTrack.gainNode.context.currentTime);
-    }, [volume, props.globalVolume]);
+        if (audioRef && streamSource) {
+            audioRef.current.srcObject = streamSource.mediaStream;
+        } else {
+            audioRef.current.srcObject = undefined;
+        }
+    }, [audioRef, streamSource]);
+
+    useEffect(() => {
+        // Update gain node
+        if (audioContext && gainNode) {
+            const realVolume = props.globalVolume * props.producer.volume;
+            gainNode.gain.setValueAtTime(realVolume, audioContext.currentTime);
+        }
+    }, [props.producer.volume, props.globalVolume, gainNode, audioContext]);
 
     return (
         <SliderWrapper>
             <HiddenAudioPlayer ref={audioRef}/>
-            <VolumeSlider min={0} max={100} step={10} value={volume}
-                          onChange={(value) => setVolume(value)}/>
+            <VolumeSlider min={0} max={1} step={0.1} value={props.producer.volume}
+                          onChange={props.producer.setVolume}/>
         </SliderWrapper>
     );
 }
 
 export default (props: {
-    member: StageMember
+    member: IMember
 }) => {
-    const [globalVolume, setGlobalVolume] = useState<number>(props.member.audio.globalVolume * 100);
     const hoverRef: MutableRefObject<HTMLDivElement> = useRef<HTMLDivElement>(null);
     const hovered = useHover<HTMLDivElement>(hoverRef);
-    const {api} = useDigitalStage();
 
     //TODO: For later, when Chromium fixed this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=933677
     /*
@@ -74,24 +105,23 @@ export default (props: {
         props.member.globalGain.gain.setValueAtTime(globalVolume, props.member.globalGain.context.currentTime);
     }, [globalVolume]);*/
 
-    useEffect(() => {
-        props.member.audio.globalVolume = globalVolume / 100;
-        api.setRemoteMasterVolume(props.member.uid, props.member.audio.globalVolume);
-    }, [globalVolume]);
-
     return (
         <>
             <SliderOverlay ref={hoverRef}>
-
                 <SliderPopout $hovered={hovered}>
-                    {props.member.audio.audioTracks.map((audioTrack: MediasoupAudioTrack) => (
-                        <MediasoupAudioSlider key={audioTrack.id} globalVolume={globalVolume} audioTrack={audioTrack}/>
+                    {props.member.soundjacks.map((soundjack: ISoundjack) => (
+                        <VolumeSlider min={0} max={1} step={0.1} value={soundjack.volume}
+                                      onChange={soundjack.setVolume}/>
+                    ))}
+                    {props.member.audioProducers.map((producer: IAudioProducer) => (
+                        <MediasoupAudioSlider key={producer.id} globalVolume={props.member.volume}
+                                              producer={producer}/>
                     ))}
                 </SliderPopout>
-                {props.member.audio.audioTracks.length > 0 && (
+                {props.member.audioProducers.length > 0 || props.member.soundjacks.length > 0 && (
                     <SliderWrapper>
-                        <VolumeSlider min={0} max={100} step={5} value={globalVolume}
-                                      onChange={(value) => setGlobalVolume(value)}/>
+                        <VolumeSlider min={0} max={1} step={0.1} value={props.member.volume}
+                                      onChange={props.member.setVolume}/>
                     </SliderWrapper>
                 )}
             </SliderOverlay>

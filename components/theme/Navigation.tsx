@@ -1,8 +1,8 @@
 import React from "react";
 import {useAuth} from "../../lib/useAuth";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
 import NavBar from "./NavBar";
 import {styled} from "baseui";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const CenterVertical = styled("div", {
     display: 'flex',
@@ -16,15 +16,15 @@ const Banner = styled("img", {
 
 export default () => {
     const {user} = useAuth();
-    const {leave, stage} = useDigitalStage();
+    const {leave, stageId, stageName} = useStage();
 
     return (
         <NavBar logo={(
             <CenterVertical>
                 <Banner src={"/logo.png"}/>
-                {stage ? stage.name : "Digital Stage"}
+                {stageName ? stageName : "Digital Stage"}
             </CenterVertical>
-        )} user={user} main={user ? stage ? [
+        )} user={user} main={user ? stageId ? [
             {
                 label: "Leave stage",
                 onClick: leave
@@ -37,6 +37,10 @@ export default () => {
             {
                 label: "Join stage",
                 href: "/"
+            },
+            {
+                label: "Logout",
+                href: "/logout"
             }
         ] : [
             {

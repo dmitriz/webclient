@@ -1,11 +1,11 @@
 import * as firebase from 'firebase/app'
 import 'firebase/firestore'
 
-import {types} from 'digitalstage-client-base'
 import {MediasoupRouter} from './types'
-import {Debugger} from "../base";
+import {DatabaseRouter} from '../base/types';
+import {IDebugger} from "../base";
 
-export const getFastestRouter = (): Promise<MediasoupRouter> => {
+export const getFastestRouter = (debug?: IDebugger): Promise<MediasoupRouter> => {
     return new Promise<MediasoupRouter>((resolve, reject) => {
         let fastestRouter: MediasoupRouter
         return firebase
@@ -18,18 +18,18 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                 }
                 const lowestLatency = -1
                 const routers: {
-                    [id: string]: types.DatabaseRouter
+                    [id: string]: DatabaseRouter
                 } = snapshot.val()
                 for (const routerId of Object.keys(routers)) {
-                    const router: types.DatabaseRouter = routers[routerId]
+                    const router: DatabaseRouter = routers[routerId]
                     const latency: number = await ping(
                         'https://' + router.domain + ':' + router.port + '/ping'
                     ).catch((err) => {
                         err.message = 'Could not ping router' + err.message;
-                        Debugger.handleError(err, "Mediasoup Utils")
+                        debug && debug.handleError(err, "Mediasoup Utils")
                         return 99999
                     })
-                    Debugger.debug('Latency of router ' + router.domain + ': ' + latency, "Mediasoup Utils");
+                    debug && debug.debug('Latency of router ' + router.domain + ': ' + latency, "Mediasoup Utils");
                     if (lowestLatency === -1 || lowestLatency > latency) {
                         fastestRouter = {
                             ...router,
@@ -38,7 +38,7 @@ export const getFastestRouter = (): Promise<MediasoupRouter> => {
                     }
                 }
                 if (fastestRouter) {
-                    Debugger.debug('USING ' + fastestRouter.domain, "Mediasoup Utils");
+                    debug && debug.debug('USING ' + fastestRouter.domain, "Mediasoup Utils");
                     return resolve(fastestRouter)
                 }
                 return reject(new Error('No routers available'))

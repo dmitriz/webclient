@@ -1,9 +1,8 @@
 import React, {useEffect, useRef, useState} from "react";
 import {styled} from "baseui";
 import CanvasPlayer from "./video/CanvasPlayer";
-import {MediasoupVideoTrack} from "../../lib/digitalstage/types/MediasoupVideoTrack";
 import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
-import { StageMember } from "../../lib/digitalstage/types/StageMember";
+import {IMember} from "../../lib/digitalstage/useStage";
 
 const MemberPanel = styled("div", {
     width: '100%',
@@ -52,7 +51,7 @@ const StyledMediasoupAudioPlayer = styled(MediasoupAudioPlayer, {
 });
 
 export default (props: {
-    member: StageMember
+    member: IMember
 }) => {
     const [width, setWidth] = useState<number>(0);
     const [height, setHeight] = useState<number>(0);
@@ -68,13 +67,14 @@ export default (props: {
 
     return (
         <MemberPanel ref={panelRef}>
-            {props.member.audio.soundjackVolume && (
+            {props.member.soundjacks.length > 0 && (
                 <SoundjackLogo src="/soundjack.png"/>
             )}
-            <MemberTitle>{props.member.displayName}</MemberTitle>
-            <MemberVideo width={width} height={height}
-                         videoTracks={props.member.videoTracks.map((videoTrack: MediasoupVideoTrack) => videoTrack.track)}/>
-
+            <MemberTitle>{props.member.name}</MemberTitle>
+            {props.member.videoProducers.length > 0 && (
+                <MemberVideo width={width} height={height}
+                             videoProducers={props.member.videoProducers}/>
+            )}
             <StyledMediasoupAudioPlayer member={props.member}/>
         </MemberPanel>
     )

@@ -2,15 +2,13 @@ import React from 'react'
 import App from 'next/app'
 import {Provider as StyletronProvider} from 'styletron-react'
 import {debug, styletron} from '../styletron'
-import {BaseProvider} from "baseui";
+import {BaseProvider, DarkTheme, LightTheme} from "baseui";
 import {DarkModeContext, DarkModeStageProvider} from '../lib/useDarkModeSwitch';
 import {AuthContextProvider} from "../lib/useAuth";
 import {AudioContextProvider} from "../lib/useAudioContext";
 
 import * as Sentry from '@sentry/browser';
-import {DigitalStageProvider} from "../lib/digitalstage/useDigitalStage";
-import {DigitalStageDarkTheme} from "../components/DarkTheme";
-import {DigitalStageLightTheme} from "../components/LightTheme";
+import {StageProvider} from "../lib/digitalstage/useStage";
 
 if (process.env.NODE_ENV === "production")
     Sentry.init({dsn: "https://4c5911aca6334d9aafdc6c7b106a7b1e@o403353.ingest.sentry.io/5265870"});
@@ -34,11 +32,11 @@ export default class MyApp extends App<Props, States> {
             <StyletronProvider value={styletron} debug={debug} debugAfterHydration>
                 <AuthContextProvider>
                     <AudioContextProvider>
-                        <DigitalStageProvider>
+                        <StageProvider>
                             <DarkModeStageProvider>
                                 <DarkModeContext.Consumer>
                                     {({darkMode}) => (
-                                        <BaseProvider theme={darkMode ? DigitalStageDarkTheme : DigitalStageLightTheme}>
+                                        <BaseProvider theme={darkMode ? DarkTheme : LightTheme}>
                                             <style jsx global>{`
                     :root {
                         --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
@@ -83,7 +81,7 @@ export default class MyApp extends App<Props, States> {
                                     )}
                                 </DarkModeContext.Consumer>
                             </DarkModeStageProvider>
-                        </DigitalStageProvider>
+                        </StageProvider>
                     </AudioContextProvider>
                 </AuthContextProvider>
             </StyletronProvider>

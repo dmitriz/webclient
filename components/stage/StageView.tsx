@@ -1,16 +1,11 @@
-import React, {useEffect, useState} from "react";
-import LocalDevicePanel from "./LocalDevicePanel";
-import {styled, withStyle} from "baseui";
+import React from "react";
+import {styled} from "baseui";
 import MemberView from "./MemberView";
 import Click from "../click/Click";
 import {FlexGrid, FlexGridItem} from "baseui/flex-grid";
 import {BlockProps} from "baseui/block";
 import {AspectRatioBox, AspectRatioBoxBody} from "baseui/aspect-ratio-box";
-import DevicesView from "../devices/DevicesView";
-import {ANCHOR, Drawer} from 'baseui/drawer';
-import {SHAPE, StyledBaseButton} from "baseui/button";
-import {useDigitalStage} from "../../lib/digitalstage/useDigitalStage";
-import {KIND, Toast} from "baseui/toast";
+import {useStage} from "../../lib/digitalstage/useStage";
 
 const Wrapper = styled("div", {
     position: "relative",
@@ -20,12 +15,6 @@ const Wrapper = styled("div", {
     height: '100vh'
 });
 
-const ToggleDeviceButton = withStyle(StyledBaseButton, {
-    position: "fixed",
-    bottom: "50px",
-    right: "50px",
-    zIndex: 2
-});
 
 const ClickPanel = styled("div", {
     position: "fixed",
@@ -37,17 +26,7 @@ const ClickPanel = styled("div", {
 const itemProps: BlockProps = {};
 
 export default () => {
-    const {error, members} = useDigitalStage();
-    const [showDevices, setShowDevices] = useState<boolean>(false);
-    const [showToast, setShowToast] = useState<boolean>(false);
-
-    useEffect(() => {
-        if (error) {
-            console.log("NEW ERROR:");
-            console.log(error);
-            setShowToast(true);
-        }
-    }, [error])
+    const {members} = useStage();
 
     return (
         <>
@@ -73,42 +52,10 @@ export default () => {
                     ))}
                 </FlexGrid>
 
-                <LocalDevicePanel/>
 
-                <ToggleDeviceButton
-                    onClick={() => setShowDevices(prevState => !prevState)}
-                    size="large"
-                    shape={SHAPE.round}
-                >
-                    <img src="settings-24px.svg"/>
-                </ToggleDeviceButton>
             </Wrapper>
 
-            <Drawer
-                autoFocus
-                size="full"
-                onClose={() => setShowDevices(false)}
-                isOpen={showDevices}
-                anchor={ANCHOR.bottom}
-                overrides={{
-                    Root: {
-                        style: {
-                            zIndex: 9999
-                        }
-                    }
-                }}
-            >
-                <DevicesView/>
-            </Drawer>
-            {error && showToast && (
-                <Toast overrides={{
-                    Body: {
-                        style: {
-                            zIndex: 99999
-                        }
-                    }
-                }} kind={KIND.negative} closeable={true} onClose={() => setShowToast(false)}>{error}</Toast>
-            )}
+
         </>
     )
 }

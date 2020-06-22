@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {useDigitalStage} from "./digitalstage/useDigitalStage";
+import {useStage} from "./digitalstage/useStage";
 
 export interface DarkModeProps {
     darkMode: boolean,
@@ -15,11 +15,11 @@ export const DarkModeStageProvider = (props: {
     children: React.ReactNode
 }) => {
     const [darkMode, setDarkMode] = useState<boolean>(false);
-    const {stage} = useDigitalStage();
+    const {stageId} = useStage();
 
     useEffect(() => {
-        setDarkMode(stage !== undefined);
-    }, [stage]);
+        setDarkMode(stageId !== undefined);
+    }, [stageId]);
 
     return (
         <DarkModeContext.Provider value={{

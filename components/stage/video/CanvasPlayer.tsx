@@ -1,5 +1,6 @@
 import React from "react";
 import {styled} from "baseui";
+import {IVideoProducer} from "../../../lib/digitalstage/useStage";
 
 interface CanvasElement extends HTMLCanvasElement {
     captureStream(): MediaStream;
@@ -26,7 +27,7 @@ interface AnimationFrame {
 interface Props {
     width: number;
     height: number;
-    videoTracks: MediaStreamTrack[];
+    videoProducers: IVideoProducer[];
     onStreamAvailable?: (stream: MediaStream) => void
 }
 
@@ -51,21 +52,28 @@ export default class CanvasPlayer extends React.Component<Props, States> {
     }
 
     private getVideoTrack = (id: string): MediaStreamTrack | undefined => {
-        return this.props.videoTracks.find((videoTrack: MediaStreamTrack) => videoTrack.id === id);
+        this.props.videoProducers.forEach(p => {
+            if (p.consumer && p.consumer.track.id === id) {
+                return p.consumer.track;
+            }
+        })
+        return undefined;
     };
 
     private getUniqueTracks = (): MediaStreamTrack[] => {
         const uniqueTracks: MediaStreamTrack[] = [];
-        this.props.videoTracks.forEach((videoTrack: MediaStreamTrack) => {
-            if (!uniqueTracks.find((contained) => contained.id === videoTrack.id)) {
-                uniqueTracks.push(videoTrack);
+        this.props.videoProducers.forEach((producer: IVideoProducer) => {
+            if (producer.consumer && producer.consumer.track) {
+                if (!uniqueTracks.find((contained) => producer.consumer.track && contained.id === producer.consumer.track.id)) {
+                    uniqueTracks.push(producer.consumer.track);
+                }
             }
         });
         return uniqueTracks;
     };
 
     componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<States>, snapshot?: any): void {
-        if (prevProps.videoTracks !== this.props.videoTracks) {
+        if (prevProps.videoProducers !== this.props.videoProducers) {
 
             const videoTracks: MediaStreamTrack[] = this.getUniqueTracks();
 

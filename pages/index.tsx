@@ -9,17 +9,17 @@ import {useRouter} from "next/router";
 import {KIND, Notification} from "baseui/notification";
 import StageView from "../components/stage/StageView";
 import CenteredCard from "../components/theme/CenteredCard";
-import {useDigitalStage} from "../lib/digitalstage/useDigitalStage";
 import {DisplayMedium, ParagraphMedium} from "baseui/typography";
+import {useStage} from "../lib/digitalstage/useStage";
 
 export default () => {
     const {user, loading} = useAuth();
-    const {join, stage, error, loading: stageLoading} = useDigitalStage();
+    const {join, stageId: id, error, loading: stageLoading} = useStage();
     const [stageId, setStageId] = useState<string>("-M9p2_4r-DNWAbhj74Jj");
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
-    if (loading) {
+    if (loading || stageLoading) {
         return (
             <Loading><h1>Loading</h1></Loading>
         )
@@ -28,7 +28,7 @@ export default () => {
         router.push("/login");
     }
 
-    if (stage) {
+    if (id) {
         return (
             <Layout>
                 <StageView/>
@@ -53,7 +53,7 @@ export default () => {
                 </FormControl>
                 {error && (
                     <Notification kind={KIND.negative}>
-                        {error}
+                        {error.message}
                     </Notification>
                 )}
                 <Button isLoading={stageLoading} disabled={stageId.length === 0}
