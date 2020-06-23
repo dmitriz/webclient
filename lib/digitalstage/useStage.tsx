@@ -202,15 +202,19 @@ export const StageProvider = (props: {
 
             api.on("device-added", (event: DeviceEvent) => setDevices(
                 prevState => {
+                    debug.debug("Device added " + event.device.name, "useStage");
                     const device = localDevice && localDevice.id === event.id ? localDevice : new RemoteDevice(api, event.id, event.device);
                     device.on("device-changed", () => setDevices(prevState => prevState));
                     return [...prevState, device];
                 }
             ))
 
-            api.on("device-changed", () => setDevices(
-                prevState => [...prevState]
-            ))
+            api.on("device-changed", (event: DeviceEvent) => {
+                debug.debug("Device changed " + event.device.name, "useStage");
+                setDevices(
+                    prevState => prevState.map(device => device.id === event.id ? device : device)
+                )
+            })
 
             api.on("device-removed", (event: DeviceEvent) => setDevices(
                 prevState => prevState.filter(device => {

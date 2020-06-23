@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import {styled} from "baseui";
 import CanvasPlayer from "./video/CanvasPlayer";
-import MediasoupAudioPlayer from "./audio/MediasoupAudioPlayer";
 import {IMember} from "../../lib/digitalstage/useStage";
 import AudioMixer from "./audio/AudioMixer";
 

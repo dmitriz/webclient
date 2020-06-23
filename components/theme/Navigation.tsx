@@ -21,7 +21,7 @@ export default () => {
     return (
         <NavBar logo={(
             <CenterVertical>
-                <Banner src={"/logo.png"}/>
+                <Banner src={"/logo.svg"}/>
                 {stageName ? stageName : "Digital Stage"}
             </CenterVertical>
         )} user={user} main={user ? stageId ? [

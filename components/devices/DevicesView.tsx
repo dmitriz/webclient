@@ -7,6 +7,46 @@ import {Modal, ModalBody, ModalHeader} from "baseui/modal";
 import {IDevice} from "../../lib/digitalstage/base";
 import {useStage} from "../../lib/digitalstage/useStage";
 import {useDarkModeSwitch} from "../../lib/useDarkModeSwitch";
+import Select, {Option} from '../relaunch/components/Select';
+
+const AudioDeviceSelector = (props: {
+    device: IDevice
+}) => {
+    const [css] = useStyletron();
+    const devices: Option[] = props.device.audioDevices.map((device: string, index: number) => ({
+        value: device,
+        id: index
+    }));
+
+    return (
+        <div className={css({
+            position: "relative"
+        })}>
+            <Select
+                values={devices}
+                value={props.device.inputAudioDevice && devices[props.device.inputAudioDevice]}
+                onChange={(value) => {
+                    if (value) {
+                        props.device.setAudioInputDevice(value.id);
+                    } else {
+                        props.device.setAudioInputDevice(0);
+                    }
+                }}
+            />
+            <Select
+                values={devices}
+                value={props.device.outputAudioDevice && devices[props.device.outputAudioDevice]}
+                onChange={(value) => {
+                    if (value) {
+                        props.device.setAudioOutputDevice(value.id);
+                    } else {
+                        props.device.setAudioOutputDevice(0);
+                    }
+                }}
+            />
+        </div>
+    );
+}
 
 const DeviceRow = (props: {
     device: IDevice
@@ -64,9 +104,7 @@ const DeviceRow = (props: {
                        }}>
                     <ModalHeader>{props.device.name} Settings</ModalHeader>
                     <ModalBody>
-                        {props.device.audioDevices && props.device.audioDevices.map((d: string) => <span>{d}</span>)}
-                        Input {props.device.inputAudioDevice}
-                        Output {props.device.outputAudioDevice}
+                        <AudioDeviceSelector device={props.device}/>
                     </ModalBody>
                 </Modal>
             </StyledBodyCell>
@@ -77,6 +115,8 @@ export default () => {
     const {devices} = useStage();
     const [css] = useStyletron();
     const {darkMode} = useDarkModeSwitch();
+
+    console.log(devices);
 
     return (
         <div

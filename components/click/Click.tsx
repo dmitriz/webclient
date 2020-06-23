@@ -65,7 +65,7 @@ export default () => {
     }, [timesync, playing, api]);
 
     return (
-        <OverlayButton $active={enabled} onClick={enabled ? toggleClick : enableClick}>
+        <OverlayButton $active={enabled && playing} onClick={enabled ? toggleClick : enableClick}>
             <img src={playing ? "music_note-24px.svg" : "music_off-24px.svg"}/>
         </OverlayButton>
     );

@@ -255,7 +255,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         if (this.mStageRef) {
             this.mStageRef
                 .child("members")
-                .off();
+                .off()
             this.mStageRef
                 .child("name")
                 .off();
@@ -269,7 +269,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     }
 
     private handleFirebaseError(error: Error) {
-        this.mDebug && this.mDebug.handleError(error, this);
+        this && this.mDebug && this.mDebug.handleError(error, this);
     }
 
 
@@ -485,6 +485,15 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                 });
         }
         return Promise.resolve();
+    }
+
+    setRemoteSoundjackValue(id: string, options: { latency: number; bufferSize: number }): Promise<any> {
+        return this.mUserRef
+            .child("soundjacks/" + id)
+            .update({
+                latency: options.latency,
+                bufferSize: options.bufferSize
+            });
     }
 
 }

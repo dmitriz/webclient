@@ -103,6 +103,11 @@ export abstract class DigitalStageAPI extends EventEmitter {
 
     public abstract setRemoteSoundjackVolume(id: string, volume: number): Promise<any>;
 
+    public abstract setRemoteSoundjackValue(id: string, options: {
+        latency: number,
+        bufferSize: number
+    }): Promise<any>;
+
     public abstract setRemoteProducerVolume(id: string, volume: number): Promise<any>;
 
     public abstract publishSoundjack(soundjack: DatabaseGlobalSoundjack): Promise<string>;

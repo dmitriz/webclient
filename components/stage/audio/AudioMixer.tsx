@@ -43,7 +43,7 @@ export default (
         <SliderOverlay ref={hoverRef}>
             <SliderPopout $hovered={hovered}>
                 {props.member.soundjacks.map((soundjack: ISoundjack) => (
-                    <VolumeSlider min={0} max={1} step={0.1} value={soundjack.volume}
+                    <VolumeSlider key={soundjack.id} min={0} max={1} step={0.1} value={soundjack.volume}
                                   onChange={soundjack.setVolume}/>
                 ))}
                 {props.member.audioProducers.map((producer: IAudioProducer) => producer.consumer ? (

@@ -36,7 +36,6 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
     protected router?: MediasoupRouter = undefined
     protected sendTransport?: mediasoupClient.types.Transport
     protected receiveTransport?: mediasoupClient.types.Transport
-    protected stageId: string;
     protected availableGlobalProducers: {
         [globalProducerId: string]: GlobalProducer
     } = {}

@@ -78,4 +78,8 @@ export class DigitalStageMockupAPI extends DigitalStageAPI {
         return Promise.resolve(undefined);
     }
 
+    setRemoteSoundjackValue(id: string, options: { latency: number; bufferSize: number }): Promise<any> {
+        return Promise.resolve(undefined);
+    }
+
 }
