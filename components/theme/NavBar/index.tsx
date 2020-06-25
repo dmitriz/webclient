@@ -158,7 +158,6 @@ export default (props: {
                         {props.user && (
                             <Cell span={[0, 1, 1]}>
                                 <StyledSpacing>
-                                    {props.user.displayName}
                                 </StyledSpacing>
                             </Cell>
                         )}
