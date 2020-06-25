@@ -6,6 +6,7 @@ import {Reducer, useReducer} from "react";
 
 type StageReducerActionType = {
     type:
+        | 'signOut'
         | 'addMember'
         | 'changeMember'
         | 'removeMember'
@@ -33,7 +34,8 @@ export enum ACTION_TYPES {
     REMOVE_SOUNDJACK = 'removeSoundjack',
     CHANGE_VOLUME = 'changeVolume',
     ADD_CONSUMER = 'addConsumer',
-    REMOVE_CONSUMER = 'removeConsumer'
+    REMOVE_CONSUMER = 'removeConsumer',
+    SIGN_OUT = 'signOut'
 };
 
 export interface Store {
@@ -315,6 +317,10 @@ const handleActions = {
             soundjacks: m.soundjacks.filter(ap => ap.id !== payload.event.id)
         } : m)
     }),
+    [ACTION_TYPES.SIGN_OUT]: (store: Store): Store => ({
+        ...store,
+        members: []
+    })
 }
 
 export const reducer: Reducer<Store, StageReducerActionType> = (store: Store, action: StageReducerActionType) => Boolean(handleActions[action.type]) ? handleActions[action.type](store, action as any) : store;

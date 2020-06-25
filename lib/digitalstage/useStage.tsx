@@ -298,6 +298,14 @@ export const StageProvider = (props: {
         }
     }, [api]);
 
+    useEffect(() => {
+        if (!stageId) {
+            dispatch({
+                type: ACTION_TYPES.SIGN_OUT
+            });
+        }
+    }, [stageId])
+
     return (
         <StageContext.Provider value={{
             api,
