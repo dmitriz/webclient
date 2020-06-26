@@ -2,12 +2,12 @@ import React, {useCallback, useEffect, useState} from "react";
 import useTimesync from "../../lib/useTimesync";
 import "firebase/database";
 import useClick from "../../lib/useClick";
-import {OverlayButton} from "../theme/OverlayButton";
-import {useStage} from "../../lib/digitalstage/useStage";
+import useDigitalStage from "../../lib/useDigitalStage";
+import {Button} from "baseui/button";
 
 
 export default () => {
-    const {api} = useStage();
+    const {api} = useDigitalStage();
 
     // Audio specific
     const [startTime, setStartTime] = useState<number>(0);
@@ -65,8 +65,8 @@ export default () => {
     }, [timesync, playing, api]);
 
     return (
-        <OverlayButton $active={enabled && playing} onClick={enabled ? toggleClick : enableClick}>
+        <Button onClick={enabled ? toggleClick : enableClick}>
             <img src={playing ? "music_note-24px.svg" : "music_off-24px.svg"}/>
-        </OverlayButton>
+        </Button>
     );
 };

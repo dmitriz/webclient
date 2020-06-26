@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from "react";
-import CanvasPlayer from "../../components/stage/video/CanvasPlayer";
 import {Button} from "baseui/button";
 import {IVideoProducer} from "../../lib/digitalstage/useStage";
+import CanvasPlayer from "../../components/video/CanvasPlayer";
 
 export default () => {
     const [tracks, setTracks] = useState<IVideoProducer[]>([]);
