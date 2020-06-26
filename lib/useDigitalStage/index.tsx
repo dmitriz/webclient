@@ -145,7 +145,8 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                     api: api,
                     connect: this.connect,
                     disconnect: this.disconnect,
-                    localDevice: localDevice
+                    localDevice: localDevice,
+                    loading: false
                 });
             } else {
                 if (this.state.devices.length > 0) {
@@ -165,7 +166,8 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                 this.setState({
                     audioProducers: {},
                     videoProducers: {},
-                    soundjacks: {}
+                    soundjacks: {},
+                    loading: false
                 })
             }
         }
@@ -536,12 +538,16 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
 
 
     connect = (): Promise<boolean> => {
+        this.setState({
+            loading: true
+        });
         return this.state.api.registerDevice(this.state.localDevice)
             .then(deviceId => this.state.localDevice.setDeviceId(deviceId))
             .then(() => this.state.localDevice.connect())
             .then(() => this.state.localDevice.setReceiveAudio(true))
             .then(() => this.state.localDevice.setReceiveVideo(true))
             .then(() => this.state.api.connect())
+            .then(() => this.setState({connected: true}))
             .then(() => true)
             .finally(() => this.setState({
                 loading: false
@@ -549,11 +555,25 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
     }
 
     disconnect = (): Promise<boolean> => {
-        return new Promise<boolean>(resolve => {
-            this.state.api.disconnect();
-            this.state.localDevice.disconnect();
-            resolve(true);
+        this.setState({
+            loading: true
         });
+        return this.state.localDevice.disconnect()
+            .then(() => this.state.api.unregisterDevice(this.state.localDevice.id))
+            .then(async () => await this.state.devices.forEach(d => d.disconnect()))
+            .then(() => this.state.api.disconnect())
+            .then(() => this.setState({
+                devices: [],
+                stage: undefined,
+                audioProducers: {},
+                videoProducers: {},
+                soundjacks: {},
+                connected: false
+            }))
+            .then(() => true)
+            .finally(() => this.setState({
+                loading: false
+            }));
     }
 
     render() {

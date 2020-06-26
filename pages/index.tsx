@@ -6,6 +6,9 @@ import {useAudioContext} from "../lib/useAudioContext";
 import useDigitalStage, {IAudioProducer} from "../lib/useDigitalStage";
 import VideoTrackPlayer from "../components/video/VideoTrackPlayer";
 import VolumeSlider from "../components/audio/VolumeSlider";
+import {Button} from "baseui/button";
+import {useRouter} from "next/router";
+import {useAuth} from "../lib/useAuth";
 
 const HiddenAudioPlayer = styled("audio", {})
 const AudioPlayer = (props: {
@@ -40,16 +43,37 @@ const AudioPlayer = (props: {
 }
 
 export default () => {
-    const {stage, devices, localDevice, connect, loading} = useDigitalStage();
+    const {user, loading: userLoading} = useAuth();
+    const router = useRouter();
+    const {stage, devices, localDevice, connected, connect, disconnect, loading} = useDigitalStage();
 
     useEffect(() => {
-        if (connect)
-            connect();
-    }, [connect])
+        if( !user && !userLoading ) {
+            router.push("/login");
+        }
+    }, [user, userLoading])
+
+
+    useEffect(() => {
+        if( connected && !stage ) {
+            router.push("/join");
+        }
+    }, [stage, connected]);
 
     return (
         <div>
             {loading && <h1>Loading</h1>}
+            {connect && disconnect && (
+                <p>
+                    <Button onClick={() => {
+                        if (connected) {
+                            disconnect()
+                        } else {
+                            connect()
+                        }
+                    }}>{connected ? "Disconnect" : "Connect"}</Button>
+                </p>
+            )}
             {stage ? (
 
                 <ul>
@@ -141,54 +165,61 @@ export default () => {
             ) : "No stage available"}
 
             {localDevice && (
-                <ul>
+                <>
                     <h1>LOCAL DEVICE</h1>
-                    <li>
-                        Send Audio <input type="checkbox" checked={localDevice.sendAudio}
-                                          onChange={e => localDevice.setSendAudio(e.currentTarget.checked)}/>
-                    </li>
-                    <li>
-                        Send Video <input type="checkbox" checked={localDevice.sendVideo}
-                                          onChange={e => localDevice.setSendVideo(e.currentTarget.checked)}/>
-                    </li>
-                    <li>
-                        Receive Audio <input type="checkbox" checked={localDevice.receiveAudio}
-                                             onChange={e => localDevice.setReceiveAudio(e.currentTarget.checked)}/>
-                    </li>
-                    <li>
-                        Receive Video <input type="checkbox" checked={localDevice.receiveVideo}
-                                             onChange={e => localDevice.setReceiveVideo(e.currentTarget.checked)}/>
-                    </li>
-                </ul>
-            )}
-
-            <ul>
-                <h1>ALL DEVICE</h1>
-                {devices.map(device => (
-                    <li key={device.id}>
-                        <h3>{device.id}: {device.caption}</h3>
-                        <h4>{device.isRemote ? "Remote" : "Local"}</h4>
+                    <span>{localDevice.id}</span>
+                    {localDevice.connected && (
                         <ul>
                             <li>
-                                Send Audio <input type="checkbox" checked={device.sendAudio}
-                                                  onChange={e => device.setSendAudio(e.currentTarget.checked)}/>
+                                Send Audio <input type="checkbox" checked={localDevice.sendAudio}
+                                                  onChange={e => localDevice.setSendAudio(e.currentTarget.checked)}/>
                             </li>
                             <li>
-                                Send Video <input type="checkbox" checked={device.sendVideo}
-                                                  onChange={e => device.setSendVideo(e.currentTarget.checked)}/>
+                                Send Video <input type="checkbox" checked={localDevice.sendVideo}
+                                                  onChange={e => localDevice.setSendVideo(e.currentTarget.checked)}/>
                             </li>
                             <li>
-                                Receive Audio <input type="checkbox" checked={device.receiveAudio}
-                                                     onChange={e => device.setReceiveAudio(e.currentTarget.checked)}/>
+                                Receive Audio <input type="checkbox" checked={localDevice.receiveAudio}
+                                                     onChange={e => localDevice.setReceiveAudio(e.currentTarget.checked)}/>
                             </li>
                             <li>
-                                Receive Video <input type="checkbox" checked={device.receiveVideo}
-                                                     onChange={e => device.setReceiveVideo(e.currentTarget.checked)}/>
+                                Receive Video <input type="checkbox" checked={localDevice.receiveVideo}
+                                                     onChange={e => localDevice.setReceiveVideo(e.currentTarget.checked)}/>
                             </li>
                         </ul>
-                    </li>
-                ))}
-            </ul>
+                    )}
+                </>
+            )}
+
+            <>
+                <h1>ALL DEVICE</h1>
+                <ul>
+                    {devices.map(device => (
+                        <li key={device.id}>
+                            <h3>{device.id}: {device.caption}</h3>
+                            <h4>{device.isRemote ? "Remote" : "Local"}</h4>
+                            <ul>
+                                <li>
+                                    Send Audio <input type="checkbox" checked={device.sendAudio}
+                                                      onChange={e => device.setSendAudio(e.currentTarget.checked)}/>
+                                </li>
+                                <li>
+                                    Send Video <input type="checkbox" checked={device.sendVideo}
+                                                      onChange={e => device.setSendVideo(e.currentTarget.checked)}/>
+                                </li>
+                                <li>
+                                    Receive Audio <input type="checkbox" checked={device.receiveAudio}
+                                                         onChange={e => device.setReceiveAudio(e.currentTarget.checked)}/>
+                                </li>
+                                <li>
+                                    Receive Video <input type="checkbox" checked={device.receiveVideo}
+                                                         onChange={e => device.setReceiveVideo(e.currentTarget.checked)}/>
+                                </li>
+                            </ul>
+                        </li>
+                    ))}
+                </ul>
+            </>
         </div>
     );
 }

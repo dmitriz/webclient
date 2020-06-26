@@ -81,7 +81,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                         this.sendTransport = await this.createWebRTCTransport('send')
                         this.receiveTransport = await this.createWebRTCTransport('receive')
                         this.emit('connected', true)
-                        this.registerDeviceListeners();
+                        this.addDeviceListeners();
                         return true;
                     }
                     return false;
@@ -90,6 +90,7 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
     }
 
     public disconnect(): Promise<boolean> {
+        console.log("DISCONNECT");
         this.mDebug && this.mDebug.debug("disconnect()", this);
         return super.disconnect()
             .then(result => {
@@ -100,100 +101,124 @@ export class MediasoupDevice extends RealtimeDatabaseDevice {
                     if (this.receiveTransport) {
                         this.receiveTransport.close()
                     }
-                    this.router = undefined
+                    this.router = undefined;
+                    this.removeDeviceListeners();
                 }
                 return result;
             })
     }
 
-    private registerDeviceListeners() {
-        this.mDebug && this.mDebug.debug("registerDeviceListeners()", this);
-        this.on('sendAudio', (sendAudio: boolean) => {
-            if (sendAudio) {
-                this.mDebug && this.mDebug.debug("Activate sendAudio", this);
-                getLocalAudioTracks().then((tracks: MediaStreamTrack[]) => {
-                    this.mDebug && this.mDebug.debug("Sending in sum " + tracks.length + " audio tracks", this);
-                    tracks.forEach((track: MediaStreamTrack) =>
-                        this.createProducer(track)
-                    )
-                })
-            } else {
-                this.mDebug && this.mDebug.debug("Deactivate sendAudio", this);
-                Object.keys(this.producers).forEach((trackId: string) => {
-                    if (this.producers[trackId].producer.kind === 'audio')
-                        return this.stopProducer(trackId)
-                })
-            }
-        })
-        this.on('sendVideo', (sendVideo: boolean) => {
-            if (sendVideo) {
-                this.mDebug && this.mDebug.debug("Activate sendVideo", this);
-                getLocalVideoTracks().then((tracks: MediaStreamTrack[]) => {
-                    this.mDebug && this.mDebug.debug("Sending in sum " + tracks.length + " video tracks", this);
-                    tracks.forEach((track: MediaStreamTrack) =>
-                        this.createProducer(track)
-                    )
-                })
-            } else {
-                this.mDebug && this.mDebug.debug("Deactivate sendVideo", this);
-                Object.keys(this.producers).forEach((trackId: string) => {
-                    if (this.producers[trackId].producer.kind === 'video')
-                        return this.stopProducer(trackId)
-                })
-            }
-        })
-        this.on('receiveAudio', (receiveAudio: boolean) => {
-            if (receiveAudio) {
-                this.mDebug && this.mDebug.debug("Activate receiveAudio", this);
-                Object.values(this.availableGlobalProducers).forEach(
-                    (globalProducer: GlobalProducer) => {
-                        if (globalProducer.kind === 'audio')
-                            return this.createConsumer(globalProducer)
-                    }
+    private addDeviceListeners() {
+        this.mDebug && this.mDebug.debug("addDeviceListeners()", this);
+        this.on('sendAudio', this.handleSendAudio);
+        this.on('sendVideo', this.handleSendVideo);
+        this.on('receiveAudio', this.handleReceiveAudio);
+        this.on('receiveVideo', this.handleReceiveVideo);
+        this.mApi.on("producer-added", this.handleProducerAdded);
+        this.mApi.on("producer-removed", this.handleProducerRemoved);
+    }
+
+    private removeDeviceListeners() {
+        this.mDebug && this.mDebug.debug("removeDeviceListeners()", this);
+        this.off('sendAudio', this.handleSendAudio);
+        this.off('sendVideo', this.handleSendVideo);
+        this.off('receiveAudio', this.handleReceiveAudio);
+        this.off('receiveVideo', this.handleReceiveVideo);
+        this.mApi.off("producer-added", this.handleProducerAdded);
+        this.mApi.off("producer-removed", this.handleProducerRemoved);
+    }
+
+    private handleSendAudio = (sendAudio: boolean) => {
+        if (sendAudio) {
+            this.mDebug && this.mDebug.debug("Activate sendAudio", this);
+            getLocalAudioTracks().then((tracks: MediaStreamTrack[]) => {
+                console.log("Send Audio");
+                this.mDebug && this.mDebug.debug("Sending in sum " + tracks.length + " audio tracks", this);
+                tracks.forEach((track: MediaStreamTrack) =>
+                    this.createProducer(track)
                 )
-            } else {
-                this.mDebug && this.mDebug.debug("Deactivate receiveAudio", this);
-                Object.values(this.consumers).forEach((consumer: Consumer) => {
-                    if (consumer.globalProducer.kind === 'audio')
-                        return this.closeConsumer(consumer.globalProducer.id)
-                })
-            }
-        })
-        this.on('receiveVideo', (receiveVideo: boolean) => {
-            if (receiveVideo) {
-                this.mDebug && this.mDebug.debug("Activate receiveVideo", this);
-                Object.values(this.availableGlobalProducers).forEach(
-                    (globalProducer: GlobalProducer) => {
-                        if (globalProducer.kind === 'video')
-                            return this.createConsumer(globalProducer)
-                    }
+            })
+        } else {
+            this.mDebug && this.mDebug.debug("Deactivate sendAudio", this);
+            Object.keys(this.producers).forEach((trackId: string) => {
+                if (this.producers[trackId].producer.kind === 'audio')
+                    return this.stopProducer(trackId)
+            })
+        }
+    };
+
+    private handleSendVideo = (sendVideo: boolean) => {
+        if (sendVideo) {
+            this.mDebug && this.mDebug.debug("Activate sendVideo", this);
+            getLocalVideoTracks().then((tracks: MediaStreamTrack[]) => {
+                console.log("Send video");
+                this.mDebug && this.mDebug.debug("Sending in sum " + tracks.length + " video tracks", this);
+                tracks.forEach((track: MediaStreamTrack) =>
+                    this.createProducer(track)
                 )
-            } else {
-                this.mDebug && this.mDebug.debug("Deactivate receiveVideo", this);
-                Object.values(this.consumers).forEach((consumer: Consumer) => {
-                    if (consumer.globalProducer.kind === 'video')
-                        return this.closeConsumer(consumer.globalProducer.id)
-                })
-            }
-        });
-        this.mApi.on("producer-added", (event: ProducerEvent) => {
-            this.mDebug && this.mDebug.debug("Handling new global producer " + event.id, this);
-            this.availableGlobalProducers[event.id] = {
-                ...event.producer,
-                id: event.id
-            } as GlobalProducer;
-            if (
-                (event.producer.kind === 'audio' && this.receiveAudio) ||
-                (event.producer.kind === 'video' && this.receiveVideo)
-            ) {
-                return this.createConsumer(this.availableGlobalProducers[event.id]);
-            }
-        });
-        this.mApi.on("producer-removed", (event: ProducerEvent) => {
-            this.mDebug && this.mDebug.debug("Handling removal of global producer " + event.id, this);
-            this.availableGlobalProducers = omit(this.availableGlobalProducers, event.id);
-            if (this.consumers[event.id]) return this.closeConsumer(event.id)
-        });
+            })
+        } else {
+            this.mDebug && this.mDebug.debug("Deactivate sendVideo", this);
+            Object.keys(this.producers).forEach((trackId: string) => {
+                if (this.producers[trackId].producer.kind === 'video')
+                    return this.stopProducer(trackId)
+            })
+        }
+    };
+    private handleReceiveAudio = (receiveAudio: boolean) => {
+        if (receiveAudio) {
+            this.mDebug && this.mDebug.debug("Activate receiveAudio", this);
+            Object.values(this.availableGlobalProducers).forEach(
+                (globalProducer: GlobalProducer) => {
+                    if (globalProducer.kind === 'audio')
+                        return this.createConsumer(globalProducer)
+                }
+            )
+        } else {
+            this.mDebug && this.mDebug.debug("Deactivate receiveAudio", this);
+            Object.values(this.consumers).forEach((consumer: Consumer) => {
+                if (consumer.globalProducer.kind === 'audio')
+                    return this.closeConsumer(consumer.globalProducer.id)
+            })
+        }
+    }
+
+    private handleReceiveVideo = (receiveVideo: boolean) => {
+        if (receiveVideo) {
+            this.mDebug && this.mDebug.debug("Activate receiveVideo", this);
+            Object.values(this.availableGlobalProducers).forEach(
+                (globalProducer: GlobalProducer) => {
+                    if (globalProducer.kind === 'video')
+                        return this.createConsumer(globalProducer)
+                }
+            )
+        } else {
+            this.mDebug && this.mDebug.debug("Deactivate receiveVideo", this);
+            Object.values(this.consumers).forEach((consumer: Consumer) => {
+                if (consumer.globalProducer.kind === 'video')
+                    return this.closeConsumer(consumer.globalProducer.id)
+            })
+        }
+    }
+
+    private handleProducerAdded = (event: ProducerEvent) => {
+        this.mDebug && this.mDebug.debug("Handling new global producer " + event.id, this);
+        this.availableGlobalProducers[event.id] = {
+            ...event.producer,
+            id: event.id
+        } as GlobalProducer;
+        if (
+            (event.producer.kind === 'audio' && this.receiveAudio) ||
+            (event.producer.kind === 'video' && this.receiveVideo)
+        ) {
+            return this.createConsumer(this.availableGlobalProducers[event.id]);
+        }
+    }
+
+    private handleProducerRemoved = (event: ProducerEvent) => {
+        this.mDebug && this.mDebug.debug("Handling removal of global producer " + event.id, this);
+        this.availableGlobalProducers = omit(this.availableGlobalProducers, event.id);
+        if (this.consumers[event.id]) return this.closeConsumer(event.id)
     }
 
     public on(event: MediasoupEventType | DeviceEvents, listener: (arg: any) => void): this {

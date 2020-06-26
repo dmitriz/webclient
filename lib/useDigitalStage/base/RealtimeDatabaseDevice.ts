@@ -76,13 +76,13 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
         return new Promise<boolean>((resolve, reject) => {
             if (!this.mDeviceRef)
                 return reject(new Error("Please set a valid device ID first"));
-            if (this.connected) {
+            if (!this.connected) {
                 return resolve(false);
             }
             this.mDebug && this.mDebug.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
-            this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);
+            this.mDeviceRef.off("value", this.handleDeviceChange);
             this.mConnected = false;
-            this.emit("connected", true);
+            this.emit("connected", false);
             return resolve(true);
         });
     }
@@ -90,7 +90,7 @@ export abstract class RealtimeDatabaseDevice extends EventEmitter implements IDe
     public setDeviceId(deviceId: string) {
         if (this.mDeviceRef) {
             this.mDebug && this.mDebug.debug("Detach database listener for deviceId=" + this.mDeviceId, this);
-            this.mDeviceRef.off("value", this.handleDeviceChange, this.handleFirebaseError);
+            this.mDeviceRef.off("value", this.handleDeviceChange);
         }
         this.mDeviceId = deviceId;
         if (this.mDeviceId) {
