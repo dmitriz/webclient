@@ -474,6 +474,7 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
 
     private addLocalDeviceListeners(localDevice: MediasoupDevice) {
         localDevice.on("consumer-added", (consumer: Consumer) => {
+            console.log("CONSUMER ADDED");
             if (consumer.globalProducer.kind === "audio") {
                 this.setState(prevState => ({
                     ...prevState,
@@ -486,6 +487,23 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                                 track: consumer.consumer.track
                             }
                         }
+                    },
+                    stage: prevState.stage && {
+                        ...prevState.stage,
+                        members: prevState.stage.members.map(member => {
+                            if( member.uid === consumer.globalProducer.uid) {
+                                member.audioProducers = member.audioProducers.map(producer => {
+                                    if( producer.id === consumer.globalProducer.id ) {
+                                        producer.consumer = {
+                                            id: consumer.consumer.id,
+                                            track: consumer.consumer.track
+                                        }
+                                    }
+                                    return producer;
+                                })
+                            }
+                            return member;
+                        })
                     }
                 }))
             } else {
@@ -500,6 +518,23 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                                 track: consumer.consumer.track
                             }
                         }
+                    },
+                    stage: prevState.stage && {
+                        ...prevState.stage,
+                        members: prevState.stage.members.map(member => {
+                            if( member.uid === consumer.globalProducer.uid) {
+                                member.videoProducers = member.videoProducers.map(producer => {
+                                    if( producer.id === consumer.globalProducer.id ) {
+                                        producer.consumer = {
+                                            id: consumer.consumer.id,
+                                            track: consumer.consumer.track
+                                        }
+                                    }
+                                    return producer;
+                                })
+                            }
+                            return member;
+                        })
                     }
                 }))
             }
