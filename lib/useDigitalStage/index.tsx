@@ -79,8 +79,8 @@ export interface DigitalStageState {
 
     // Stage handling
     stage?: IStage;
-    create?: (name: string, password: string) => Promise<DatabaseStage>;
-    join?: (stageId: string, password: string) => Promise<DatabaseStage>;
+    create?: (name: string, password: string) => Promise<boolean>;
+    join?: (stageId: string, password: string) => Promise<boolean>;
     leave?: () => Promise<boolean>;
 
     // State outside and inside of stage
@@ -145,6 +145,9 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                     api: api,
                     connect: this.connect,
                     disconnect: this.disconnect,
+                    create: this.create,
+                    join: this.join,
+                    leave: this.leave,
                     localDevice: localDevice,
                     loading: false
                 });
@@ -171,6 +174,39 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                 })
             }
         }
+    }
+
+    private handleError(error: Error) {
+        debug.handleError(error);
+        this.setState({
+            error: error
+        });
+    }
+
+    private create(name: string, password: string): Promise<boolean> {
+        return this.state.api.createStage(name, password)
+            .then(result => result !== undefined)
+            .catch(error => {
+                this.handleError(error);
+                return false;
+            });
+    }
+
+    private join(id: string, password: string): Promise<boolean> {
+        return this.state.api.joinStage(id, password)
+            .then(result => result !== undefined)
+            .catch(error => {
+                this.handleError(error);
+                return false;
+            });
+    }
+
+    private leave(): Promise<boolean> {
+        return this.state.api.leaveStage()
+            .catch(error => {
+                this.handleError(error);
+                return false;
+            });
     }
 
     private addApiListeners(api: DigitalStageAPI) {
@@ -491,9 +527,9 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                     stage: prevState.stage && {
                         ...prevState.stage,
                         members: prevState.stage.members.map(member => {
-                            if( member.uid === consumer.globalProducer.uid) {
+                            if (member.uid === consumer.globalProducer.uid) {
                                 member.audioProducers = member.audioProducers.map(producer => {
-                                    if( producer.id === consumer.globalProducer.id ) {
+                                    if (producer.id === consumer.globalProducer.id) {
                                         producer.consumer = {
                                             id: consumer.consumer.id,
                                             track: consumer.consumer.track
@@ -522,9 +558,9 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                     stage: prevState.stage && {
                         ...prevState.stage,
                         members: prevState.stage.members.map(member => {
-                            if( member.uid === consumer.globalProducer.uid) {
+                            if (member.uid === consumer.globalProducer.uid) {
                                 member.videoProducers = member.videoProducers.map(producer => {
-                                    if( producer.id === consumer.globalProducer.id ) {
+                                    if (producer.id === consumer.globalProducer.id) {
                                         producer.consumer = {
                                             id: consumer.consumer.id,
                                             track: consumer.consumer.track
@@ -584,6 +620,10 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
             .then(() => this.state.api.connect())
             .then(() => this.setState({connected: true}))
             .then(() => true)
+            .catch(error => {
+                this.handleError(error)
+                return false
+            })
             .finally(() => this.setState({
                 loading: false
             }));
@@ -606,6 +646,10 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                 connected: false
             }))
             .then(() => true)
+            .catch(error => {
+                this.handleError(error)
+                return false
+            })
             .finally(() => this.setState({
                 loading: false
             }));

@@ -8,12 +8,7 @@ import MemberGrid from "../components/stage/MemberGrid";
 export default () => {
     const {user, loading: userLoading} = useAuth();
     const router = useRouter();
-    const {stage, devices, localDevice, connected, connect, disconnect, loading, error} = useDigitalStage();
-
-    useEffect(() => {
-        if (connect)
-            connect()
-    }, [connect])
+    const {stage, loading} = useDigitalStage();
 
     useEffect(() => {
         if (!userLoading && !user) {
@@ -21,20 +16,16 @@ export default () => {
         }
     }, [user, userLoading])
 
-
-    useEffect(() => {
-        if (connected && !stage) {
-            router.push("/join");
-        }
-    }, [stage, connected]);
-
-
     if (loading) {
         return <Loading><h1>Loading</h1></Loading>
     }
 
-    if (stage) {
-        router.push("/stage/" + stage.id)
+    if (!stage) {
+        return (
+            <div>
+                Stage not found
+            </div>
+        )
     }
 
     return (
