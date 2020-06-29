@@ -25,7 +25,9 @@ export default () => {
 
     return (
         <Layout>
-            <MemberGrid members={stage.members}/>
+            {stage && (
+                <MemberGrid members={stage.members}/>
+            )}
         </Layout>
     );
 }
