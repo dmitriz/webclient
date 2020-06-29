@@ -2,7 +2,6 @@ import Layout from "../components/Layout";
 import useDigitalStage from "../lib/useDigitalStage";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
-import Loading from "../components/theme/Loading";
 import CenteredCard from "../components/theme/CenteredCard";
 import {DisplayMedium, ParagraphMedium} from "baseui/typography";
 import {FormControl} from "baseui/form-control";
