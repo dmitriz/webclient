@@ -269,7 +269,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     }
 
     private handleFirebaseError(error: Error) {
-        this.mDebug && this.mDebug.handleError(error, this);
+        this && this.mDebug && this.mDebug.handleError(error, this);
     }
 
 

@@ -138,11 +138,13 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
     }
 
     componentDidUpdate(prevProps: Readonly<DigitalStageProps>, prevState: Readonly<DigitalStageState>, snapshot?: any) {
-        if (prevProps.user !== this.props.user) {
+        if (prevProps.loading !== this.props.loading ||
+            prevProps.user !== this.props.user) {
             this.setState({
                 user: this.props.user
             });
-            if (this.props.user) {
+        } else if (prevState.user !== this.state.user) {
+            if (this.state.user) {
                 this.setState({
                     connect: this.connect,
                     disconnect: this.disconnect,
