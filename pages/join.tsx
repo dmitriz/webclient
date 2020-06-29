@@ -1,5 +1,4 @@
 import Layout from "../components/Layout";
-import {useAuth} from "../lib/useAuth";
 import useDigitalStage from "../lib/useDigitalStage";
 import React, {useState} from "react";
 import {useRouter} from "next/router";
@@ -12,23 +11,16 @@ import {KIND, Notification} from "baseui/notification";
 import {Button} from "baseui/button";
 
 export default () => {
-    const {user} = useAuth();
-    const {join, stage, loading, error} = useDigitalStage();
+    const {user, join, stage, loading, error} = useDigitalStage();
     const [stageId, setStageId] = useState<string>("-M9p2_4r-DNWAbhj74Jj");
     const [password, setPassword] = useState<string>('');
     const router = useRouter();
 
-    if (loading) {
-        return (
-            <Loading><h1>Loading</h1></Loading>
-        )
-    }
-
-    if (!user) {
+    if (!loading && !user) {
         router.push("/login");
     }
 
-    if (stage) {
+    if (!loading && stage) {
         router.push("/");
     }
 
@@ -54,7 +46,7 @@ export default () => {
                 )}
                 {join && (
                     <Button isLoading={loading} disabled={stageId.length === 0}
-                            onClick={() => join(stageId, "")}>Join</Button>
+                            onClick={() => join(stageId, password)}>Join</Button>
                 )}
             </CenteredCard>
         </Layout>

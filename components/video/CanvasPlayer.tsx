@@ -6,6 +6,10 @@ interface CanvasElement extends HTMLCanvasElement {
     captureStream(): MediaStream;
 }
 
+const Wrapper = styled("div", {
+    width: '100%',
+    height: '100%'
+})
 const Canvas = styled("canvas", {
     width: '100%',
     height: 'auto',

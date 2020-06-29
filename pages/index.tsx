@@ -1,43 +1,31 @@
-import React, {useEffect} from "react";
+import React from "react";
 import useDigitalStage from "../lib/useDigitalStage";
 import {useRouter} from "next/router";
 import {useAuth} from "../lib/useAuth";
 import Loading from "../components/theme/Loading";
 import MemberGrid from "../components/stage/MemberGrid";
+import Layout from "../components/Layout";
 
 export default () => {
-    const {user, loading: userLoading} = useAuth();
+    const {user} = useAuth();
     const router = useRouter();
-    const {stage, devices, localDevice, connected, connect, disconnect, loading, error} = useDigitalStage();
-
-    useEffect(() => {
-        if (connect)
-            connect()
-    }, [connect])
-
-    useEffect(() => {
-        if (!userLoading && !user) {
-            router.push("/login");
-        }
-    }, [user, userLoading])
-
-
-    useEffect(() => {
-        if (connected && !stage) {
-            router.push("/join");
-        }
-    }, [stage, connected]);
-
+    const {stage, loading} = useDigitalStage();
 
     if (loading) {
         return <Loading><h1>Loading</h1></Loading>
     }
 
-    if (stage) {
-        router.push("/stage/" + stage.id)
+    if (!user) {
+        router.push("/login");
+    }
+
+    if (!stage) {
+        router.push("/join");
     }
 
     return (
-        <MemberGrid members={stage && stage.members}/>
+        <Layout>
+            <MemberGrid members={stage.members}/>
+        </Layout>
     );
 }

@@ -11,7 +11,6 @@ import {BaseProvider} from "baseui";
 import {DigitalStageDarkTheme} from "../components/DarkTheme";
 import {DigitalStageLightTheme} from "../components/LightTheme";
 import {DigitalStageProvider} from "../lib/useDigitalStage";
-import {Grommet} from "grommet";
 
 if (process.env.NODE_ENV === "production")
     Sentry.init({dsn: "https://4c5911aca6334d9aafdc6c7b106a7b1e@o403353.ingest.sentry.io/5265870"});
@@ -35,14 +34,13 @@ export default class MyApp extends App<Props, States> {
             <StyletronProvider value={styletron} debug={debug} debugAfterHydration>
                 <AuthContextProvider>
                     <AudioContextProvider>
-                        <DigitalStageProvider>
-                            <Grommet>
-                                <DarkModeStageProvider>
-                                    <DarkModeContext.Consumer>
-                                        {({darkMode}) => (
-                                            <BaseProvider
-                                                theme={darkMode ? DigitalStageDarkTheme : DigitalStageLightTheme}>
-                                                <style jsx global>{`
+                        <DigitalStageProvider autoConnect={true}>
+                            <DarkModeStageProvider>
+                                <DarkModeContext.Consumer>
+                                    {({darkMode}) => (
+                                        <BaseProvider
+                                            theme={darkMode ? DigitalStageDarkTheme : DigitalStageLightTheme}>
+                                            <style jsx global>{`
                     :root {
                         --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
                         --font-mono: Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace;
@@ -79,14 +77,13 @@ export default class MyApp extends App<Props, States> {
                         100% { transform: translateY(0); }
                     }
                     `
-                                                }
-                                                </style>
-                                                <Component {...pageProps} />
-                                            </BaseProvider>
-                                        )}
-                                    </DarkModeContext.Consumer>
-                                </DarkModeStageProvider>
-                            </Grommet>
+                                            }
+                                            </style>
+                                            <Component {...pageProps} />
+                                        </BaseProvider>
+                                    )}
+                                </DarkModeContext.Consumer>
+                            </DarkModeStageProvider>
                         </DigitalStageProvider>
                     </AudioContextProvider>
                 </AuthContextProvider>

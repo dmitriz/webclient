@@ -6,9 +6,7 @@ import {useAudioContext} from "../lib/useAudioContext";
 import useDigitalStage, {IAudioProducer} from "../lib/useDigitalStage";
 import VideoTrackPlayer from "../components/video/VideoTrackPlayer";
 import VolumeSlider from "../components/audio/VolumeSlider";
-import {Button} from "baseui/button";
 import {useRouter} from "next/router";
-import {useAuth} from "../lib/useAuth";
 
 const HiddenAudioPlayer = styled("audio", {})
 const AudioPlayer = (props: {
@@ -43,40 +41,27 @@ const AudioPlayer = (props: {
 }
 
 export default () => {
-    const {user, loading: userLoading} = useAuth();
+    const {user, stage, devices, localDevice, loading, error} = useDigitalStage();
     const router = useRouter();
-    const {stage, devices, localDevice, connected, connect, disconnect, loading, error} = useDigitalStage();
 
     useEffect(() => {
-        if( !user && !userLoading ) {
+        if (!loading && !user) {
             router.push("/login");
         }
-    }, [user, userLoading])
+    }, [user, loading])
 
 
     useEffect(() => {
-        if( connected && !stage ) {
+        if (!loading && !stage) {
             router.push("/join");
         }
-    }, [stage, connected]);
+    }, [stage, loading]);
 
     return (
         <div>
             {error && <h1>{error.message}</h1>}
             {loading && <h1>Loading</h1>}
-            {connect && disconnect && (
-                <p>
-                    <Button onClick={() => {
-                        if (connected) {
-                            disconnect()
-                        } else {
-                            connect()
-                        }
-                    }}>{connected ? "Disconnect" : "Connect"}</Button>
-                </p>
-            )}
             {stage ? (
-
                 <ul>
                     {stage.members && stage.members.map((m) => (
                         <li key={m.uid}>

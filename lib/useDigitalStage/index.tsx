@@ -4,7 +4,6 @@ import {MediasoupDevice} from "./mediasoup";
 import React, {createContext, useContext} from "react";
 import {withAuth} from "../useAuth";
 import * as firebase from "firebase/app";
-import {DatabaseStage} from "./base/types";
 import {
     DeviceEvent,
     MemberEvent,
@@ -69,6 +68,8 @@ export interface IStage {
 export interface DigitalStageState {
     api?: DigitalStageAPI;
 
+    user?: firebase.User;
+
     debug: IDebugger;
     loading: boolean;
     error?: Error;
@@ -106,6 +107,7 @@ export interface DigitalStageState {
 export interface DigitalStageProps {
     user?: firebase.User;
     loading: boolean;
+    autoConnect?: boolean;
     children: React.ReactNodeArray
 }
 
@@ -130,43 +132,35 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
         super(props);
         this.state = {
             ...initialState,
+            user: props.user,
             loading: props.loading
         };
     }
 
     componentDidUpdate(prevProps: Readonly<DigitalStageProps>, prevState: Readonly<DigitalStageState>, snapshot?: any) {
         if (prevProps.user !== this.props.user) {
+            this.setState({
+                user: this.props.user
+            });
             if (this.props.user) {
-                const api: DigitalStageAPI = new RealtimeDatabaseAPI(this.props.user);
-                this.addApiListeners(api);
-                const localDevice: MediasoupDevice = new MediasoupDevice(api);
-                this.addLocalDeviceListeners(localDevice);
                 this.setState({
-                    api: api,
                     connect: this.connect,
                     disconnect: this.disconnect,
-                    create: this.create,
-                    join: this.join,
-                    leave: this.leave,
-                    localDevice: localDevice,
-                    loading: false
+                    loading: this.props.autoConnect
                 });
+                if (this.props.autoConnect) {
+                    debug && debug.debug("Connecting (auto connect enabled)", this);
+                    this.connect()
+                        .catch(this.handleError);
+                }
             } else {
-                if (this.state.devices.length > 0) {
-                    this.state.devices.forEach(device => device.disconnect());
-                    this.setState({devices: []});
-                }
-                if (this.state.localDevice) {
-                    this.state.localDevice.disconnect()
-                        .then(() => this.removeLocalDeviceListeners(this.state.localDevice))
-                        .then(() => this.setState({localDevice: undefined}));
-                }
-                if (this.state.api) {
+                if (this.state.connected) {
                     this.disconnect()
-                        .then(() => this.removeApiListeners(this.state.api))
-                        .then(() => this.setState({api: undefined}));
+                        .catch(this.handleError);
                 }
                 this.setState({
+                    connect: undefined,
+                    disconnect: undefined,
                     audioProducers: {},
                     videoProducers: {},
                     soundjacks: {},
@@ -179,11 +173,15 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
     private handleError(error: Error) {
         debug.handleError(error);
         this.setState({
-            error: error
+            error: error,
+            loading: false
         });
     }
 
-    private create(name: string, password: string): Promise<boolean> {
+    private create = (name: string, password: string): Promise<boolean> => {
+        this.setState({
+            loading: true
+        });
         return this.state.api.createStage(name, password)
             .then(result => result !== undefined)
             .catch(error => {
@@ -192,7 +190,10 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
             });
     }
 
-    private join(id: string, password: string): Promise<boolean> {
+    private join = (id: string, password: string): Promise<boolean> => {
+        this.setState({
+            loading: true
+        });
         return this.state.api.joinStage(id, password)
             .then(result => result !== undefined)
             .catch(error => {
@@ -201,7 +202,10 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
             });
     }
 
-    private leave(): Promise<boolean> {
+    private leave = (): Promise<boolean> => {
+        this.setState({
+            loading: true
+        });
         return this.state.api.leaveStage()
             .catch(error => {
                 this.handleError(error);
@@ -210,13 +214,17 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
     }
 
     private addApiListeners(api: DigitalStageAPI) {
-        api.on("stage-id-changed", (event: StageIdEvent) => this.setState(prevState => ({
-            ...prevState,
-            stage: event ? {
-                id: event,
-                members: []
-            } : undefined
-        })));
+        api.on("stage-id-changed", (event: StageIdEvent) => this.setState(prevState => {
+            debug && debug.debug("Got stage: " + event, this);
+            return {
+                ...prevState,
+                loading: false,
+                stage: event ? {
+                    id: event,
+                    members: []
+                } : undefined
+            }
+        }));
         api.on("stage-name-changed", (event: StageIdEvent) => this.setState(prevState => ({
             ...prevState,
             stage: prevState.stage ? {
@@ -609,41 +617,60 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
 
 
     connect = (): Promise<boolean> => {
+        if (!this.props.user)
+            return Promise.reject(new Error("No user available"));
+        if (this.state.connected) {
+            return Promise.resolve(false);
+        }
         this.setState({
             loading: true
         });
-        return this.state.api.registerDevice(this.state.localDevice)
-            .then(deviceId => this.state.localDevice.setDeviceId(deviceId))
-            .then(() => this.state.localDevice.connect())
-            .then(() => this.state.localDevice.setReceiveAudio(true))
-            .then(() => this.state.localDevice.setReceiveVideo(true))
-            .then(() => this.state.api.connect())
-            .then(() => this.setState({connected: true}))
-            .then(() => true)
-            .catch(error => {
-                this.handleError(error)
-                return false
-            })
-            .finally(() => this.setState({
-                loading: false
-            }));
+        const api: DigitalStageAPI = new RealtimeDatabaseAPI(this.props.user);
+        this.addApiListeners(api);
+        const localDevice: MediasoupDevice = new MediasoupDevice(api);
+        this.addLocalDeviceListeners(localDevice);
+        return api.registerDevice(localDevice)
+            .then(deviceId => localDevice.setDeviceId(deviceId))
+            .then(() => localDevice.connect())
+            .then(() => localDevice.setReceiveAudio(true))
+            .then(() => localDevice.setReceiveVideo(true))
+            .then(() => api.connect())
+            .then(() => debug && debug.debug("", this))
+            .then(() => this.setState({
+                connected: true,
+                api: api,
+                create: this.create,
+                join: this.join,
+                leave: this.leave,
+                localDevice: localDevice
+            }))
+            .then(() => true);
     }
 
     disconnect = (): Promise<boolean> => {
+        if (!this.state.connected) {
+            return Promise.resolve(false);
+        }
         this.setState({
             loading: true
         });
         return this.state.localDevice.disconnect()
+            .then(() => this.removeLocalDeviceListeners(this.state.localDevice))
             .then(() => this.state.api.unregisterDevice(this.state.localDevice.id))
             .then(async () => await this.state.devices.forEach(d => d.disconnect()))
             .then(() => this.state.api.disconnect())
+            .then(() => this.removeApiListeners(this.state.api))
             .then(() => this.setState({
+                connected: false,
+                create: undefined,
+                join: undefined,
+                leave: undefined,
                 devices: [],
                 stage: undefined,
+                localDevice: undefined,
                 audioProducers: {},
                 videoProducers: {},
-                soundjacks: {},
-                connected: false
+                soundjacks: {}
             }))
             .then(() => true)
             .catch(error => {
@@ -651,7 +678,8 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
                 return false
             })
             .finally(() => this.setState({
-                loading: false
+                loading: false,
+                connected: false
             }));
     }
 
