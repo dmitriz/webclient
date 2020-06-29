@@ -5,6 +5,8 @@ export default styled("div", {
     maxWidth: '400px',
     marginLeft: 'auto',
     marginRight: 'auto',
+    paddingLeft: '15px',
+    paddingRight: '15px',
     marginTop: '10vh',
     boxSizing: 'border-box'
 });
