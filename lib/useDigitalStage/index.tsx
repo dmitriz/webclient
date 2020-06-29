@@ -141,7 +141,8 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
         if (prevProps.loading !== this.props.loading ||
             prevProps.user !== this.props.user) {
             this.setState({
-                user: this.props.user
+                user: this.props.user,
+                loading: false
             });
         } else if (prevState.user !== this.state.user) {
             if (this.state.user) {
