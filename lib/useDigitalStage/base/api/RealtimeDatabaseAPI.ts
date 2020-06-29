@@ -25,6 +25,11 @@ import fetch from "isomorphic-unfetch";
 import {IDebugger} from "../IDebugger";
 
 
+const CREATE_STAGE_URL: string = "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/createStage";
+const JOIN_STAGE_URL: string = "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/joinStage";
+const LEAVE_STAGE_URL: string = "https://europe-west3-digitalstage-wirvsvirus.cloudfunctions.net/leaveStage";
+
+
 export class RealtimeDatabaseAPI extends DigitalStageAPI {
     private readonly mUser: firebase.User;
     private readonly mUserRef: firebase.database.Reference;
@@ -238,7 +243,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                         startTime?: number;
                         playing?: boolean;
                     } | null = snapshot.val();
-                    if( data && data.startTime ) {
+                    if (data && data.startTime) {
                         this.mDebug && this.mDebug.debug("Click available: " + data.startTime, this);
                         this.emit("click", data);
                     }
@@ -274,7 +279,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         }
         return this.mUser
             .getIdToken()
-            .then((token: string) => fetch("https://digital-stages.de/api/v2/stages/create", {
+            .then((token: string) => fetch(CREATE_STAGE_URL, {
                     method: "POST",
                     headers: {
                         authorization: token,
@@ -302,7 +307,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
         }
         return this.mUser
             .getIdToken()
-            .then((token: string) => fetch("https://digital-stages.de/api/v2/stages/join", {
+            .then((token: string) => fetch(JOIN_STAGE_URL, {
                 method: "POST",
                 headers: {
                     "authorization": token,
@@ -325,7 +330,7 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
     leaveStage(): Promise<boolean> {
         return this.mUser
             .getIdToken()
-            .then((token: string) => fetch("https://digital-stages.de/api/v2/stages/leave", {
+            .then((token: string) => fetch(LEAVE_STAGE_URL, {
                 method: "POST",
                 headers: {
                     "authorization": token,
