@@ -8,7 +8,6 @@ export default (props: {
     shape?: SHAPE[keyof SHAPE];
     size?: SIZE[keyof SIZE];
     kind?: KIND[keyof KIND];
-    spacing?: number;
 }) => {
     const {darkMode} = useDarkModeSwitch();
 
@@ -16,13 +15,6 @@ export default (props: {
         <>
             {props.device.canVideo && (
                 <Button
-                    overrides={props.spacing && {
-                        BaseButton: {
-                            style: {
-                                marginRight: props.spacing + "px"
-                            }
-                        }
-                    }}
                     shape={props.shape}
                     kind={props.kind}
                     size={props.size}
@@ -38,13 +30,6 @@ export default (props: {
 
             {props.device.canAudio && (
                 <Button
-                    overrides={props.spacing && {
-                        BaseButton: {
-                            style: {
-                                marginRight: props.spacing + "px"
-                            }
-                        }
-                    }}
                     shape={props.shape}
                     kind={props.kind}
                     size={props.size}
@@ -59,13 +44,6 @@ export default (props: {
             )}
             {props.device.canVideo && (
                 <Button
-                    overrides={props.spacing && {
-                        BaseButton: {
-                            style: {
-                                marginRight: props.spacing + "px"
-                            }
-                        }
-                    }}
                     shape={props.shape}
                     kind={props.kind}
                     size={props.size}
