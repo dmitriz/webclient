@@ -3,6 +3,7 @@ import {styled} from "baseui";
 
 const Slider = styled("input", (props: {
     $value: number
+    $color?: string
 }) => ({
     WebkitAppearance: "none",
     width: "100%",
@@ -21,13 +22,13 @@ const Slider = styled("input", (props: {
         appearance: "none",
         width: "25px",
         height: "25px",
-        background: "#4CAF50",
+        background: props.$color ? props.$color : "#d3d3d3",
         cursor: "pointer"
     },
     "::-moz-range-thumb": {
         width: "25px",
         height: "25px",
-        background: "#4CAF50",
+        background: props.$color ? props.$color : "#d3d3d3",
         cursor: "pointer"
     },
 }));
@@ -37,6 +38,7 @@ export default (props: {
     max: number;
     step: number;
     value: number;
+    color?: string;
     onChange: (value: number) => void
 }) => {
 
@@ -47,6 +49,7 @@ export default (props: {
                 max={props.max}
                 value={props.value}
                 $value={props.value}
+                $color={props.color}
                 onChange={(e) => props.onChange(e.currentTarget.valueAsNumber)}/>
     )
 }

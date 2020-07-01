@@ -2,7 +2,6 @@ import React, {useEffect, useState} from "react";
 import {styled} from "styletron-react";
 import {IMember} from "../../lib/useDigitalStage";
 import {LabelMedium} from "baseui/typography";
-import {useWindowSize} from "../../lib/useWindowSize";
 import {FlexGrid, FlexGridItem} from "baseui/flex-grid";
 import AudioMixer from "../audio/AudioMixer";
 import CanvasPlayerV2 from "../video/CanvasPlayerV2";
@@ -26,7 +25,22 @@ const CardContent = styled("div", {
     left: 0,
     width: "100%",
     height: "100%"
+})
 
+const SoundjackLogo = styled("img", {
+    position: "absolute",
+    width: "48px",
+    height: "48px",
+    top: 0,
+    right: 0
+});
+
+const PoweredBySoundjack = styled("div", {
+    position: "absolute",
+    width: "100%",
+    left: 0,
+    right: 0,
+    top: "30px"
 })
 
 export default (props: {
@@ -65,6 +79,16 @@ export default (props: {
                         <Card>
                             <CardConstraint/>
                             <CardContent>
+                                {member.soundjacks.length > 0 && (
+                                    <>
+                                        <SoundjackLogo src={"soundjack.png"}/>
+                                        <PoweredBySoundjack>
+                                            <LabelMedium>
+                                                Powered by soundjack.eu
+                                            </LabelMedium>
+                                        </PoweredBySoundjack>
+                                    </>
+                                )}
                                 <div className={css({
                                     position: 'absolute',
                                     top: 0,

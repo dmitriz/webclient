@@ -366,7 +366,8 @@ export class RealtimeDatabaseAPI extends DigitalStageAPI {
                 outputAudioDevice: device.outputAudioDevice ? device.outputAudioDevice : null
             } as DatabaseDevice)
             .then(async (reference: firebase.database.Reference) => {
-                await reference.onDisconnect().remove();
+                reference.onDisconnect().remove()
+                    .catch(error => console.error(error));
                 if (reference.key) {
                     this.emit("device-registered", {id: reference.key});
                     this.mDebug && this.mDebug.debug("Device registered: " + reference.key, this);

@@ -31,6 +31,10 @@ const SliderPopout = styled("div", (props: {
     zIndex: 2
 }));
 
+const PoweredBySoundjack = styled("div", {
+    width: "100%",
+})
+
 export default (
     props: {
         member: IMember
@@ -44,11 +48,13 @@ export default (
             <SliderPopout $hovered={hovered}>
                 {props.member.soundjacks.map((soundjack: ISoundjack) => (
                     <VolumeSlider key={soundjack.id} min={0} max={1} step={0.1} value={soundjack.volume}
+                                  color="#73A0CF"
                                   onChange={soundjack.setVolume}/>
                 ))}
                 {props.member.audioProducers.map((producer: IAudioProducer) => producer.consumer ? (
                     <React.Fragment key={producer.id}>
                         <VolumeSlider min={0} max={1} step={0.1} value={producer.volume}
+                                      color="#012340"
                                       onChange={producer.setVolume}/>
                         <AudioPlayer track={producer.consumer.track} masterVolume={props.member.volume}
                                      trackVolume={producer.volume}/>
@@ -57,7 +63,11 @@ export default (
             </SliderPopout>
             {(props.member.audioProducers.find(ap => ap.consumer !== undefined) || props.member.soundjacks.length > 0) && (
                 <SliderWrapper>
-                    <VolumeSlider min={0} max={1} step={0.1} value={props.member.volume}
+                    <VolumeSlider min={0}
+                                  max={1}
+                                  step={0.1}
+                                  value={props.member.volume}
+                                  color="#F20544"
                                   onChange={v => props.member.setVolume(v)}/>
                 </SliderWrapper>
             )}

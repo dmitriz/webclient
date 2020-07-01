@@ -2,6 +2,8 @@ import React from "react";
 import NavBar from "./theme/NavBar";
 import {useStyletron} from "baseui";
 import LocalDeviceControl from "./device/LocalDeviceControl";
+import RemoteDeviceControl from "./device/RemoteDeviceControl";
+
 
 export default (props: {
     children: React.ReactNode
@@ -18,6 +20,13 @@ export default (props: {
                 bottom: "15px",
                 zIndex: 1000
             })}/>
+            <RemoteDeviceControl className={css({
+                position: "fixed",
+                right: "15px",
+                bottom: "15px",
+                zIndex: 3000
+            })}
+            />
         </>
     )
 }
