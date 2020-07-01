@@ -175,7 +175,7 @@ class DigitalStageProviderBase extends React.Component<DigitalStageProps, Digita
 
     private handleError(error: Error) {
         debug.handleError(error);
-        this.setState({
+        this && this.setState({
             error: error,
             loading: false
         });

@@ -1,7 +1,7 @@
 import React from "react";
 import NavBar from "./theme/NavBar";
 import {useStyletron} from "baseui";
-import LocalDeviceControl from "./stage/LocalDeviceControl";
+import LocalDeviceControl from "./device/LocalDeviceControl";
 
 export default (props: {
     children: React.ReactNode
