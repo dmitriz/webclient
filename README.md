@@ -57,7 +57,7 @@ To get started, checkout the repository and install all dependencies first:
     
 Then you can start the client by using
 
-    npm prod
+    npm run prod
     
 
 Then open a modern browser (we recommend Google Chrome) and open
